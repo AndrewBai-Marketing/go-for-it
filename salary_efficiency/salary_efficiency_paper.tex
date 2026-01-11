@@ -8,7 +8,7 @@
 \usepackage{float}
 
 \title{MLB Salary Efficiency Analysis: \\A Bayesian Hierarchical Approach}
-\author{}
+\author{Andrew Bai\\University of Chicago}
 \date{\today}
 
 \begin{document}
@@ -210,33 +210,112 @@ The negative R$^2$ trend is statistically significant, contradicting the ``Money
     \item Risk preferences and injury history affect pricing
 \end{itemize}
 
-\section{Hierarchical Model for Team Efficiency}
+\section{Bayesian Hierarchical Model}
+
+We develop a fully Bayesian hierarchical model that addresses several limitations of naive salary-WAR regressions: measurement error in WAR, smooth market inflation, nonlinear star premiums, and heteroskedastic residuals.
 
 \subsection{Model Specification}
 
-We model log salary as a function of latent talent with team and year effects:
+Let $i = 1, \ldots, N$ index player-seasons, with team $t_i \in \{1, \ldots, 30\}$ and year $y_i \in \{2000, \ldots, 2016\}$.
 
-\textbf{Latent talent (measurement error model):}
+\subsubsection{Latent Talent (Measurement Error Model)}
+
+WAR is a noisy estimate of true player value. We model observed WAR as a draw from a distribution centered at latent talent $\theta_i$:
 \begin{equation}
     \text{WAR}_i \mid \theta_i \sim N(\theta_i, \sigma_{\text{WAR}}^2)
 \end{equation}
+where $\sigma_{\text{WAR}} = 0.5$ reflects the typical standard error of WAR estimates. This measurement error model shrinks extreme WAR observations toward the mean and provides appropriate uncertainty quantification.
 
-\textbf{Salary model with piecewise WAR effect:}
+\subsubsection{Salary Model}
+
+Log salary follows a linear model in latent talent with piecewise slope:
 \begin{equation}
-    \log(\text{salary}_i) = \alpha + \beta_1 \theta_i + \beta_2 (\theta_i - 3)_+ + \gamma_{\text{team}}[t_i] + \gamma_{\text{year}}[y_i] + \epsilon_i
+    \log(\text{salary}_i) = \alpha + \beta_1 \theta_i + \beta_2 (\theta_i - \kappa)_+ + \gamma_{\text{team}}[t_i] + \gamma_{\text{year}}[y_i] + \epsilon_i
 \end{equation}
+where:
+\begin{itemize}
+    \item $\alpha$ is the baseline log salary intercept
+    \item $\beta_1$ is the base salary-WAR elasticity (for $\theta_i < \kappa$)
+    \item $\beta_2$ is the additional slope for stars (for $\theta_i \geq \kappa$), so total slope above the knot is $\beta_1 + \beta_2$
+    \item $\kappa = 3$ WAR is the ``star threshold'' where pricing may change
+    \item $(x)_+ = \max(x, 0)$ is the positive part function
+    \item $\gamma_{\text{team}}[t]$ is the team-specific effect (positive = overpays)
+    \item $\gamma_{\text{year}}[y]$ is the year effect (market inflation)
+\end{itemize}
 
-\textbf{Random walk year effects:}
+\subsubsection{Team Effects (Partial Pooling)}
+
+Team effects are drawn from a common distribution, providing regularization:
 \begin{equation}
-    \gamma_{\text{year}}[t] \mid \gamma_{\text{year}}[t-1] \sim N(\gamma_{\text{year}}[t-1], \tau^2)
+    \gamma_{\text{team}}[t] \mid \sigma_{\text{team}} \stackrel{iid}{\sim} N(0, \sigma_{\text{team}}^2), \quad t = 1, \ldots, 30
 \end{equation}
+This hierarchical structure shrinks extreme team estimates toward zero, appropriate given the modest sample sizes per team.
 
-\textbf{Heteroskedastic residuals:}
+\subsubsection{Year Effects (Random Walk)}
+
+Rather than independent year effects, we impose temporal smoothness via a random walk prior:
+\begin{align}
+    \gamma_{\text{year}}[1] &\sim N(0, 0.5^2) \\
+    \gamma_{\text{year}}[t] \mid \gamma_{\text{year}}[t-1] &\sim N(\gamma_{\text{year}}[t-1], \tau^2), \quad t = 2, \ldots, T
+\end{align}
+This ensures market inflation evolves smoothly year-to-year, rather than jumping erratically.
+
+\subsubsection{Heteroskedastic Residuals}
+
+Salary variance plausibly scales with player value. We model:
 \begin{equation}
-    \log \sigma_i = a + b \cdot \theta_i
+    \epsilon_i \mid \theta_i \sim N(0, \sigma_i^2), \quad \log \sigma_i = a + b \cdot \theta_i
 \end{equation}
+This allows residual variance to increase (or decrease) with latent talent.
 
-\subsection{Results: Fixed Effects}
+\subsection{Prior Distributions}
+
+We specify weakly informative priors:
+\begin{align}
+    \alpha &\sim N(14, 2^2) && \text{(baseline $\approx$ \$1.2M)} \\
+    \beta_1 &\sim N(0.3, 0.2^2) && \text{(exp(0.3) $\approx$ 1.35$\times$ per WAR)} \\
+    \beta_2 &\sim N(0.1, 0.1^2) && \text{(modest star premium expected)} \\
+    \sigma_{\text{team}} &\sim \text{Half-}N(0, 0.2^2) && \text{(team effect scale)} \\
+    \tau &\sim \text{Half-}N(0, 0.1^2) && \text{(year RW innovation)} \\
+    a &\sim N(-0.5, 0.5^2) && \text{(baseline residual SD)} \\
+    b &\sim N(0, 0.1^2) && \text{(heteroskedasticity slope)}
+\end{align}
+
+The joint posterior is:
+\begin{equation}
+    p(\boldsymbol{\theta}, \boldsymbol{\gamma}, \boldsymbol{\phi} \mid \mathbf{y}, \mathbf{WAR}) \propto \prod_i p(\text{WAR}_i \mid \theta_i) \cdot p(y_i \mid \theta_i, \boldsymbol{\gamma}, \boldsymbol{\phi}) \cdot p(\boldsymbol{\gamma}) \cdot p(\boldsymbol{\phi})
+\end{equation}
+where $\boldsymbol{\phi} = (\alpha, \beta_1, \beta_2, a, b, \sigma_{\text{team}}, \tau)$ collects the global parameters.
+
+\subsection{Posterior Computation}
+
+We sample from the posterior using a Metropolis-within-Gibbs algorithm:
+\begin{enumerate}
+    \item \textbf{Scalar parameters} $(\alpha, \beta_1, \beta_2, a, b)$: Metropolis updates with Gaussian proposals
+    \item \textbf{Variance parameters} $(\sigma_{\text{team}}, \tau)$: Metropolis on log scale to enforce positivity
+    \item \textbf{Latent talent} $\boldsymbol{\theta}$: Block Metropolis updates (blocks of 100 observations)
+    \item \textbf{Team effects} $\boldsymbol{\gamma}_{\text{team}}$: Component-wise Metropolis
+    \item \textbf{Year effects} $\boldsymbol{\gamma}_{\text{year}}$: Component-wise Metropolis
+\end{enumerate}
+
+We run 4,000 iterations (1,000 warmup + 3,000 retained). Proposal standard deviations are hand-tuned to achieve $\sim$25\% acceptance rates.
+
+\subsection{Interpretation of Parameters}
+
+\textbf{Team efficiency} is defined as $\exp(-\gamma_{\text{team}}[t])$:
+\begin{itemize}
+    \item If $\gamma_{\text{team}} < 0$: team pays less than average for equivalent talent (efficient)
+    \item If $\gamma_{\text{team}} > 0$: team pays more than average (inefficient)
+    \item Efficiency $> 1$ means the team gets more WAR per dollar
+\end{itemize}
+
+\textbf{Star premium}: If $\beta_2 > 0$, stars command higher $/WAR; if $\beta_2 < 0$, stars are bargains.
+
+\textbf{Year effects}: $\gamma_{\text{year}}[2016] - \gamma_{\text{year}}[2000]$ gives total market inflation after controlling for WAR and teams.
+
+\section{Model Results}
+
+\subsection{Fixed Effects}
 
 \begin{table}[H]
 \centering
@@ -255,7 +334,7 @@ $\beta_2$ (star effect) & $-$0.12 & 0.03 & 1.17$\times$ per WAR (above 3) \\
 
 The negative $\beta_2$ confirms the descriptive finding: salary growth per WAR \emph{slows} for elite players. Each additional WAR multiplies salary by 1.32$\times$ for players below 3 WAR, but only 1.17$\times$ above that threshold.
 
-\subsection{Results: Team Efficiency Rankings}
+\subsection{Team Efficiency Rankings}
 
 Team efficiency = $\exp(-\gamma_{\text{team}})$: teams with negative $\gamma$ pay less for equivalent talent.
 
@@ -288,7 +367,7 @@ The efficiency gap is substantial: Oakland obtains roughly 3$\times$ more WAR pe
 
 \textbf{Caveat}: ``Inefficiency'' may be rational for large-market teams if their marginal win value is higher (playoff odds, revenue, brand value). The Yankees paying premium prices may still be optimal given their revenue structure.
 
-\subsection{Results: Year Effects (Market Inflation)}
+\subsection{Year Effects (Market Inflation)}
 
 \begin{table}[H]
 \centering
