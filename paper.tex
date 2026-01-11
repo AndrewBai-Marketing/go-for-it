@@ -23,18 +23,6 @@ We analyze MLB salary efficiency using real contract data from the Lahman databa
 
 Professional sports provide a natural laboratory for studying labor market efficiency. Unlike most markets, player productivity in baseball is precisely measured through statistics like Wins Above Replacement (WAR), and salaries are publicly observable. This paper asks: \textit{Which teams achieve better value in the salary market, and has market efficiency changed over time?}
 
-\subsection{Contribution}
-
-We improve on naive salary-WAR regressions in several ways:
-\begin{enumerate}
-    \item \textbf{Real salary data}: We use observed salaries from the Lahman database rather than simulated values.
-    \item \textbf{Latent talent model}: WAR is treated as a noisy proxy for true player value, preventing measurement error from inflating ``inefficiency'' estimates.
-    \item \textbf{Random walk year effects}: Market-wide salary trends are modeled as smooth rather than iid shocks.
-    \item \textbf{Piecewise star premium}: We explicitly model differential pricing for elite players.
-    \item \textbf{Heteroskedasticity}: Residual variance scales with player value.
-\end{enumerate}
-
-\subsection{Limitations}
 
 Several important caveats apply:
 \begin{itemize}
