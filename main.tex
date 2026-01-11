@@ -50,7 +50,7 @@
 \maketitle
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture team-specific conversion rates and kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates even for teams and kickers with limited observations. Applying this framework to 30,025 fourth-down situations from 2017--2024, we find that coaches make suboptimal decisions approximately 24\% of the time, costing an average of 0.33 percentage points of win probability per decision. Using an expanding window methodology, we show that 96.2\% of optimal decisions were \textit{knowable in real-time}---the recommendation using only pre-season data matches the full-sample recommendation. This undermines claims that coaches lacked sufficient information to make better decisions.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture team-specific conversion rates and kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates even for teams and kickers with limited observations. Applying this framework to 71,849 fourth-down situations from 2006--2024, we find that coaches make suboptimal decisions approximately 22\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 95.3\% of optimal decisions were \textit{knowable in real-time}---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 21.5\% of the time. This undermines claims that coaches lacked sufficient information to make better decisions.
 \end{abstract}
 
 \section{Introduction}
@@ -166,7 +166,7 @@ Situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 1$ are \textbf{ob
 
 \subsection{Data}
 
-We use play-by-play data from the 2006--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use 2006--2016 as the initial training period and evaluate decisions in 2017--2024. The evaluation sample contains 30,025 fourth-down situations.
+We use play-by-play data from the 1999--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use a 7-year minimum training window starting from 1999, testing decisions from 2006--2024. The evaluation sample contains 71,849 fourth-down situations across 19 test years.
 
 \subsection{Bayesian Estimation}
 
@@ -303,44 +303,55 @@ In practice, the hierarchical effects rarely flip the optimal decision (they do 
 
 \section{Real-Time Knowability: Expanding Window Analysis}
 
-A natural objection to retrospective decision analysis is that coaches could not have known the optimal decision at the time. Perhaps the models we use today rely on information that was not available in, say, 2017. This section addresses this concern directly.
+A natural objection to retrospective decision analysis is that coaches could not have known the optimal decision at the time. Perhaps the models we use today rely on information that was not available in, say, 2006. This section addresses this concern directly.
 
 \subsection{Methodology}
 
-We implement an \textit{expanding window} analysis. For each test year $Y \in \{2017, \ldots, 2024\}$:
+We implement an \textit{expanding window} analysis with a 7-year minimum training window. For each test year $Y \in \{2006, \ldots, 2024\}$:
 \begin{enumerate}
-    \item Train all Bayesian models on data from 2006 through $Y-1$ only (the ``ex ante'' model)
-    \item Train models on the full sample 2006--2024 (the ``ex post'' model)
+    \item Train all Bayesian models on data from 1999 through $Y-1$ only (the ``ex ante'' model)
+    \item Train models on the full sample 1999--2024 (the ``ex post'' model)
     \item For each fourth-down situation in year $Y$, compute the optimal decision under both models
     \item Compare: Does the ex ante recommendation match the ex post recommendation?
 \end{enumerate}
 
-If the models agree, the correct decision was \textit{knowable in real-time}---the coach had access to sufficient historical data to identify the optimal action. If they disagree, we cannot definitively fault the coach, since the data available at the time pointed to a different conclusion.
+The 7-year minimum training window (1999--2005 for the 2006 test year) ensures sufficient data for stable model estimates while maximizing the span of test years. If the models agree, the correct decision was \textit{knowable in real-time}---the coach had access to sufficient historical data to identify the optimal action. If they disagree, we cannot definitively fault the coach, since the data available at the time pointed to a different conclusion.
 
 \subsection{Results}
 
 \begin{table}[H]
 \centering
-\caption{Expanding Window Analysis: Ex Ante vs. Ex Post Model Agreement}
+\caption{Expanding Window Analysis: Ex Ante vs. Ex Post Model Agreement (2006--2024)}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
 \textbf{Season} & \textbf{N Plays} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
 \midrule
-2017 & 3,874 & 76.9\% & 74.8\% & 96.6\% \\
-2018 & 3,578 & 78.4\% & 76.2\% & 96.1\% \\
-2019 & 3,637 & 77.3\% & 74.4\% & 92.7\% \\
-2020 & 3,405 & 75.6\% & 73.8\% & 97.2\% \\
-2021 & 3,778 & 74.2\% & 73.2\% & 97.4\% \\
-2022 & 3,872 & 75.6\% & 73.3\% & 95.7\% \\
-2023 & 4,053 & 75.4\% & 74.0\% & 97.1\% \\
-2024 & 3,828 & 75.7\% & 74.5\% & 96.7\% \\
+2006 & 3,839 & 79.3\% & 74.7\% & 92.3\% \\
+2007 & 3,762 & 76.6\% & 74.3\% & 93.6\% \\
+2008 & 3,677 & 78.5\% & 74.5\% & 93.3\% \\
+2009 & 3,851 & 76.4\% & 73.7\% & 93.4\% \\
+2010 & 3,843 & 79.9\% & 75.4\% & 93.4\% \\
+2011 & 3,848 & 80.0\% & 77.1\% & 93.3\% \\
+2012 & 3,824 & 79.6\% & 76.4\% & 95.1\% \\
+2013 & 3,907 & 80.7\% & 77.8\% & 96.1\% \\
+2014 & 3,742 & 78.6\% & 76.1\% & 94.3\% \\
+2015 & 3,826 & 76.3\% & 76.8\% & 95.5\% \\
+2016 & 3,705 & 79.6\% & 77.8\% & 97.2\% \\
+2017 & 3,874 & 79.1\% & 77.9\% & 98.4\% \\
+2018 & 3,578 & 77.9\% & 77.7\% & 97.1\% \\
+2019 & 3,637 & 76.6\% & 76.2\% & 98.5\% \\
+2020 & 3,405 & 77.7\% & 75.8\% & 95.8\% \\
+2021 & 3,778 & 76.4\% & 75.0\% & 94.5\% \\
+2022 & 3,872 & 76.1\% & 75.2\% & 96.9\% \\
+2023 & 4,053 & 75.8\% & 75.5\% & 95.1\% \\
+2024 & 3,828 & 75.6\% & 75.4\% & 97.4\% \\
 \midrule
-\textbf{Overall} & \textbf{30,025} & \textbf{76.1\%} & \textbf{74.3\%} & \textbf{96.2\%} \\
+\textbf{Overall} & \textbf{71,849} & \textbf{77.9\%} & \textbf{76.0\%} & \textbf{95.3\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key finding: \textbf{96.2\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases.
+The key finding: \textbf{95.3\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 92.3\% (2006, with the minimum training data) to 98.5\% (2019).
 
 \subsection{Implications for Coach Evaluation}
 
@@ -356,18 +367,18 @@ A fourth-down decision is an \textit{inexcusable mistake} if:
 
 Under this definition:
 \begin{itemize}
-    \item 28,888 plays (96.2\%) had stable optimal decisions
-    \item Of these, coaches made the optimal decision on 22,031 plays (76.3\%)
-    \item The remaining 6,857 plays (23.7\%) were \textbf{inexcusable mistakes}
+    \item 68,489 plays (95.3\%) had stable optimal decisions
+    \item Of these, coaches made the optimal decision on 53,774 plays (78.5\%)
+    \item The remaining 14,715 plays (21.5\%) were \textbf{inexcusable mistakes}
 \end{itemize}
 
 \begin{remark}
-The 3.8\% of plays where models disagree represent situations where the data available at the time genuinely pointed to a different conclusion. For these plays, we cannot fault the coach for following the ex ante recommendation, even if ex post analysis suggests otherwise.
+The 4.7\% of plays where models disagree represent situations where the data available at the time genuinely pointed to a different conclusion. For these plays, we cannot fault the coach for following the ex ante recommendation, even if ex post analysis suggests otherwise.
 \end{remark}
 
 \subsection{Stability Over Time}
 
-Figure \ref{fig:time_trends} shows that the agreement rate is remarkably stable across seasons, ranging from 92.7\% (2019) to 97.4\% (2021). The 2019 dip likely reflects that season's unusual characteristics (including rule changes affecting play-calling), but even in this outlier year, over 92\% of decisions had stable optimal actions.
+The agreement rate is remarkably stable across all 19 seasons, ranging from 92.3\% (2006) to 98.5\% (2019). Notably, agreement rates are slightly lower in the earliest test years (2006--2011, averaging 93.2\%) compared to later years (2012--2024, averaging 96.0\%), reflecting the benefit of additional training data. However, even with only 7 years of training data, the 2006 agreement rate of 92.3\% demonstrates that the structural parameters governing conversions, punts, and field goals were sufficiently stable to enable reliable real-time recommendations.
 
 \begin{figure}[H]
 \centering
@@ -382,12 +393,12 @@ The expanding window analysis addresses a fundamental challenge in retrospective
 
 Our results show this criticism is largely unfounded for fourth-down decisions. The structural parameters governing conversions, punts, and field goals are sufficiently stable that:
 \begin{enumerate}
-    \item Models trained on pre-season data yield recommendations that match full-sample analysis 96\% of the time
-    \item The remaining 4\% of disagreements are concentrated in edge cases where even substantial additional data does not clearly resolve the optimal action
+    \item Models trained on pre-season data yield recommendations that match full-sample analysis 95\% of the time
+    \item The remaining 5\% of disagreements are concentrated in edge cases where even substantial additional data does not clearly resolve the optimal action
     \item Coaches could have---and should have---made better decisions using information that was publicly available
 \end{enumerate}
 
-This is not to say coaches have perfect information. They face execution uncertainty, opponent-specific adjustments, and time pressure that models do not capture. But the \textit{structural} uncertainty about whether going for it beats punting is largely resolved by historical data. The 24\% error rate reflects decision-making failures, not information failures.
+This is not to say coaches have perfect information. They face execution uncertainty, opponent-specific adjustments, and time pressure that models do not capture. But the \textit{structural} uncertainty about whether going for it beats punting is largely resolved by historical data. The 21.5\% error rate on stable decisions reflects decision-making failures, not information failures.
 
 \section{Application: 2026 Bears-Packers Wild Card Game}
 
@@ -524,8 +535,9 @@ The regular season vs. playoff comparison suggests that:
 
 We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; and (4) testing real-time knowability via expanding window analysis.
 
-Twenty years after \citet{romer2006} documented systematic conservatism, coaches still make suboptimal decisions approximately 24\% of the time. The average cost is 0.33 percentage points of win probability per fourth-down decision. Critically, our expanding window analysis shows that 96.2\% of optimal decisions were knowable in real-time---the recommendation using only pre-season data matches the full-sample recommendation. This undermines claims that coaches lacked sufficient information to make better decisions.
+Twenty years after \citet{romer2006} documented systematic conservatism, coaches still make suboptimal decisions approximately 22\% of the time. Critically, our expanding window analysis using 71,849 fourth-down situations from 2006--2024 shows that 95.3\% of optimal decisions were knowable in real-time---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 21.5\% of the time. This undermines claims that coaches lacked sufficient information to make better decisions.
 
+The comparison of regular season and playoff decision-making reveals that increased stakes shift aggressiveness but not accuracy. This is consistent with context-dependent risk aversion: playoff coaches require less of a margin to choose the aggressive option, but they are not better informed about which option is actually correct. The 73\% accuracy ceiling appears to reflect fundamental uncertainty about within-game outcomes rather than correctable bias.
 
 \subsection{Extensions}
 
