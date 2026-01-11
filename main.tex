@@ -107,24 +107,13 @@ Each action induces a probability distribution over successor states. Let $P(s' 
     P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot \ind\{\text{score } +3, \text{kickoff}\} + (1 - \phi(x; \theta)) \cdot \ind\{\text{opp. at } \max(x, 20)\}
 \end{equation}
 
-\section{Win Probability Model}
+\section{Data}
 
-The objective is to maximize the probability of winning the game. Let $W: \calS \to [0, 1]$ denote the win probability function. We model this as:
-\begin{equation}
-    W(s) = \sigma\left(\beta_1 \Delta + \beta_2 \tau + \beta_3 (\Delta \cdot \tau) + \beta_4 x + \beta_0\right)
-\end{equation}
-where $\sigma(\cdot)$ is the logistic function:
-\begin{equation}
-    \sigma(z) = \frac{1}{1 + e^{-z}}
-\end{equation}
+We use play-by-play data from the 1999--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use a 7-year minimum training window starting from 1999, testing decisions from 2006--2024. The evaluation sample contains 71,849 fourth-down situations across 19 test years.
 
-The interaction term $\beta_3 (\Delta \cdot \tau)$ captures the intuition that score differential matters more when less time remains---being down by 7 with 2 minutes left is worse than being down by 7 with 28 minutes left.
+\section{Hierarchical Bayesian Decision Framework}
 
-We estimate $\beta$ by maximum likelihood on historical play-by-play data, yielding posterior distribution $p(\beta \mid \calD)$ via Bayesian inference with prior $\beta \sim \mathcal{N}(0, \sigma^2 I)$.
-
-\section{Bayesian Decision Framework}
-
-\subsection{Expected Win Probability}
+\subsection{Expected Win Probability Under Parameter Uncertainty}
 
 For a given action $a$ in state $s$, the expected win probability integrating over parameter uncertainty is:
 \begin{equation}
@@ -156,101 +145,64 @@ The posterior probability that action $a$ is optimal is:
 \end{equation}
 \end{definition}
 
-This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \calD)$ for $m = 1, \ldots, M$, compute win probabilities under each draw, and calculate the fraction of draws for which the action is optimal.
+This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \calD)$ for $m = 1, \ldots, M$, compute win probabilities under each draw, and calculate the fraction of draws for which the action is optimal. Situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 1$ are \textbf{obvious} go-for-it decisions; situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 0.5$ are \textbf{close calls} where the data do not clearly favor one action.
 
-\begin{remark}
-Situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 1$ are \textbf{obvious} go-for-it decisions; situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 0.5$ are \textbf{close calls} where the data do not clearly favor one action.
-\end{remark}
+\subsection{Model Specification}
 
-\section{Empirical Implementation}
+We specify four component models, using hierarchical structure for conversion and field goal probabilities to capture team- and kicker-specific heterogeneity while borrowing strength across units via partial pooling. All models are estimated using Laplace approximation to the posterior with weakly informative priors $\beta \sim \mathcal{N}(0, 100)$.
 
-\subsection{Data}
-
-We use play-by-play data from the 1999--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use a 7-year minimum training window starting from 1999, testing decisions from 2006--2024. The evaluation sample contains 71,849 fourth-down situations across 19 test years.
-
-\subsection{Bayesian Estimation}
-
-We estimate all models using Laplace approximation to the posterior. For logistic regression, we find the MAP estimate via BFGS optimization, then approximate the posterior as Gaussian with covariance equal to the inverse Hessian at the mode. For linear regression (punt model), the posterior is exact under conjugate Gaussian priors. We use weakly informative priors $\beta \sim \mathcal{N}(0, 100)$ on all coefficients.
-
-\subsection{Parameter Estimates}
-
-\paragraph{Conversion probability.} We model conversion as logistic in yards to go:
+\paragraph{Hierarchical conversion model.} We model conversion probability as logistic in yards to go with team-specific random effects:
 \begin{equation}
-    \Prob(\text{convert} \mid d) = \sigma(\alpha + \beta d)
+    \Prob(\text{convert} \mid d, \text{team} = k) = \sigma(\alpha + \beta d + \gamma_k)
 \end{equation}
-The posterior estimates are $\hat{\alpha} = 0.784$ (SE: 0.046) and $\hat{\beta} = -0.176$ (SE: 0.009), with posterior correlation $-0.72$. This yields:
-\begin{align}
-    \pi(1) &= 64.8\% \quad [62.9\%, 66.4\%] \\
-    \pi(2) &= 60.7\% \quad [58.9\%, 62.2\%] \\
-    \pi(3) &= 56.4\% \quad [54.8\%, 57.9\%] \\
-    \pi(5) &= 47.6\% \quad [46.0\%, 49.3\%] \\
-    \pi(10) &= 27.4\% \quad [24.9\%, 30.4\%]
-\end{align}
-where brackets denote 95\% credible intervals.
+where $\gamma_k \sim \mathcal{N}(0, \tau^2)$ is the team-specific effect and $\tau^2$ is the between-team variance estimated via empirical Bayes. The shrinkage estimator is $\hat{\gamma}_k = (1 - B_k) \cdot \hat{\gamma}_k^{\text{raw}}$ where $B_k = \text{SE}_k^2 / (\text{SE}_k^2 + \tau^2)$. Teams with fewer observations shrink more toward the league average.
 
-\paragraph{Field goal probability.} We model make probability as logistic in kick distance, centered at 35 yards:
+The population-level posterior estimates are $\hat{\alpha} = 0.784$ (SE: 0.046) and $\hat{\beta} = -0.176$ (SE: 0.009). The between-team variance is $\hat{\tau}^2 = 0.024$ (SD $\approx$ 0.15 in log-odds). This yields league-average conversion probabilities:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Yards to Go} & \textbf{Conversion \%} & \textbf{95\% CI} \\
+\midrule
+1 & 64.8\% & [62.9\%, 66.4\%] \\
+2 & 60.7\% & [58.9\%, 62.2\%] \\
+3 & 56.4\% & [54.8\%, 57.9\%] \\
+5 & 47.6\% & [46.0\%, 49.3\%] \\
+10 & 27.4\% & [24.9\%, 30.4\%] \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Hierarchical field goal model.} We model make probability as logistic in kick distance (centered at 35 yards) with kicker-specific effects:
 \begin{equation}
-    \Prob(\text{make} \mid d) = \sigma(\alpha + \beta (d - 35))
+    \Prob(\text{make} \mid d, \text{kicker} = j) = \sigma(\alpha + \beta (d - 35) + \gamma_j)
 \end{equation}
-The posterior estimates are $\hat{\alpha} = 2.383$ (SE: 0.056) and $\hat{\beta} = -0.105$ (SE: 0.004). This yields:
-\begin{align}
-    \phi(25) &= 96.9\% \quad [96.3\%, 97.4\%] \\
-    \phi(35) &= 91.6\% \quad [90.7\%, 92.4\%] \\
-    \phi(45) &= 79.1\% \quad [77.9\%, 80.3\%] \\
-    \phi(52) &= 64.5\% \quad [62.1\%, 66.6\%]
-\end{align}
+where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures kicker ability relative to league average. The population-level estimates are $\hat{\alpha} = 2.383$ (SE: 0.056) and $\hat{\beta} = -0.105$ (SE: 0.004). The between-kicker variance is $\hat{\tau}^2 = 0.031$, implying meaningful heterogeneity in kicker ability.
 
-\paragraph{Punt distance.} We model net punt yards as linear in field position with Gaussian errors:
+\paragraph{Punt model.} We model net punt yards as linear in field position with Gaussian errors:
 \begin{equation}
     Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)
 \end{equation}
 The posterior estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), and $\hat{\sigma} = 9.3$ yards. Punts from deeper in own territory travel further (positive $\beta$), reflecting punter adjustment to field position.
 
-\paragraph{Win probability.} We model win probability as logistic in game state features:
+\paragraph{Win probability model.} We model win probability as logistic in game state features:
 \begin{equation}
     \Prob(\text{win} \mid s) = \sigma\left(\beta_0 + \beta_1 \frac{\Delta}{14} + \beta_2 \frac{\tau}{3600} + \beta_3 \frac{\Delta \cdot \tau}{14 \cdot 3600} + \beta_4 \frac{x - 50}{50} + \beta_5 \frac{k}{3}\right)
 \end{equation}
-where $\Delta$ is score differential, $\tau$ is seconds remaining, $x$ is yards from opponent's end zone, and $k$ is timeout differential. The posterior estimates are:
-\begin{center}
+where $\Delta$ is score differential, $\tau$ is seconds remaining, $x$ is yards from opponent's end zone, and $k$ is timeout differential. The negative interaction term ($\hat{\beta}_3 = -3.438$) confirms that score differential matters more as time decreases.
+
+\subsection{Estimated Heterogeneity}
+
+The hierarchical structure reveals meaningful variation across teams and kickers:
+
+\begin{table}[H]
+\centering
+\caption{Estimated Team and Kicker Effects (2006--2024)}
+\begin{minipage}{0.48\textwidth}
+\centering
+\textbf{Team Conversion Effects}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Coefficient} & \textbf{Estimate} & \textbf{SE} \\
-\midrule
-Intercept ($\beta_0$) & 0.450 & 0.026 \\
-Score differential ($\beta_1$) & 4.112 & 0.064 \\
-Time remaining ($\beta_2$) & $-0.304$ & 0.040 \\
-Score $\times$ time ($\beta_3$) & $-3.438$ & 0.114 \\
-Field position ($\beta_4$) & $-0.445$ & 0.023 \\
-Timeout differential ($\beta_5$) & 0.295 & 0.044 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-The negative interaction term ($\beta_3 < 0$) confirms that score differential matters more as time decreases---being down 7 with 2 minutes left is worse than being down 7 with 28 minutes left.
-
-\section{Hierarchical Models with Team and Kicker Effects}
-
-The baseline models treat all teams and kickers as exchangeable. In practice, some teams convert fourth downs more reliably than others, and some kickers are more accurate than league average. We extend the framework using hierarchical Bayesian models that allow for team- and kicker-specific effects while borrowing strength across units via partial pooling.
-
-\subsection{Hierarchical Conversion Model}
-
-We extend the conversion model to include team-specific random effects:
-\begin{equation}
-    \Prob(\text{convert} \mid d, \text{team} = k) = \sigma(\alpha + \beta d + \gamma_k)
-\end{equation}
-where $\gamma_k \sim \mathcal{N}(0, \tau^2)$ is the team-specific effect and $\tau^2$ is the between-team variance estimated via empirical Bayes.
-
-The shrinkage estimator for team $k$ is:
-\begin{equation}
-    \hat{\gamma}_k = (1 - B_k) \cdot \hat{\gamma}_k^{\text{raw}}
-\end{equation}
-where $B_k = \frac{\text{SE}_k^2}{\text{SE}_k^2 + \tau^2}$ is the shrinkage factor. Teams with fewer observations shrink more toward the league average; teams with many observations retain estimates closer to their raw performance.
-
-\paragraph{Estimated team effects.} The between-team variance is $\hat{\tau}^2 = 0.024$, implying a standard deviation of approximately 0.15 in log-odds. Selected team effects (2006--2024):
-\begin{center}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Team} & \textbf{Effect ($\hat{\gamma}_k$)} & \textbf{N Attempts} \\
+\textbf{Team} & \textbf{Effect} & \textbf{N} \\
 \midrule
 PHI & $+0.18$ & 412 \\
 DET & $+0.14$ & 389 \\
@@ -260,46 +212,30 @@ CHI & $-0.09$ & 298 \\
 NYG & $-0.12$ & 287 \\
 \bottomrule
 \end{tabular}
-\end{center}
-
-The Eagles and Lions---teams known for aggressive coaching---show positive effects, suggesting their fourth-down success is not merely due to attempting more conversions but also executing them at above-average rates.
-
-\subsection{Hierarchical Field Goal Model}
-
-Similarly, we model kicker-specific effects on field goal probability:
-\begin{equation}
-    \Prob(\text{make} \mid d, \text{kicker} = j) = \sigma(\alpha + \beta (d - 35) + \gamma_j)
-\end{equation}
-where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures kicker ability relative to league average.
-
-\paragraph{Estimated kicker effects.} The between-kicker variance is $\hat{\tau}^2 = 0.031$, implying meaningful heterogeneity in kicker ability. Selected effects:
-\begin{center}
-\begin{tabular}{lccc}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\textbf{Kicker Effects (50-yd FG)}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Kicker} & \textbf{Effect ($\hat{\gamma}_j$)} & \textbf{50-yd Make \%} & \textbf{N Attempts} \\
+\textbf{Kicker} & \textbf{Make \%} & \textbf{N} \\
 \midrule
-J. Tucker & $+0.42$ & 72.1\% & 298 \\
-H. Butker & $+0.31$ & 68.5\% & 187 \\
-C. Boswell & $+0.28$ & 67.4\% & 203 \\
+C. Boswell & 73.1\% & 191 \\
+N. Folk & 73.0\% & 173 \\
+C. Dicker & 72.7\% & 97 \\
 \midrule
-League Avg & $0.00$ & 58.2\% & --- \\
+League Avg & 69.2\% & --- \\
 \midrule
-N. Folk & $-0.19$ & 51.2\% & 156 \\
+M. Ammendola & 63.9\% & 35 \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{minipage}
+\end{table}
 
-Justin Tucker's estimated effect implies he makes 50-yard field goals at approximately 14 percentage points higher than league average---a substantial difference that meaningfully affects optimal decision-making at the margin.
+The Eagles and Lions---teams known for aggressive coaching---show positive conversion effects, suggesting their fourth-down success is not merely due to attempting more conversions but also executing them at above-average rates. For kickers, the best-to-worst spread at 50 yards is approximately 9 percentage points (73.1\% vs 63.9\%), translating to roughly 0.1 additional wins per season from having an elite kicker.
 
-\subsection{Implications for Decision Analysis}
-
-The hierarchical models allow situation-specific recommendations. Consider 4th \& 3 at the opponent's 35-yard line:
-\begin{itemize}
-    \item For a team with $\hat{\gamma}_k = +0.15$ and a kicker with $\hat{\gamma}_j = +0.30$: the decision is closer because both conversion and field goal success are above average
-    \item For a team with $\hat{\gamma}_k = -0.10$ and a league-average kicker: going for it becomes less attractive relative to the field goal
-\end{itemize}
-
-In practice, the hierarchical effects rarely flip the optimal decision (they do so in approximately 3\% of cases), but they substantially affect decision confidence and the magnitude of expected win probability gains.
+In practice, the hierarchical effects rarely flip the optimal decision (approximately 3\% of cases), but they substantially affect decision confidence and the magnitude of expected win probability gains.
 
 \section{Real-Time Knowability: Expanding Window Analysis}
 
