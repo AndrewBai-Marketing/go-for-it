@@ -32,8 +32,10 @@ def compute_market_rate_by_year(df: pd.DataFrame) -> pd.DataFrame:
 
 def compute_position_pricing(df: pd.DataFrame) -> pd.DataFrame:
     """Compute $/WAR by position."""
-    # Use position_type (batter vs pitcher)
-    pos_stats = df.groupby('position').agg({
+    # Use primary_position if available, otherwise fall back to position
+    pos_col = 'primary_position' if 'primary_position' in df.columns else 'position'
+
+    pos_stats = df.groupby(pos_col).agg({
         'salary': 'sum',
         'war': 'sum',
         'season': 'count'
@@ -284,24 +286,29 @@ def main():
 
     first_year = market_rate.iloc[0]
     last_year = market_rate.iloc[-1]
+
+    # Get position column name
+    pos_col = position_pricing.columns[0]  # First column is the position
+
     print(f"""
 1. MARKET RATE FOR WINS
    {int(first_year['season'])}: ${first_year['dollars_per_war']/1e6:.2f}M/WAR
    {int(last_year['season'])}: ${last_year['dollars_per_war']/1e6:.2f}M/WAR
    Growth: {((last_year['dollars_per_war']/first_year['dollars_per_war'])-1)*100:.1f}%
 
-2. POSITION PRICING (Batters vs Pitchers)
-   Batters: ${position_pricing[position_pricing['position']=='batter']['dollars_per_war'].values[0]/1e6:.2f}M/WAR
-   Pitchers: ${position_pricing[position_pricing['position']=='pitcher']['dollars_per_war'].values[0]/1e6:.2f}M/WAR
+2. POSITION PRICING (by position)""")
+    for _, row in position_pricing.iterrows():
+        print(f"   {row[pos_col]:>3}: ${row['dollars_per_war']/1e6:.2f}M/WAR ({row['n_players']:,} players)")
 
+    print(f"""
 3. STAR PREMIUM
    0-1 WAR: ${star_premium[star_premium['war_bucket']=='0-1']['dollars_per_war'].values[0]/1e6:.2f}M/WAR
    5+ WAR: ${star_premium[star_premium['war_bucket']=='5+']['dollars_per_war'].values[0]/1e6:.2f}M/WAR
    Premium ratio: {star_premium[star_premium['war_bucket']=='5+']['dollars_per_war'].values[0] / star_premium[star_premium['war_bucket']=='0-1']['dollars_per_war'].values[0]:.2f}x
 
 4. MARKET EFFICIENCY OVER TIME
-   First era R²: {era_efficiency.iloc[0]['r_squared']:.4f}
-   Last era R²: {era_efficiency.iloc[-1]['r_squared']:.4f}
+   First era R-squared: {era_efficiency.iloc[0]['r_squared']:.4f}
+   Last era R-squared: {era_efficiency.iloc[-1]['r_squared']:.4f}
    Residual var change: {((era_efficiency.iloc[-1]['residual_var']/era_efficiency.iloc[0]['residual_var'])-1)*100:.1f}%
    Trend: {trend_results['conclusion']}
 """)

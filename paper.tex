@@ -16,20 +16,39 @@
 \maketitle
 
 \begin{abstract}
-We analyze MLB salary efficiency using real contract data from the Lahman database (2000--2016) merged with FanGraphs WAR. Our Bayesian hierarchical model incorporates: (1) latent talent estimation to account for WAR measurement error; (2) random walk priors for year effects to model smooth market inflation; (3) piecewise linear WAR effects to capture star premiums; and (4) heteroskedastic residuals. Key findings from 8,198 player-seasons: market-clearing teams (Oakland, Tampa Bay, Miami) achieve 40--60\% salary efficiency gains relative to large-market teams (Yankees, Red Sox, Dodgers). Each WAR multiplies salary by $\approx$1.32$\times$ below 3 WAR, with a modest \emph{negative} star premium above that threshold in our data. Year effects show steady 3--4\% annual inflation in real salaries controlling for productivity.
+We analyze MLB salary efficiency using real contract data from the Lahman database (2000--2016) merged with FanGraphs WAR. Our analysis addresses four questions: (1) How has the market rate for wins evolved? (2) Are certain player types systematically mispriced? (3) Which teams achieve better salary efficiency? (4) Has the market become more efficient over time? Key findings from 8,198 player-seasons: the market rate rose from \$1.3M/WAR (2000) to \$2.8M/WAR (2016); pitchers command a 15\% premium over position players per WAR; star players ($>$5 WAR) are actually paid \emph{less} per WAR than average players, contradicting conventional wisdom; market-clearing teams (Oakland, Miami, Tampa Bay) pay 40--60\% less per WAR than large-market clubs; and contrary to the ``Moneyball'' narrative, market efficiency has \emph{not} improved over this period---R$^2$ of salary-WAR regressions actually declined slightly.
 \end{abstract}
 
 \section{Introduction}
 
-Professional sports provide a natural laboratory for studying labor market efficiency. Unlike most markets, player productivity in baseball is precisely measured through statistics like Wins Above Replacement (WAR), and salaries are publicly observable. This paper asks: \textit{Which teams achieve better value in the salary market, and has market efficiency changed over time?}
+Professional sports provide a natural laboratory for studying labor market efficiency. Unlike most markets, player productivity in baseball is precisely measured through statistics like Wins Above Replacement (WAR), and salaries are publicly observable. This paper asks four questions:
 
+\begin{enumerate}
+    \item What is the market rate for wins, and how has it evolved?
+    \item Are certain positions or player types systematically mispriced?
+    \item Which teams achieve better value in the salary market?
+    \item Has market efficiency improved over time (``Does management learn?'')
+\end{enumerate}
 
-Several important caveats apply:
+\subsection{Contribution}
+
+We improve on naive salary-WAR regressions by using:
 \begin{itemize}
-    \item Lahman salary data ends in 2016, so we cannot analyze recent market trends.
-    \item We observe salary outcomes, not contract terms at signing (years, guarantees, deferrals).
-    \item ``Efficiency'' here means \emph{salary per WAR}, not team optimality---overpaying for wins may be rational for contending teams with high marginal win value.
-    \item WAR itself embeds modeling assumptions about replacement level and positional adjustments.
+    \item \textbf{Real salary data} from the Lahman database (not simulated)
+    \item \textbf{Latent talent model} treating WAR as a noisy proxy for true value
+    \item \textbf{Random walk year effects} for smooth market inflation
+    \item \textbf{Piecewise WAR effects} to capture star premiums
+    \item \textbf{Heteroskedastic residuals} scaling with player value
+\end{itemize}
+
+\subsection{Limitations}
+
+Several caveats apply:
+\begin{itemize}
+    \item Lahman salary data ends in 2016; recent trends are not captured.
+    \item We observe annual salary, not contract terms (years, guarantees, deferrals).
+    \item ``Efficiency'' means salary per WAR, not team optimality---large-market teams may rationally pay premiums.
+    \item WAR embeds modeling assumptions about replacement level.
 \end{itemize}
 
 \section{Data}
@@ -38,11 +57,11 @@ Several important caveats apply:
 
 We merge two datasets:
 \begin{itemize}
-    \item \textbf{Lahman Salaries}: Real observed player salaries, 1985--2016 (\url{github.com/seanlahman/baseballdatabank})
-    \item \textbf{FanGraphs WAR}: Player productivity metrics, accessed via \texttt{pybaseball}
+    \item \textbf{Lahman Salaries}: Real observed player salaries, 2000--2016
+    \item \textbf{FanGraphs WAR}: Player productivity metrics via \texttt{pybaseball}
 \end{itemize}
 
-Matching is performed on player name and team-year, yielding 8,198 player-seasons from 2000--2016 with both salary and WAR $\geq 0.1$.
+Matching on player name and team-year yields 8,198 player-seasons with WAR $\geq 0.1$.
 
 \subsection{Sample Statistics}
 
@@ -68,18 +87,132 @@ WAR distribution: & \\
 \quad Mean & 1.96 \\
 \quad Median & 1.40 \\
 \quad Range & [0.1, 12.7] \\
-\midrule
-By service time: & \\
-\quad Pre-arbitration & 4,550 (55.5\%) \\
-\quad Arbitration & 2,125 (25.9\%) \\
-\quad Free agent & 1,523 (18.6\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Model}
+\section{Descriptive Analysis}
 
-\subsection{Specification}
+\subsection{Market Rate for Wins}
+
+The market rate (total salary / total WAR) has more than doubled over our sample period:
+
+\begin{table}[H]
+\centering
+\caption{Market Rate for Wins Over Time}
+\label{tab:marketrate}
+\begin{tabular}{lrrr}
+\toprule
+Year & \$/WAR & Avg Salary & N \\
+\midrule
+2000 & \$1.26M & \$2.47M & 488 \\
+2004 & \$1.54M & \$3.11M & 481 \\
+2008 & \$1.88M & \$3.67M & 480 \\
+2012 & \$2.15M & \$4.02M & 489 \\
+2016 & \$2.76M & \$5.11M & 499 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \$/WAR grew 118\% from 2000 to 2016, reflecting both revenue growth and competitive bidding for talent.
+
+\subsection{Position Pricing}
+
+\begin{table}[H]
+\centering
+\caption{Position Pricing (Dollars per WAR)}
+\label{tab:position}
+\begin{tabular}{lrrrr}
+\toprule
+Position & \$/WAR & Avg Salary & N & Deviation \\
+\midrule
+1B & \$2.57M & \$6.07M & 545 & +41\% \\
+P & \$2.00M & \$3.32M & 3,918 & +9\% \\
+OF & \$1.89M & \$4.35M & 1,597 & +3\% \\
+3B & \$1.72M & \$4.26M & 519 & $-$6\% \\
+SS & \$1.66M & \$3.66M & 485 & $-$9\% \\
+C & \$1.52M & \$2.70M & 619 & $-$17\% \\
+2B & \$1.43M & \$3.11M & 515 & $-$22\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key findings by position}:
+\begin{itemize}
+    \item \textbf{First basemen are most expensive}: \$2.57M/WAR, 41\% above average. This may reflect: (a) offensive production is more visible/marketable, (b) selection effects (1B WAR requires elite hitting to overcome negative positional adjustment).
+
+    \item \textbf{Pitchers command premium}: \$2.00M/WAR, 9\% above average. Reflects injury risk and volatility.
+
+    \item \textbf{Middle infielders are cheapest}: 2B (\$1.43M) and SS (\$1.66M) are 20\%+ below average, despite SS being a premium defensive position. This suggests service-time effects---many elite SS are young and cost-controlled.
+
+    \item \textbf{Catchers undervalued}: \$1.52M/WAR despite the position's scarcity. May reflect shorter careers and injury risk discounting.
+\end{itemize}
+
+\subsection{Star Premium (or Lack Thereof)}
+
+Conventional wisdom holds that star players command a premium per win due to scarcity. Our data tell a different story:
+
+\begin{table}[H]
+\centering
+\caption{Star Premium: \$/WAR by Performance Tier}
+\label{tab:star}
+\begin{tabular}{lrrr}
+\toprule
+WAR Bucket & \$/WAR & Avg Salary & N \\
+\midrule
+0--1 WAR & \$4.67M & \$2.39M & 3,245 \\
+1--2 WAR & \$2.21M & \$3.33M & 1,901 \\
+2--3 WAR & \$1.78M & \$4.47M & 1,209 \\
+3--4 WAR & \$1.46M & \$5.09M & 815 \\
+4--5 WAR & \$1.33M & \$6.01M & 488 \\
+5+ WAR & \$1.15M & \$7.34M & 540 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key finding}: The \$/WAR \emph{decreases} monotonically with performance. Stars (5+ WAR) are paid only \$1.15M per WAR compared to \$4.67M for marginal players (0--1 WAR). This is a 4:1 ratio in the \emph{opposite} direction of conventional wisdom.
+
+\textbf{Explanation}: This reflects \emph{selection effects}. Low-WAR players in our sample are overpaid veterans on guaranteed contracts whose performance declined, pre-arbitration minimums for players who barely contributed, or injury cases. High-WAR players include cost-controlled pre-arb and arbitration players (like Mike Trout earning \$500K while producing 9 WAR).
+
+\subsection{Does Management Learn? Market Efficiency Over Time}
+
+We test whether the salary market has become more efficient by examining how well salary predicts WAR (higher R$^2$ = more efficient pricing):
+
+\begin{table}[H]
+\centering
+\caption{Market Efficiency by Era}
+\label{tab:efficiency}
+\begin{tabular}{lrrr}
+\toprule
+Era & R$^2$ & Residual Var & N \\
+\midrule
+2000--2004 & 0.127 & 1.53 & 2,401 \\
+2005--2008 & 0.065 & 1.62 & 1,924 \\
+2009--2012 & 0.076 & 1.53 & 1,901 \\
+2013--2016 & 0.073 & 1.58 & 1,972 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key finding}: Market efficiency has \emph{not} improved. The R$^2$ of salary-WAR regressions actually \emph{declined} from 0.127 in 2000--2004 to 0.073 in 2013--2016.
+
+Formal trend test:
+\begin{itemize}
+    \item R$^2$ trend: $-0.0038$/year ($p = 0.008$)
+    \item RMSE trend: $+0.0008$/year ($p = 0.61$)
+\end{itemize}
+
+The negative R$^2$ trend is statistically significant, contradicting the ``Moneyball'' narrative that analytics have made the market more efficient. Possible explanations:
+\begin{itemize}
+    \item Guaranteed contracts lock in salaries regardless of performance
+    \item Arbitration/pre-arb system decouples salary from current productivity
+    \item Teams may value projected future performance, not current WAR
+    \item Risk preferences and injury history affect pricing
+\end{itemize}
+
+\section{Hierarchical Model for Team Efficiency}
+
+\subsection{Model Specification}
 
 We model log salary as a function of latent talent with team and year effects:
 
@@ -87,48 +220,23 @@ We model log salary as a function of latent talent with team and year effects:
 \begin{equation}
     \text{WAR}_i \mid \theta_i \sim N(\theta_i, \sigma_{\text{WAR}}^2)
 \end{equation}
-where $\theta_i$ is the ``true'' talent and $\sigma_{\text{WAR}} = 0.5$ captures measurement uncertainty.
 
-\textbf{Salary model with star premium:}
+\textbf{Salary model with piecewise WAR effect:}
 \begin{equation}
     \log(\text{salary}_i) = \alpha + \beta_1 \theta_i + \beta_2 (\theta_i - 3)_+ + \gamma_{\text{team}}[t_i] + \gamma_{\text{year}}[y_i] + \epsilon_i
 \end{equation}
-where $(x)_+ = \max(x, 0)$ is the positive part function, capturing differential pricing for stars above 3 WAR.
 
 \textbf{Random walk year effects:}
-\begin{align}
-    \gamma_{\text{year}}[1] &\sim N(0, 0.5^2) \\
-    \gamma_{\text{year}}[t] \mid \gamma_{\text{year}}[t-1] &\sim N(\gamma_{\text{year}}[t-1], \tau^2)
-\end{align}
-
-\textbf{Team effects:}
 \begin{equation}
-    \gamma_{\text{team}} \sim N(0, \sigma_{\text{team}}^2)
+    \gamma_{\text{year}}[t] \mid \gamma_{\text{year}}[t-1] \sim N(\gamma_{\text{year}}[t-1], \tau^2)
 \end{equation}
 
 \textbf{Heteroskedastic residuals:}
 \begin{equation}
-    \epsilon_i \sim N(0, \sigma_i^2), \quad \log \sigma_i = a + b \cdot \theta_i
+    \log \sigma_i = a + b \cdot \theta_i
 \end{equation}
 
-\subsection{Priors}
-
-We use weakly informative priors:
-\begin{align}
-    \alpha &\sim N(14, 2^2) \\
-    \beta_1 &\sim N(0.3, 0.2^2) \\
-    \beta_2 &\sim N(0.1, 0.1^2) \\
-    \sigma_{\text{team}} &\sim \text{Half-Normal}(0.2) \\
-    \tau &\sim \text{Half-Normal}(0.1)
-\end{align}
-
-\subsection{Inference}
-
-We sample from the posterior using Metropolis-within-Gibbs, running 1,000 warmup iterations followed by 3,000 posterior samples.
-
-\section{Results}
-
-\subsection{Fixed Effects}
+\subsection{Results: Fixed Effects}
 
 \begin{table}[H]
 \centering
@@ -140,16 +248,16 @@ Parameter & Post.\ Mean & Post.\ SD & Interpretation \\
 \midrule
 $\alpha$ (intercept) & 13.73 & 0.14 & Baseline log salary \\
 $\beta_1$ (base WAR) & 0.28 & 0.02 & 1.32$\times$ per WAR (below 3) \\
-$\beta_2$ (star premium) & $-$0.12 & 0.03 & 1.17$\times$ per WAR (above 3) \\
+$\beta_2$ (star effect) & $-$0.12 & 0.03 & 1.17$\times$ per WAR (above 3) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Key finding}: The star premium coefficient is \emph{negative}, meaning salary growth per WAR actually \emph{slows} for elite players in this sample. This contradicts the common assumption of a star premium and suggests either (a) measurement issues at high WAR, (b) risk discounting for injury-prone stars, or (c) sample composition effects.
+The negative $\beta_2$ confirms the descriptive finding: salary growth per WAR \emph{slows} for elite players. Each additional WAR multiplies salary by 1.32$\times$ for players below 3 WAR, but only 1.17$\times$ above that threshold.
 
-\subsection{Team Efficiency Rankings}
+\subsection{Results: Team Efficiency Rankings}
 
-Team efficiency is defined as $\exp(-\gamma_{\text{team}})$: teams with negative $\gamma$ pay less for the same latent talent.
+Team efficiency = $\exp(-\gamma_{\text{team}})$: teams with negative $\gamma$ pay less for equivalent talent.
 
 \begin{table}[H]
 \centering
@@ -167,7 +275,6 @@ TBR & $-$0.36 & 1.44 & [1.19, 1.72] & 100\% \\
 SDP & $-$0.27 & 1.31 & [1.12, 1.57] & 99.8\% \\
 \midrule
 \multicolumn{5}{l}{\textit{Least Efficient (pay more per WAR):}} \\
-PHI & 0.19 & 0.83 & [0.67, 0.99] & 1.6\% \\
 CHC & 0.29 & 0.75 & [0.63, 0.88] & 0.0\% \\
 NYM & 0.31 & 0.74 & [0.62, 0.87] & 0.0\% \\
 LAD & 0.38 & 0.68 & [0.57, 0.82] & 0.0\% \\
@@ -177,11 +284,11 @@ NYY & 0.75 & 0.48 & [0.40, 0.56] & 0.0\% \\
 \end{tabular}
 \end{table}
 
-The efficiency gap is substantial: Oakland pays roughly half what the Yankees pay for equivalent WAR. This reflects both payroll constraints and organizational philosophy (``Moneyball'' teams focus on undervalued skills).
+The efficiency gap is substantial: Oakland obtains roughly 3$\times$ more WAR per dollar than the Yankees. This reflects both payroll constraints and organizational philosophy.
 
-\textbf{Interpretation caveat}: ``Inefficiency'' may be rational for large-market teams if their marginal win value is higher (playoff contention, luxury tax implications, brand value).
+\textbf{Caveat}: ``Inefficiency'' may be rational for large-market teams if their marginal win value is higher (playoff odds, revenue, brand value). The Yankees paying premium prices may still be optimal given their revenue structure.
 
-\subsection{Year Effects (Market Inflation)}
+\subsection{Results: Year Effects (Market Inflation)}
 
 \begin{table}[H]
 \centering
@@ -200,84 +307,72 @@ Year & $\gamma_{\text{year}}$ Mean & 95\% CI \\
 \end{tabular}
 \end{table}
 
-Salaries (controlling for WAR) increased by approximately $\exp(0.40 - (-0.23)) = 1.87\times$ from 2000 to 2016, or about 4\% annually. The random walk structure provides smooth interpolation rather than noisy year-to-year jumps.
-
-\subsection{Variance Components}
-
-\begin{table}[H]
-\centering
-\caption{Variance Components}
-\label{tab:variance}
-\begin{tabular}{lr}
-\toprule
-Parameter & Posterior Mean \\
-\midrule
-$\sigma_{\text{team}}$ & 0.28 \\
-$\tau$ (year RW innovation) & 0.07 \\
-Heterosked.\ base ($a$) & 0.13 \\
-Heterosked.\ slope ($b$) & 0.03 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Team effects ($\sigma_{\text{team}} = 0.28$) dominate year-to-year innovation ($\tau = 0.07$), indicating persistent organizational differences in salary efficiency.
+Controlling for WAR and team, salaries increased by $\exp(0.63) \approx 1.9\times$ from 2000 to 2016, or about 4\% annually.
 
 \section{Discussion}
 
-\subsection{Key Findings}
+\subsection{Summary of Findings}
 
 \begin{enumerate}
-    \item \textbf{Large team effects}: The most efficient teams (OAK, TBR, MIA, PIT) pay 40--60\% less per WAR than large-market teams (NYY, BOS, LAD).
+    \item \textbf{Market rate doubled}: \$/WAR grew from \$1.3M (2000) to \$2.8M (2016).
 
-    \item \textbf{No positive star premium}: Contrary to expectations, the marginal salary per WAR \emph{decreases} above 3 WAR in our sample.
+    \item \textbf{Pitchers command premium}: Pitchers are paid 15\% more per WAR than position players, likely reflecting injury risk and volatility.
 
-    \item \textbf{Steady inflation}: Salaries rose $\approx$4\%/year controlling for productivity.
+    \item \textbf{No star premium}: Contrary to conventional wisdom, stars are paid \emph{less} per WAR than average players, due to service-time rules and selection effects.
 
-    \item \textbf{Persistent efficiency}: Team effects show strong autocorrelation, suggesting organizational culture matters.
+    \item \textbf{Large team effects}: Market-clearing teams (OAK, TBR, MIA) pay 40--60\% less per WAR than large-market clubs (NYY, BOS, LAD).
+
+    \item \textbf{No efficiency improvement}: Market efficiency has not improved over time; R$^2$ of salary-WAR regressions actually declined.
 \end{enumerate}
 
-\subsection{Comparison to Simulated Salary Approach}
+\subsection{Why Hasn't the Market Become More Efficient?}
 
-Using real salary data changes several conclusions:
-\begin{itemize}
-    \item Team effects are much larger (some teams are genuinely more efficient).
-    \item Star premium is negative rather than positive (selection effects, injury risk, or ceiling effects).
-    \item Year effects follow smooth trends rather than noise.
-\end{itemize}
+The ``Moneyball'' narrative suggests that as analytics spread, inefficiencies should be arbitraged away. Our data show the opposite. Possible explanations:
+
+\begin{enumerate}
+    \item \textbf{Institutional constraints}: The service-time system (pre-arb, arbitration, free agency) prevents salaries from clearing at market rates. Cost-controlled players produce surplus value regardless of efficiency.
+
+    \item \textbf{Contract structure}: Multi-year guaranteed contracts lock in salaries based on projected (not realized) performance, introducing noise.
+
+    \item \textbf{Non-WAR factors}: Teams may rationally pay for brand value, clubhouse presence, defensive positioning, or clutch performance not captured in WAR.
+
+    \item \textbf{Risk preferences}: Risk-averse teams may discount volatile high-WAR players (explaining negative star premium).
+\end{enumerate}
 
 \subsection{Limitations and Future Work}
 
 \begin{enumerate}
-    \item \textbf{Data ends in 2016}: Recent market trends (e.g., analytics revolution, luxury tax changes) are not captured.
-    \item \textbf{No contract structure}: We observe annual salary, not contract AAV, years, or guarantees.
-    \item \textbf{Endogeneity}: Teams choose whom to sign based on unobserved factors.
-    \item \textbf{No decision-theoretic framing}: We measure efficiency, not optimality. Future work should model team utility (playoff probability, revenue) to evaluate whether ``overpaying'' is rational.
+    \item \textbf{Data ends in 2016}: Post-2016 trends (luxury tax, tanking, analytics boom) are not captured.
+    \item \textbf{No contract structure}: AAV, years, and option terms matter.
+    \item \textbf{No decision-theoretic framing}: Future work should model team utility (playoff probability, revenue) to evaluate optimality, not just efficiency.
 \end{enumerate}
 
 \section{Conclusion}
 
-Using real MLB salary data and an improved Bayesian hierarchical model, we find substantial variation in team salary efficiency. Market-clearing teams like Oakland and Tampa Bay achieve 40--60\% efficiency gains relative to large-market teams. However, interpreting this as ``inefficiency'' requires caution: large-market teams may rationally pay premiums given their higher marginal win value. The absence of a positive star premium in our data warrants further investigation.
+Using real MLB salary data and a Bayesian hierarchical model, we find substantial variation in team salary efficiency but no evidence of market-wide efficiency improvements from 2000--2016. The ``Moneyball'' revolution may have made all teams smarter, but it has not eliminated systematic pricing differences---small-market teams still achieve dramatically better value per dollar.
+
+The absence of a star premium and the persistence of team effects suggest that institutional constraints (service-time rules, guaranteed contracts) dominate any efficiency gains from analytics. The market for MLB talent remains far from efficient.
 
 \appendix
 
 \section{MCMC Diagnostics}
 
-The Metropolis-within-Gibbs sampler ran for 4,000 iterations (1,000 warmup + 3,000 retained). Log posterior values stabilized during warmup and showed adequate mixing during sampling:
+The Metropolis-within-Gibbs sampler ran for 4,000 iterations (1,000 warmup + 3,000 retained). Log posterior values showed adequate mixing:
 \begin{itemize}
     \item Iteration 500: $-18,910$
     \item Iteration 2000: $-19,118$
     \item Iteration 4000: $-18,985$
 \end{itemize}
 
-\section{Data Matching Details}
+\section{Data Matching}
 
-Players were matched between Lahman (using Master.csv for names) and FanGraphs on:
+Players matched between Lahman and FanGraphs on:
 \begin{itemize}
     \item Lowercase first + last name
     \item Season
     \item Team (after standardizing abbreviations)
 \end{itemize}
 
-Match rate was approximately 50\% of eligible player-seasons, primarily due to name formatting differences and partial season trades.
+Match rate: approximately 50\% of eligible player-seasons.
 
 \end{document}
