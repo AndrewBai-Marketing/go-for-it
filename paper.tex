@@ -16,7 +16,7 @@
 \maketitle
 
 \begin{abstract}
-We analyze MLB salary efficiency using real contract data from the Lahman database (2000--2016) merged with FanGraphs WAR. Our analysis addresses four questions: (1) How has the market rate for wins evolved? (2) Are certain player types systematically mispriced? (3) Which teams achieve better salary efficiency? (4) Has the market become more efficient over time? Key findings from 8,198 player-seasons: the market rate rose from \$1.3M/WAR (2000) to \$2.8M/WAR (2016); pitchers command a 15\% premium over position players per WAR; star players ($>$5 WAR) are actually paid \emph{less} per WAR than average players, contradicting conventional wisdom; market-clearing teams (Oakland, Miami, Tampa Bay) pay 40--60\% less per WAR than large-market clubs; and contrary to the ``Moneyball'' narrative, market efficiency has \emph{not} improved over this period---R$^2$ of salary-WAR regressions actually declined slightly.
+We analyze MLB salary efficiency using real contract data from the Lahman database (2000--2016) merged with FanGraphs WAR. Our analysis addresses four questions: (1) How has the market rate for wins evolved? (2) Are certain player types systematically mispriced? (3) Which teams achieve better salary efficiency? (4) Has the market become more efficient over time? Key findings from 8,198 player-seasons: the market rate rose from \$1.3M/WAR (2000) to \$2.8M/WAR (2016); pitchers command a 15\% premium over position players per WAR; star players ($>$5 WAR) are actually paid \emph{less} per WAR than average players, contradicting conventional wisdom; market-clearing teams (Oakland, Miami, Tampa Bay) pay 40--60\% less per WAR than large-market clubs. R$^2$ of salary-WAR regressions actually declined slightly.
 \end{abstract}
 
 \section{Introduction}
@@ -30,16 +30,7 @@ Professional sports provide a natural laboratory for studying labor market effic
     \item Has market efficiency improved over time (``Does management learn?'')
 \end{enumerate}
 
-\subsection{Contribution}
 
-We improve on naive salary-WAR regressions by using:
-\begin{itemize}
-    \item \textbf{Real salary data} from the Lahman database (not simulated)
-    \item \textbf{Latent talent model} treating WAR as a noisy proxy for true value
-    \item \textbf{Random walk year effects} for smooth market inflation
-    \item \textbf{Piecewise WAR effects} to capture star premiums
-    \item \textbf{Heteroskedastic residuals} scaling with player value
-\end{itemize}
 
 \subsection{Limitations}
 
