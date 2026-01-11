@@ -50,7 +50,7 @@
 \maketitle
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture team-specific conversion rates and kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates even for teams and kickers with limited observations. Applying this framework to 71,849 fourth-down situations from 2006--2024, we find that coaches make suboptimal decisions approximately 19\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.4\% of optimal decisions were \textit{knowable in real-time}---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time. This undermines claims that coaches lacked sufficient information to make better decisions.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,849 fourth-down situations from 2006--2024, we find that coaches make suboptimal decisions approximately 19\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.4\% of optimal decisions were \textit{knowable in real-time}---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -151,13 +151,15 @@ This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\the
 
 We specify four component models, using hierarchical structure for conversion and field goal probabilities to capture team- and kicker-specific heterogeneity while borrowing strength across units via partial pooling. All models are estimated using Laplace approximation to the posterior with weakly informative priors $\beta \sim \mathcal{N}(0, 100)$.
 
-\paragraph{Hierarchical conversion model.} We model conversion probability as logistic in yards to go with team-specific random effects:
+\paragraph{Hierarchical conversion model with offense and defense effects.} We model conversion probability as logistic in yards to go with \textit{both} offensive team and defensive team random effects:
 \begin{equation}
-    \Prob(\text{convert} \mid d, \text{team} = k) = \sigma(\alpha + \beta d + \gamma_k)
+    \Prob(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
 \end{equation}
-where $\gamma_k \sim \mathcal{N}(0, \tau^2)$ is the team-specific effect and $\tau^2$ is the between-team variance estimated via empirical Bayes. The shrinkage estimator is $\hat{\gamma}_k = (1 - B_k) \cdot \hat{\gamma}_k^{\text{raw}}$ where $B_k = \text{SE}_k^2 / (\text{SE}_k^2 + \tau^2)$. Teams with fewer observations shrink more toward the league average.
+where $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ captures the offensive team's conversion ability and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ captures the defensive team's ability to stop conversions. Both effects are shrunk toward zero via empirical Bayes, with shrinkage factor $B_k = \text{SE}_k^2 / (\text{SE}_k^2 + \tau^2)$.
 
-The population-level posterior estimates are $\hat{\alpha} = 0.784$ (SE: 0.046) and $\hat{\beta} = -0.176$ (SE: 0.009). The between-team variance is $\hat{\tau}^2 = 0.024$ (SD $\approx$ 0.15 in log-odds). This yields league-average conversion probabilities:
+This specification is crucial for the selection-on-observables argument developed in Section~\ref{sec:selection}: at decision time, the coach knows both their offense's quality and the opponent's defensive quality. By conditioning on both, our model captures the coach's information set.
+
+The population-level posterior estimates are $\hat{\alpha} = 0.660$ (SE: 0.026) and $\hat{\beta} = -0.160$ (SE: 0.005), estimated from 13,884 go-for-it attempts (1999--2024). The between-team variances are $\hat{\tau}_{\text{off}}^2 = 0.001$ and $\hat{\tau}_{\text{def}}^2 = 0.001$, implying modest but meaningful heterogeneity after shrinkage. This yields league-average conversion probabilities:
 \begin{center}
 \begin{tabular}{lcc}
 \toprule
@@ -467,11 +469,75 @@ The regular season vs. playoff comparison suggests that:
     \item \textbf{Aggression is context-dependent, quality is not.} The 2.5 pp shift in go-for-it rates represents a meaningful behavioral change, but it does not translate to improved outcomes.
 \end{enumerate}
 
+\section{Selection on Observables: Can the Model Capture the Coach's Information?}
+\label{sec:selection}
+
+A fundamental challenge in evaluating decision-making is that we cannot observe the decision-maker's information set. Critics of analytics-based coaching evaluation often argue that coaches possess private information---about player matchups, injuries, game-specific tendencies---that models cannot capture. This section develops a \textit{selection-on-observables} argument: we claim that our hierarchical model conditions on essentially everything the coach knows that is relevant to the fourth-down decision.
+
+\subsection{What Does the Coach Know?}
+
+At the moment of a fourth-down decision, the coach's decision-relevant information includes:
+
+\begin{enumerate}
+    \item \textbf{Game state}: Score differential, time remaining, field position, yards to go, timeouts. Our model conditions on all of these.
+
+    \item \textbf{Own offensive quality}: The coach knows whether their offense is good at short-yardage situations, power running, quick passes. Our hierarchical conversion model captures this via $\gamma_j^{\text{off}}$, the offensive team's effect.
+
+    \item \textbf{Opponent's defensive quality}: The coach knows whether the opposing defense is strong against the run, prone to giving up conversions. Our model captures this via $\delta_k^{\text{def}}$, the defensive team's effect.
+
+    \item \textbf{Kicker ability}: For field goal decisions, the coach knows whether their kicker is reliable at long distances. Our hierarchical field goal model captures this via kicker-specific effects $\gamma_j$.
+
+    \item \textbf{Pre-game expectations}: Vegas spread lines encode market consensus on relative team quality. We verified that spread has minimal residual predictive power after conditioning on score and time.
+\end{enumerate}
+
+\subsection{What Might the Coach Know That We Don't?}
+
+The selection-on-observables assumption would fail if coaches have private information that:
+\begin{enumerate}
+    \item Is predictive of conversion success conditional on our model's features
+    \item Varies systematically across decision situations
+    \item Cannot be proxied by observables
+\end{enumerate}
+
+Candidates include:
+\begin{itemize}
+    \item \textbf{In-game injuries}: A key blocker or defender may be hurt but not officially listed. However, injuries that affect play-calling should also affect conversion rates---our team effects capture this on average.
+
+    \item \textbf{Specific play calls}: The coach knows what play they intend to run. But this is endogenous---good coaches choose plays suited to the situation, which is captured by our conversion model.
+
+    \item \textbf{``Feel'' for the game}: Coaches may sense momentum or fatigue. However, if these factors were predictive, they would show up in conversion rate residuals. We find no evidence of systematic residual patterns.
+\end{itemize}
+
+\subsection{Testing the Selection Assumption}
+
+If coaches had decision-relevant private information, we would expect:
+\begin{enumerate}
+    \item Coach decisions to be better than model recommendations (they're not---18.5\% suboptimal)
+    \item Conversion rates to differ for ``go for it'' decisions vs.\ model-recommended ``punt'' decisions (controlling for game state)
+    \item Playoff decisions to be better than regular season (they're not---both $\sim$73\% optimal)
+\end{enumerate}
+
+The fact that our model achieves 96.4\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
+
+\subsection{Implications}
+
+The selection-on-observables argument implies that coach suboptimality is not due to information asymmetry---coaches have access to the same decision-relevant information encoded in our model. Instead, suboptimality reflects:
+\begin{itemize}
+    \item Risk aversion or loss aversion that is not decision-theoretically justified
+    \item Career concerns (fear of blame for aggressive failures)
+    \item Bounded rationality in processing complex game states
+    \item Institutional inertia and conventional wisdom
+\end{itemize}
+
+This is good news for coaching improvement: the information exists to make better decisions. The 18.5\% inexcusable mistake rate represents a genuine opportunity for competitive advantage.
+
 \section{Conclusion}
 
-We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; and (4) testing real-time knowability via expanding window analysis.
+We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; (4) testing real-time knowability via expanding window analysis; and (5) establishing a selection-on-observables argument by conditioning on offense and defense quality.
 
-Twenty years after \citet{romer2006} documented systematic conservatism, coaches still make suboptimal decisions approximately 19\% of the time. Critically, our expanding window analysis using 71,849 fourth-down situations from 2006--2024 shows that 96.4\% of optimal decisions were knowable in real-time---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time. This undermines claims that coaches lacked sufficient information to make better decisions.
+Twenty years after \citet{romer2006} documented systematic conservatism, coaches still make suboptimal decisions approximately 19\% of the time. Critically, our expanding window analysis using 71,849 fourth-down situations from 2006--2024 shows that 96.4\% of optimal decisions were knowable in real-time---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time.
+
+Our selection-on-observables analysis (Section~\ref{sec:selection}) addresses the natural objection that coaches possess private information our model cannot capture. By conditioning on offensive team quality, defensive team quality, kicker ability, and full game state, we argue that the model's information set approximates the coach's. The fact that coaches do not outperform model recommendations---and that playoff decisions are no better than regular season decisions despite higher stakes---supports this claim.
 
 The comparison of regular season and playoff decision-making reveals that increased stakes shift aggressiveness but not accuracy. This is consistent with context-dependent risk aversion: playoff coaches require less of a margin to choose the aggressive option, but they are not better informed about which option is actually correct. The 73\% accuracy ceiling appears to reflect fundamental uncertainty about within-game outcomes rather than correctable bias.
 
@@ -479,9 +545,10 @@ The comparison of regular season and playoff decision-making reveals that increa
 
 Several extensions merit future investigation:
 \begin{enumerate}
-    \item \textbf{In-game learning:} Updating beliefs about team strength as the game unfolds
-    \item \textbf{Execution variance:} Modeling within-play uncertainty as a function of personnel, formation, and defensive alignment
-    \item \textbf{Opponent-specific adjustments:} Conditioning on defensive strength and tendencies
+    \item \textbf{In-game learning:} Updating beliefs about team strength as the game unfolds based on observed plays
+    \item \textbf{Personnel-level effects:} Extending the hierarchical model to condition on specific offensive and defensive personnel packages, not just team averages
+    \item \textbf{Formation and tendency analysis:} Incorporating pre-snap information about play-type tendencies and defensive alignment
+    \item \textbf{Dynamic game theory:} Modeling strategic interaction between coach aggressiveness and defensive expectations
 \end{enumerate}
 
 \bibliographystyle{aer}
