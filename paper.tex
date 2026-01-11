@@ -305,11 +305,22 @@ Table~\ref{tab:kicker_rankings} presents the top and bottom kickers by Bayesian-
 
 The best-to-worst spread at 50 yards is 9.2 percentage points (73.1\% vs 63.9\%). Converting to wins: an elite kicker adds approximately 0.06--0.07 wins per season relative to league average, while the worst kickers cost a similar amount. The total spread between best and worst is roughly 0.12 wins per season---smaller than the spread in team decision quality.
 
-\subsection{Do Teams Recognize Kicker Value?}
+\subsection{Can Front Offices Identify Decision Quality?}
 
-A natural question is whether front offices appropriately value kicking ability. If teams understood the hierarchical kicker effects, we would expect teams with below-average kickers to replace them at higher rates.
+A natural question is whether front offices can---and do---appropriately evaluate coaching decision quality and kicker ability.
 
-We find mixed evidence. Among the bottom-10 kickers by effect, 7 were replaced within two seasons of their poor performance being identifiable. However, the correlation between estimated kicker effect and tenure is weak ($r = 0.12$), suggesting teams rely more on raw make percentage than properly shrunk estimates. This creates an opportunity for teams to gain marginal wins by applying Bayesian reasoning to kicker evaluation---though the total value at stake (approximately 0.1 wins per season) is modest.
+\paragraph{Kicker evaluation.} We find moderate correlation between estimated kicker effect and career tenure ($r = 0.39$), suggesting teams do partially recognize kicking ability. However, the correlation with \textit{raw} make percentage is similar ($r = 0.33$), indicating teams may rely on unshrunken statistics rather than properly pooled Bayesian estimates. Among inactive kickers, there is no significant difference in tenure between those with positive effects (2.2 years) and negative effects (2.7 years, $p = 0.46$).
+
+\paragraph{Coaching decision quality.} The challenge of evaluating fourth-down decision-making is more severe. Year-over-year team decision quality shows:
+\begin{itemize}
+    \item Near-zero autocorrelation ($r = -0.08$), indicating decision quality is not persistent
+    \item Strong mean reversion ($r = -0.69$ between prior year rate and change)
+    \item Bottom-quartile teams improve by +5.4 pp on average; top-quartile teams decline by -5.4 pp
+\end{itemize}
+
+This pattern suggests fourth-down decision quality is dominated by noise rather than stable coaching skill. A team that appears to make poor decisions one year is likely to improve the next---not because they fired their coach or changed their approach, but because they regressed to the mean.
+
+\paragraph{Implications.} The low persistence of decision quality creates a fundamental identification problem: front offices cannot reliably distinguish good from bad fourth-down decision-makers based on observed outcomes. This may explain why coaching changes do not appear correlated with fourth-down performance---there is simply too much noise to draw valid inferences. By contrast, kicker ability shows more persistence, making it a more viable target for analytical evaluation.
 
 \section{Real-Time Knowability: Expanding Window Analysis}
 
