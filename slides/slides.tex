@@ -18,6 +18,9 @@
 \newcommand{\E}{\mathrm{E}}
 \newcommand{\Var}{\mathrm{Var}}
 \newcommand{\Prob}{\mathrm{Pr}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\ind}{\mathbbm{1}}
 
 \usepackage{enumitem}
 
@@ -177,57 +180,219 @@
 % FOURTH DOWN: MODEL
 %------------------------------------------
 
-\begin{frame}{The Fourth Down Decision Problem}
-  \textbf{State:} Score differential $\Delta$, time remaining $\tau$, field position $x$, yards to go $d$
+\begin{frame}{Fourth Down: The Decision Problem}
+  \textbf{State:} $s = (\Delta, \tau, x, d)$ where
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.3em
+  ]
+    \item $\Delta$ = score differential (positive if winning)
+    \item $\tau$ = time remaining (seconds)
+    \item $x$ = yards from opponent's end zone
+    \item $d$ = yards to go for first down
+  \end{itemize}
 
   \vspace{0.5cm}
-  \textbf{Actions:} $\mathcal{A} = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$
+  \textbf{Actions:} $\calA = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$
 
   \vspace{0.5cm}
   \textbf{Objective:} Maximize win probability
   \[
-    a^* = \argmax_{a \in \mathcal{A}} \E[W \mid a, s]
+    a^* = \argmax_{a \in \calA} \E[W \mid a, s]
+  \]
+\end{frame}
+
+\begin{frame}{Bayesian Decision Framework}
+  Expected win probability integrating over parameter uncertainty:
+  \[
+    \E[W \mid a, s] = \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \calD) \, d\theta
+  \]
+
+  \vspace{0.3cm}
+  For action \texttt{go}, this expands to:
+  \[
+    \E[W \mid \texttt{go}, s] = \int \left[\pi(d; \theta) \cdot W(s_{\text{conv}}) + (1 - \pi(d; \theta)) \cdot W(s_{\text{fail}})\right] p(\theta \mid \calD) \, d\theta
   \]
 
   \vspace{0.5cm}
-  \textbf{Key innovation:} Bayesian framework with hierarchical effects
+  \textbf{Decision confidence:} Posterior probability that action $a$ is optimal
+  \[
+    \Prob(a \text{ is optimal} \mid s, \calD) = \Prob_{\theta \mid \calD}\left(W_a(s; \theta) > \max_{a' \neq a} W_{a'}(s; \theta)\right)
+  \]
+
+  \vspace{0.3cm}
+  {\small Estimated via Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \calD)$, compute fraction where $a$ wins.}
+\end{frame}
+
+\begin{frame}{Component Models: Conversion Probability}
+  \textbf{Hierarchical logistic model} with offense and defense random effects:
+  \[
+    \Prob(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
+  \]
+  where $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$
+
+  \vspace{0.5cm}
+  \textbf{Estimates} (13,884 attempts, 1999--2024):
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.3em
+  ]
+    \item $\hat{\alpha} = 0.660$ (SE: 0.026), $\hat{\beta} = -0.160$ (SE: 0.005)
+    \item $\hat{\tau}_{\text{off}}^2 = \hat{\tau}_{\text{def}}^2 = 0.001$
+  \end{itemize}
+
+  \vspace{0.3cm}
+  \begin{center}
+    \small
+    \begin{tabular}{lcc}
+      \toprule
+      \textbf{Yards to Go} & \textbf{Conv. \%} & \textbf{95\% CI} \\
+      \midrule
+      1 & 64.8\% & [62.9\%, 66.4\%] \\
+      3 & 56.4\% & [54.8\%, 57.9\%] \\
+      5 & 47.6\% & [46.0\%, 49.3\%] \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Component Models: Field Goal \& Punt}
+  \textbf{Hierarchical field goal model} with kicker-specific effects:
+  \[
+    \Prob(\text{make} \mid d, \text{kicker} = j) = \sigma(\alpha + \beta (d - 35) + \gamma_j)
+  \]
+  where $\gamma_j \sim \mathcal{N}(0, \tau^2)$
+
+  \vspace{0.3cm}
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.3em
+  ]
+    \item $\hat{\alpha} = 2.383$, $\hat{\beta} = -0.105$, $\hat{\tau}^2 = 0.031$
+    \item Best-to-worst kicker spread at 50 yds: 73.1\% vs 63.9\%
+  \end{itemize}
+
+  \vspace{0.5cm}
+  \textbf{Punt model:} Net yards linear in field position
+  \[
+    Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)
+  \]
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.3em
+  ]
+    \item $\hat{\alpha} = 32.8$, $\hat{\beta} = 0.154$, $\hat{\sigma} = 9.3$ yards
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Win Probability Model}
+  \textbf{Logistic model} with game state features:
+  \[
+    \Prob(\text{win} \mid s) = \sigma\left(\beta_0 + \beta_1 \frac{\Delta}{14} + \beta_2 \frac{\tau}{3600} + \beta_3 \frac{\Delta \cdot \tau}{14 \cdot 3600} + \beta_4 \frac{x - 50}{50} + \beta_5 \frac{k}{3}\right)
+  \]
+  where $k$ = timeout differential
+
+  \vspace{0.5cm}
+  \textbf{Key insight:} Negative interaction $\hat{\beta}_3 = -2.647$ confirms score differential matters more as time decreases
+
+  \vspace{0.5cm}
+  \textbf{Model validation:}
   \begin{itemize}[
     label=\(\triangleright\),
     leftmargin=*,
     itemsep=0.5em
   ]
-    \item Offensive team conversion ability $\gamma_j^{\text{off}}$
-    \item Defensive team stopping ability $\delta_k^{\text{def}}$
-    \item Kicker-specific field goal accuracy
+    \item 5-fold CV Brier score: \textbf{0.150} vs 0.162 for \texttt{nflfastR}
+    \item \textbf{7.4\% improvement} over industry standard
+    \item Well-calibrated: 40--60\% predicted WP $\rightarrow$ 49.3\% actual win rate
   \end{itemize}
 \end{frame}
 
+\begin{frame}{Clock Consumption Model}
+  \textbf{Critical innovation:} Asymmetric clock consumption by action-outcome
+
+  \vspace{0.5cm}
+  \begin{center}
+    \begin{tabular}{lc}
+      \toprule
+      \textbf{Action + Outcome} & \textbf{Clock Burned} \\
+      \midrule
+      Go + convert & $\sim$151 seconds \\
+      Go + fail & $\sim$48 seconds \\
+      Punt & $\sim$69 seconds \\
+      FG make & $\sim$99 seconds \\
+      FG miss & $\sim$48 seconds \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+
+  \vspace{0.5cm}
+  \textbf{Implications:}
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.5em
+  ]
+    \item When leading: converting burns clock $\rightarrow$ protects lead
+    \item When trailing: burning clock hurts $\rightarrow$ less time to catch up
+    \item Model handles end-of-game scenarios naturally (no hard-coded filters)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Estimation: Expanding Window Analysis}
+  \textbf{Challenge:} Can we claim coaches ``should have known better''?
+
+  \vspace{0.5cm}
+  \textbf{Solution:} For each test year $Y \in \{2006, \ldots, 2024\}$:
+  \begin{enumerate}
+    \item Train all models on 1999 through $Y-1$ only (``ex ante'')
+    \item Train models on full sample 1999--2024 (``ex post'')
+    \item Compare recommendations
+  \end{enumerate}
+
+  \vspace{0.5cm}
+  \textbf{7-year minimum training window} ensures stable estimates
+
+  \vspace{0.5cm}
+  \begin{finding}
+    96.5\% of plays have identical ex ante and ex post recommendations \\
+    $\Rightarrow$ optimal decisions were \textbf{knowable in real-time}
+  \end{finding}
+\end{frame}
+
 \begin{frame}{Selection on Observables}
-  \textbf{Can the model capture the coach's information?}
+  \textbf{Claim:} Model conditions on what the coach knows at decision time
 
   \vspace{0.5cm}
   \begin{itemize}[
     label=\(\triangleright\),
     leftmargin=*,
-    itemsep=1em
+    itemsep=0.8em
   ]
-    \item Model conditions on: game state, offensive quality, defensive quality, kicker ability
-    \item \textbf{Direct test:} When coaches override the model, do they convert more often?
-    \begin{itemize}[
-      label=\(\triangleright\),
-      leftmargin=*,
-      itemsep=0.5em
-    ]
-      \item 4th \& short (1--2 yds): +3.0 pp $\rightarrow$ some private info
-      \item 4th \& medium (3--5 yds): +0.4 pp $\rightarrow$ none
-      \item 4th \& long (6+ yds): $-9.3$ pp $\rightarrow$ overconfident!
-    \end{itemize}
+    \item Game state $(\Delta, \tau, x, d)$ $\checkmark$
+    \item Own offensive quality $\gamma_j^{\text{off}}$ $\checkmark$
+    \item Opponent defensive quality $\delta_k^{\text{def}}$ $\checkmark$
+    \item Kicker ability $\gamma_j$ $\checkmark$
   \end{itemize}
 
   \vspace{0.5cm}
-  \begin{takeaway}
-    Coaches don't outperform the model $\Rightarrow$ suboptimality is behavioral, not informational
-  \end{takeaway}
+  \textbf{Direct test:} When coaches override model to go for it, do they convert more?
+  \begin{center}
+    \small
+    \begin{tabular}{lcc}
+      \toprule
+      \textbf{Distance} & \textbf{Override vs Agree} & \textbf{Interpretation} \\
+      \midrule
+      4th \& short (1--2) & +3.0 pp & Some private info \\
+      4th \& medium (3--5) & +0.4 pp & None \\
+      4th \& long (6+) & $-9.3$ pp & \textbf{Overconfident} \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
 \end{frame}
 
 \begin{frame}[noframenumbering]{Outline}
@@ -243,39 +408,6 @@
 %------------------------------------------
 % FOURTH DOWN: RESULTS
 %------------------------------------------
-
-\begin{frame}{Real-Time Knowability}
-  \textbf{Objection:} ``You can't judge coaches using hindsight''
-
-  \vspace{0.5cm}
-  \textbf{Test:} Expanding window analysis (7-year minimum training)
-  \begin{itemize}[
-    label=\(\triangleright\),
-    leftmargin=*,
-    itemsep=0.5em
-  ]
-    \item Train model on data available \textit{before} each season
-    \item Compare ex ante vs.\ ex post recommendations
-  \end{itemize}
-
-  \vspace{0.5cm}
-  \begin{center}
-    \begin{tabular}{lc}
-      \toprule
-      \textbf{Metric} & \textbf{Value} \\
-      \midrule
-      Ex ante/ex post agreement & 96.5\% \\
-      Plays analyzed & 71,786 \\
-      Years tested & 2006--2024 \\
-      \bottomrule
-    \end{tabular}
-  \end{center}
-
-  \vspace{0.3cm}
-  \begin{finding}
-    96.5\% of optimal decisions were \textbf{knowable in real-time}
-  \end{finding}
-\end{frame}
 
 \begin{frame}{How Often Are Coaches Optimal?}
   \begin{center}
@@ -421,39 +553,84 @@
 % TWO-POINT CONVERSIONS
 %------------------------------------------
 
-\begin{frame}{The Two-Point Decision}
-  After a touchdown: PAT (1 point, 94\% success) or 2pt (2 points, 48\% success)
+\begin{frame}{Two-Point: The Decision Problem}
+  After scoring a touchdown, choose: PAT or 2-point conversion
 
   \vspace{0.5cm}
-  \textbf{Expected points nearly identical:}
+  \textbf{Actions:} $\calA = \{\text{PAT}, \text{2pt}\}$
+
+  \vspace{0.5cm}
+  \textbf{Same Bayesian framework:}
   \[
-    \E[\text{PAT}] = 0.94 \quad \text{vs.} \quad \E[\text{2pt}] = 0.96
+    a^* = \argmax_{a \in \{\text{PAT}, \text{2pt}\}} \E[W \mid a, s]
   \]
 
-  \vspace{0.3cm}
-  \textbf{The difference is entirely \textit{variance}:}
-  \begin{itemize}[
-    label=\(\triangleright\),
-    leftmargin=*,
-    itemsep=0.5em
-  ]
-    \item PAT: High probability, low variance
-    \item 2pt: Lower probability, higher variance
-  \end{itemize}
-
   \vspace{0.5cm}
-  \textbf{Simple rule:}
+  \textbf{Key difference from fourth down:}
   \begin{itemize}[
     label=\(\triangleright\),
     leftmargin=*,
     itemsep=0.5em
   ]
-    \item \textbf{Trailing?} Go for 2 (variance helps when behind)
-    \item \textbf{Leading?} Kick PAT (variance hurts when ahead)
+    \item Expected points nearly identical: $\E[\text{PAT}] = 0.94$ vs $\E[\text{2pt}] = 0.96$
+    \item The difference is entirely \textit{variance}
+    \item Binary choice (simpler than 3-way fourth down decision)
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Two-Point Coach Optimality}
+\begin{frame}{Two-Point: Hierarchical Conversion Model}
+  \textbf{Model:} Logistic with offense and defense random effects
+  \[
+    \text{logit}(p_{ij}) = \mu + \alpha_i^{\text{off}} + \alpha_j^{\text{def}}
+  \]
+  where $\alpha_i^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ and $\alpha_j^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$
+
+  \vspace{0.5cm}
+  \textbf{Key finding: Team effects are negligible}
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.5em
+  ]
+    \item $\hat{\tau}_{\text{off}} = \hat{\tau}_{\text{def}} = 0.032$ log-odds
+    \item Compare to fourth down: $\tau \approx 0.15$
+    \item Best matchup (elite O vs weak D): only 52\% conversion
+    \item Still essentially a coin flip!
+  \end{itemize}
+
+  \vspace{0.5cm}
+  $\Rightarrow$ Use pooled estimates: league-wide 2pt success rate $\approx$ 48\%
+\end{frame}
+
+\begin{frame}{Two-Point: Win Probability and Variance}
+  \textbf{Same WP model as fourth down}, but different state transitions:
+
+  \vspace{0.3cm}
+  \[
+    \E[W \mid \text{2pt}, s] = 0.48 \cdot W(s_{\text{+2}}) + 0.52 \cdot W(s_{\text{+0}})
+  \]
+  \[
+    \E[W \mid \text{PAT}, s] = 0.94 \cdot W(s_{\text{+1}}) + 0.06 \cdot W(s_{\text{+0}})
+  \]
+
+  \vspace{0.5cm}
+  \textbf{The variance intuition:}
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.5em
+  ]
+    \item PAT: High probability (94\%), low variance
+    \item 2pt: Lower probability (48\%), higher variance
+    \item \textbf{Trailing?} Variance helps $\rightarrow$ go for 2
+    \item \textbf{Leading?} Variance hurts $\rightarrow$ kick PAT
+  \end{itemize}
+
+  \vspace{0.3cm}
+  \textbf{Simple rule:} Go for 2 when trailing after the TD ($\Delta \leq -1$)
+\end{frame}
+
+\begin{frame}{Two-Point: Coach Optimality}
   \begin{center}
     \begin{tabular}{lrr}
       \toprule
@@ -475,10 +652,10 @@
   \end{finding}
 
   \vspace{0.3cm}
-  {\small This reflects the nature of the decision: outcomes differ by only 1 point.}
+  {\small Why? Outcomes differ by only 1 point $\Rightarrow$ WP margins always $<$2\%.}
 \end{frame}
 
-\begin{frame}{Are Coaches Learning? (Two-Point)}
+\begin{frame}{Two-Point: Are Coaches Learning?}
   \begin{columns}
     \begin{column}{0.55\textwidth}
       \includegraphics[width=\textwidth]{../outputs/figures/two_point_guide.png}
@@ -504,7 +681,7 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{The Massive Conservatism Gap}
+\begin{frame}{Two-Point: The Massive Conservatism Gap}
   \begin{center}
     \begin{tabular}{lcc}
       \toprule
@@ -538,31 +715,35 @@
 % CONCLUSION
 %------------------------------------------
 
-\begin{frame}{Fourth Down vs.\ Two-Point Comparison}
+\begin{frame}{Fourth Down vs.\ Two-Point: Model Comparison}
   \begin{center}
+    \small
     \begin{tabular}{lcc}
       \toprule
-      \textbf{Metric} & \textbf{Fourth Down} & \textbf{Two-Point} \\
+      \textbf{Model Component} & \textbf{Fourth Down} & \textbf{Two-Point} \\
       \midrule
-      Coach optimality rate & 80.5\% & 58.6\% \\
-      Clear mistakes (\% of all) & 0.9\% & 0.007\% \\
-      Maximum WP margin & $>$30\% & $\sim$5\% \\
-      Team effects matter? & Yes & No \\
-      \textbf{Learning trend} & \textbf{None} & \textbf{+1 pp/year} \\
+      Actions & $\{\texttt{go}, \texttt{punt}, \texttt{fg}\}$ & $\{\text{PAT}, \text{2pt}\}$ \\
+      Conversion model & Hierarchical logistic & Hierarchical logistic \\
+      Team effects $\tau$ & $\sim$0.15 (meaningful) & $\sim$0.03 (negligible) \\
+      WP model & Same & Same \\
+      Clock model & Critical & Not needed \\
+      Max WP margin & $>$30\% & $\sim$5\% \\
       \bottomrule
     \end{tabular}
   \end{center}
 
   \vspace{0.5cm}
-  \textbf{Paradox:} Fourth down decisions matter more but coaches perform \textit{better} at them.
-
-  \vspace{0.3cm}
-  Two-point decisions matter less but coaches are \textit{worse}---and improving.
-
-  \vspace{0.5cm}
-  \begin{takeaway}
-    Decision \textit{complexity}, not stakes, drives coaching errors
-  \end{takeaway}
+  \textbf{Key insight:} Same Bayesian framework, but fourth down has:
+  \begin{itemize}[
+    label=\(\triangleright\),
+    leftmargin=*,
+    itemsep=0.3em
+  ]
+    \item More actions (3 vs 2)
+    \item More heterogeneity across teams
+    \item Higher stakes (larger WP swings)
+    \item Clock dynamics that matter
+  \end{itemize}
 \end{frame}
 
 \begin{frame}{Conclusion: Is Management Learning?}
