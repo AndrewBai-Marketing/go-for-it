@@ -227,14 +227,45 @@ def find_most_controversial(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
     return controversial.nlargest(n, 'controversy_score')
 
 
-def find_worst_decisions(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
+def find_worst_decisions(df: pd.DataFrame, n: int = 20, exclude_end_of_game: bool = True) -> pd.DataFrame:
     """
     Find the worst decisions of all time according to the model.
 
     Ranked by WP cost (how much the decision hurt the team).
+
+    Parameters:
+        df: DataFrame with categorized decisions
+        n: Number of worst decisions to return
+        exclude_end_of_game: If True, exclude late-game situations where opponent
+                             can run out the clock (model limitation)
     """
-    worst = df[df['coach_wrong']].nlargest(n, 'wp_cost')
-    return worst
+    candidates = df[df['coach_wrong']].copy()
+
+    if exclude_end_of_game:
+        # Exclude situations where the model's recommendation may be wrong
+        # because opponent can kneel out the clock.
+        #
+        # Key insight: If trailing and under ~2:30 remaining, giving up the ball
+        # to a leading opponent means they can kneel. The model doesn't account
+        # for this - it assumes opponent will try to score.
+        #
+        # Conservative filter: Exclude 4th quarter plays where:
+        # - Team is trailing (score_diff < 0)
+        # - Less than 150 seconds (2:30) remaining
+        # - Model recommends giving up the ball (punt or FG attempt)
+        #
+        # Also exclude cases where team went for it but model said FG/punt,
+        # since these involve the clock management issue in reverse.
+
+        end_of_game_mask = (
+            (candidates['time_remaining'] < 150) &  # Under 2:30 left
+            (candidates['score_diff'] < 0)  # Trailing
+        )
+
+        # Remove these plays from consideration
+        candidates = candidates[~end_of_game_mask]
+
+    return candidates.nlargest(n, 'wp_cost')
 
 
 def find_egregious_mistakes(df: pd.DataFrame) -> pd.DataFrame:
