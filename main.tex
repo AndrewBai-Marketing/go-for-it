@@ -390,6 +390,37 @@ Interestingly, the most controversial decisions cluster in blowout situations wh
 
 In \textit{meaningful} game situations (within two scores, fourth quarter), controversial decisions are rarer. When the game is on the line, coaches and models tend to agree more often---suggesting that both are responding to the same fundamental calculus about risk and reward.
 
+\subsection{When ``It Depends'' Has Precise Structure}
+
+The most interesting fourth-down situations are those where the optimal decision depends critically on team quality. Consider 4th \& 1 at the opponent's 40-yard line---the ``triple-threat zone'' where all three options (go for it, field goal, punt) are viable. A 57-yard field goal is long but makeable for elite kickers; going for it on short yardage has high conversion probability; and punting pins the opponent deep.
+
+At this situation with the game tied and 8:00 remaining in the fourth quarter, our model finds razor-thin margins between options. For an average team facing an average defense:
+\begin{itemize}
+    \item Go for it: 56.2\% WP
+    \item Field goal: 56.7\% WP
+    \item Punt: 56.0\% WP
+\end{itemize}
+
+The average decision margin is just 0.5 percentage points---too close to call definitively. But this ``it depends'' has \textit{precise mathematical structure}. Figure~\ref{fig:off_def_heatmap} shows how the optimal decision shifts with offense and defense quality.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/decision_heatmap_off_def_quality.png}
+\caption{Optimal fourth-down decision as a function of offense quality (x-axis) and opponent defense quality (y-axis). Situation: 4th \& 1 at opponent's 40, tied, 8:00 left in Q4. Left panel shows decision regions (green = go, blue = punt, red = field goal). Right panel shows the WP advantage of going for it versus the best kicking option. The white circle marks league-average teams. Decision boundaries are sharp: a team 1$\sigma$ above average in offense facing a below-average defense should always go for it, while a below-average offense facing an elite defense should kick.}
+\label{fig:off_def_heatmap}
+\end{figure}
+
+The heat map reveals several insights:
+\begin{enumerate}
+    \item \textbf{Offense quality dominates}: Movement along the x-axis (offense quality) shifts the boundary more than movement along the y-axis. This reflects the asymmetry of fourth-down conversions---a good offense can exploit short-yardage situations, but even a bad defense gives up conversions at baseline rates.
+
+    \item \textbf{Field goal becomes optimal for conservative matchups}: When facing an elite defense with a below-average offense, the 57-yard field goal attempt becomes optimal despite its difficulty. The logic: low conversion probability makes going for it unattractive, and punting yields only modest field position gain.
+
+    \item \textbf{The ``go for it'' region expands rapidly}: Teams with even modest offensive advantages (+0.5$\sigma$) facing average or worse defenses should go for it. This supports the analytics consensus that most teams are too conservative---the ``go for it'' region covers more territory than coaches typically utilize.
+\end{enumerate}
+
+This visualization operationalizes the selection-on-observables argument: coaches observe both their offensive quality and the opponent's defensive quality. By conditioning on this matchup information, we can identify situations where the data clearly favor one action---and situations where ``it depends'' is genuinely the correct answer.
+
 \subsection{Team-Level Decision Quality}
 
 How much do suboptimal fourth-down decisions cost each team per season? We sum the win probability cost across all plays and convert to expected wins lost.
