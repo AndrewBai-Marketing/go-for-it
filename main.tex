@@ -332,25 +332,32 @@ Among late-game, high-stakes situations (within 14 points, at least one minute r
 \begin{table}[H]
 \centering
 \caption{Costliest Fourth-Down Decisions (2006--2024, Excluding End-of-Game)}
-\begin{tabular}{lllccc}
+\label{tab:worst_decisions}
+\begin{tabular}{lllcc}
 \toprule
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
-2021 CLE @ PIT & 4th \& 12 at opp 26, down 5, 1:58 Q4 & GO & FG & 8.2\% \\
-2019 LA @ PIT & 4th \& 10 at opp 30, down 5, 1:30 Q4 & GO & FG & 7.8\% \\
-2022 SEA @ ATL & 4th \& 18 at opp 38, down 4, 1:30 Q4 & GO & FG & 7.3\% \\
+2023 MIN @ LV & 4th \& 4 at opp 28, up 3, 0:18 Q4 & PUNT & FG & 12.2\% \\
+2019 BUF @ NYJ & 4th \& 5 at opp 35, up 1, 0:19 Q4 & PUNT & FG & 11.0\% \\
+2024 PIT @ WAS & 4th \& 15 at own 16, up 7, Q1 & GO & PUNT & 8.4\% \\
 2020 HOU @ CLE & 4th \& 13 at opp 30, down 3, Q2 & PUNT & FG & 8.3\% \\
 2022 CHI @ PHI & 4th \& 26 at opp 30, up 3, Q2 & PUNT & FG & 8.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\begin{remark}[Interpreting the Worst Decisions]
+The top two entries illustrate a subtle but costly error: punting from field goal range in the final seconds while \textit{leading}. In the 2023 MIN @ LV game, Minnesota lined up in field goal formation at the Raiders' 28-yard line with 18 seconds remaining and a 3-point lead, then executed a fake field goal \textit{punt}---a baffling choice that cost 12.2 percentage points of win probability. A routine 46-yard field goal would have extended the lead to 6 points, virtually guaranteeing victory. The 2019 BUF @ NYJ play is similar: Buffalo punted from the Jets' 35-yard line with 19 seconds left and a 1-point lead instead of attempting a 52-yard field goal.
+\end{remark}
+
 \begin{remark}[Model Limitation: End-of-Game Clock Management]
 Two decisions that initially appeared among the ``worst''---2024 NE @ MIA (4th \& 15, down 5, 1:00 left) and 2021 BUF @ NE (4th \& 14, down 4, 2:00 left)---are actually \textbf{correct} upon closer inspection. In both cases, the model recommends a field goal, but this analysis is flawed: if the trailing team kicks a FG to cut the deficit to 1--2 points, the opponent can simply \textit{kneel out the clock} rather than attempting to score. The model assumes the opponent will try to score after receiving the kickoff, but a team leading by any margin with under two minutes remaining can run out the clock.
 
 In the BUF @ NE case, if Buffalo kicks the FG (making it 14--13), New England receives the kickoff with approximately 1:55 remaining and three timeouts. They kneel three times, game over. Buffalo's only path to victory requires an onside kick recovery, making the expected WP approximately $P(\text{onside}) \times P(\text{score}) \approx 10\% \times 50\% = 5\%$. Going for it on 4th \& 14 (with roughly 15--20\% conversion probability leading to a likely touchdown) was clearly superior.
 
-This limitation affects situations where: (1) the team is trailing by a one-possession margin, (2) a field goal would leave the opponent still leading, and (3) insufficient time remains for the opponent to be forced to play offense. We exclude such situations from the ``worst decisions'' table above, though they remain in aggregate statistics. Properly modeling end-of-game clock dynamics is an important extension for future work.
+This limitation affects situations where: (1) the team is trailing by a one-possession margin, (2) a field goal would leave the opponent still leading, and (3) insufficient time remains for the opponent to be forced to play offense. We exclude such situations from the ``worst decisions'' table above, though they remain in aggregate statistics.
+
+A famous historical example is Andy Reid's punt in the 2006 NFC Divisional Playoff. Trailing the Saints 27--24 with 1:56 remaining at their own 39-yard line facing 4th \& 15, Reid elected to punt. Our model actually recommends punting in this situation (26.5\% WP vs.\ 23.0\% for going for it), but this recommendation is \textit{wrong}: after the Eagles punted, the Saints simply kneeled out the clock from their own 22-yard line. Punting was effectively 0\% WP, while going for it---even with just 15\% conversion probability---preserved some positive chance of winning. This illustrates why our model's end-of-game recommendations should be viewed skeptically when the opponent can run out the clock.
 \end{remark}
 
 \subsection{The Most Controversial Decisions}
