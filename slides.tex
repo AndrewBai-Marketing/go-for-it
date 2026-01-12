@@ -1,0 +1,516 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tikz}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Chicago Maroon Theme
+\definecolor{chicagomaroon}{RGB}{128,0,0}
+\setbeamercolor{structure}{fg=chicagomaroon}
+\setbeamercolor{title}{fg=chicagomaroon}
+\setbeamercolor{frametitle}{fg=chicagomaroon}
+\setbeamercolor{block title}{bg=chicagomaroon,fg=white}
+\setbeamercolor{block body}{bg=chicagomaroon!10}
+
+% Remove navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Custom bullet style
+\setbeamertemplate{itemize items}{\color{chicagomaroon}$\triangleright$}
+\setlength{\leftmargini}{1.5em}
+
+% Theorem environments
+\setbeamertemplate{theorems}[numbered]
+\theoremstyle{definition}
+\newtheorem{finding}{Finding}
+\newtheorem{takeaway}{Takeaway}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+
+% Title information
+\title{\textbf{Is Management Learning?}}
+\subtitle{Evidence from NFL Fourth Down and Two-Point Decisions}
+\author{Andrew Bai}
+\date{January 2026}
+
+\begin{document}
+
+% Title slide
+\begin{frame}
+\vspace{2cm}
+\begin{center}
+{\LARGE\textbf{\textcolor{chicagomaroon}{Is Management Learning?}}}\\[0.5cm]
+{\large Evidence from NFL Fourth Down and Two-Point Decisions}\\[1.5cm]
+{\normalsize Andrew Bai}\\[0.5cm]
+{\small January 2026}
+\end{center}
+\end{frame}
+
+% Motivation
+\begin{frame}{The Question}
+\begin{itemize}
+\item<1-> \textbf{Setting:} NFL coaches make high-stakes decisions with well-defined objectives
+\item<2-> \textbf{Classic finding:} Romer (2006) showed coaches are systematically too conservative on fourth down
+\item<3-> \textbf{The puzzle:} 20 years of publicly available research, billions of dollars at stake
+\item<4-> \textbf{Our question:} Have coaches improved? Are they learning?
+\end{itemize}
+
+\vspace{0.5cm}
+\pause[5]
+\begin{block}{Preview}
+Fourth down: No improvement. Two-point conversions: Yes, significant improvement.
+\end{block}
+\end{frame}
+
+%------------------------------------------
+% PART I: FOURTH DOWN
+%------------------------------------------
+
+\begin{frame}
+\begin{center}
+{\Huge\textcolor{chicagomaroon}{\textbf{Part I}}}\\[0.5cm]
+{\Large Fourth Down Decisions}
+\end{center}
+\end{frame}
+
+% The Model
+\begin{frame}{The Decision Problem}
+\textbf{State:} Score differential $\Delta$, time remaining $\tau$, field position $x$, yards to go $d$
+
+\vspace{0.3cm}
+\textbf{Actions:} $\mathcal{A} = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$
+
+\vspace{0.3cm}
+\textbf{Objective:} Maximize win probability
+\[
+a^* = \arg\max_{a \in \mathcal{A}} \E[W \mid a, s]
+\]
+
+\pause
+\vspace{0.3cm}
+\textbf{Key innovation:} Bayesian framework with hierarchical effects
+\begin{itemize}
+\item Offensive team conversion ability $\gamma_j^{\text{off}}$
+\item Defensive team stopping ability $\delta_k^{\text{def}}$
+\item Kicker-specific field goal accuracy
+\end{itemize}
+\end{frame}
+
+% Selection on Observables
+\begin{frame}{Can the Model Capture the Coach's Information?}
+\textbf{Selection-on-observables argument:} We condition on what the coach knows
+
+\vspace{0.5cm}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\textbf{Model conditions on:}
+\begin{itemize}
+\item Game state (score, time, position)
+\item Offensive team quality
+\item Defensive team quality
+\item Kicker ability
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Direct test:}\\[0.2cm]
+When coaches override the model, do they convert more often?
+\begin{itemize}
+\item 4th \& short: +3.0 pp (some info)
+\item 4th \& medium: +0.4 pp (none)
+\item 4th \& long: $-9.3$ pp (overconfident)
+\end{itemize}
+\end{column}
+\end{columns}
+
+\pause
+\vspace{0.5cm}
+\begin{takeaway}
+Coaches don't outperform the model $\Rightarrow$ suboptimality is behavioral, not informational
+\end{takeaway}
+\end{frame}
+
+% Expanding Window
+\begin{frame}{Real-Time Knowability}
+\textbf{Objection:} ``You can't judge coaches using hindsight''
+
+\vspace{0.3cm}
+\textbf{Test:} Expanding window analysis (7-year minimum training)
+\begin{itemize}
+\item Train model on data available \textit{before} each season
+\item Compare ex ante vs.\ ex post recommendations
+\end{itemize}
+
+\pause
+\vspace{0.5cm}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Finding} & \textbf{Value} \\
+\midrule
+Ex ante/ex post agreement & 96.5\% \\
+Plays analyzed & 71,786 \\
+Years tested & 2006--2024 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.3cm}
+\begin{finding}
+96.5\% of optimal decisions were \textbf{knowable in real-time}
+\end{finding}
+\end{frame}
+
+% Coach Optimality
+\begin{frame}{How Often Are Coaches Optimal?}
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{\%} \\
+\midrule
+\textcolor{chicagomaroon}{\textbf{Correct}} (matched model) & 57,796 & \textbf{80.5\%} \\
+Difference of opinion ($<$2\% WP) & 11,558 & 16.1\% \\
+Questionable (2--5\% WP) & 1,758 & 2.4\% \\
+Clear mistake ($>$5\% WP) & 674 & \textbf{0.9\%} \\
+\midrule
+\textbf{Total} & \textbf{71,786} & 100\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\begin{finding}
+83\% of ``mistakes'' are actually close calls. Only 0.9\% are clear errors.
+\end{finding}
+\end{frame}
+
+% Are Coaches Learning?
+\begin{frame}{Are Coaches Learning? (Fourth Down)}
+\begin{columns}
+\begin{column}{0.55\textwidth}
+\includegraphics[width=\textwidth]{outputs/figures/time_trends.png}
+\end{column}
+\begin{column}{0.45\textwidth}
+\textbf{Go-for-it rates:}
+\begin{itemize}
+\item 1999: 12.5\%
+\item 2024: 20.0\%
+\item[$\Rightarrow$] \textbf{+7.5 pp increase}
+\end{itemize}
+
+\vspace{0.3cm}
+\pause
+\textbf{But decision quality:}
+\begin{itemize}
+\item 2017--2019: 0.31 wins lost
+\item 2022--2024: 0.37 wins lost
+\item[$\Rightarrow$] \textbf{No improvement}
+\end{itemize}
+\end{column}
+\end{columns}
+
+\pause
+\vspace{0.3cm}
+\begin{takeaway}
+Coaches shifted from excessive conservatism to excessive aggression---net effect: zero
+\end{takeaway}
+\end{frame}
+
+% Thresholds by Quality
+\begin{frame}{``It Depends'' Has Precise Structure}
+\begin{center}
+\includegraphics[width=0.75\textwidth]{outputs/figures/decision_thresholds_by_quality.png}
+\end{center}
+
+\vspace{-0.3cm}
+{\small At midfield: Elite offense $\rightarrow$ go for it on 4th \& 10. Weak offense $\rightarrow$ only 4th \& 4.}
+\end{frame}
+
+% The Worst Decisions
+\begin{frame}{The Worst Decisions of All Time}
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{WP Cost} \\
+\midrule
+2023 MIN @ LV & 4th \& 4, opp 28, up 3, 0:18 Q4 & PUNT & \textbf{12.2\%} \\
+2019 BUF @ NYJ & 4th \& 5, opp 35, up 1, 0:19 Q4 & PUNT & 11.0\% \\
+2024 PIT @ WAS & 4th \& 15, own 16, up 7, Q1 & GO & 8.4\% \\
+2020 HOU @ CLE & 4th \& 13, opp 30, down 3, Q2 & PUNT & 8.3\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\textbf{2023 MIN @ LV:} Minnesota lined up for a 46-yard FG with 18 seconds left and a 3-point lead... then executed a fake FG \textit{punt}.
+
+\vspace{0.3cm}
+A routine FG would have virtually guaranteed victory.
+\end{frame}
+
+% Most Controversial
+\begin{frame}{The Most Controversial Decisions (Near-Ties)}
+\begin{center}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{Margin} \\
+\midrule
+2023 DEN @ MIA & 4th \& 7, own 28, down 43 & PUNT & GO & 0.01\% \\
+2021 WAS @ DAL & 4th \& 2, opp 25, down 49 & GO & FG & 0.01\% \\
+2021 GB @ NO & 4th \& 5, opp 48, down 35 & PUNT & FG & 0.02\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\textbf{Pattern:} Most controversial decisions cluster in blowouts where the practical difference is negligible.
+
+\vspace{0.3cm}
+In \textit{meaningful} game situations, coaches and models agree more often.
+\end{frame}
+
+% Case Study: Bears-Packers
+\begin{frame}{Case Study: 2026 Bears-Packers Wild Card}
+\textbf{Ben Johnson faced criticism for aggressive play-calling} (Bears won 31--27)
+
+\vspace{0.3cm}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Situation} & \textbf{Decision} & \textbf{WP Cost} & \textbf{Verdict} \\
+\midrule
+4th \& 6, GB 40, down 7 & GO & $-3.3$ pp & \textcolor{red}{Suboptimal} \\
+4th \& 5, own 32, down 11 & GO & $-0.8$ pp & Marginal \\
+4th \& 1, GB 6, down 11 & GO & $+0.6$ pp & \textcolor{chicagomaroon}{\textbf{Correct}} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\textbf{The interception on 4th \& 1 was bad luck, not bad process.}
+
+The 4th \& 6 punt recommendation was genuinely suboptimal regardless of outcome.
+\end{frame}
+
+%------------------------------------------
+% PART II: TWO-POINT CONVERSIONS
+%------------------------------------------
+
+\begin{frame}
+\begin{center}
+{\Huge\textcolor{chicagomaroon}{\textbf{Part II}}}\\[0.5cm]
+{\Large Two-Point Conversion Decisions}
+\end{center}
+\end{frame}
+
+% 2pt Model
+\begin{frame}{The Two-Point Decision}
+After a touchdown: PAT (1 point, 94\% success) or 2pt (2 points, 48\% success)
+
+\vspace{0.3cm}
+\textbf{Expected points nearly identical:}
+\[
+\E[\text{PAT}] = 0.94 \quad \text{vs.} \quad \E[\text{2pt}] = 0.96
+\]
+
+\pause
+\vspace{0.3cm}
+\textbf{The difference is entirely \textit{variance}:}
+\begin{itemize}
+\item PAT: High probability, low variance
+\item 2pt: Lower probability, higher variance
+\end{itemize}
+
+\pause
+\vspace{0.3cm}
+\begin{block}{Simple Rule}
+\textbf{Trailing?} Go for 2 (variance helps when behind)\\
+\textbf{Leading?} Kick PAT (variance hurts when ahead)
+\end{block}
+\end{frame}
+
+% 2pt Optimality
+\begin{frame}{Two-Point Coach Optimality}
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{\%} \\
+\midrule
+\textcolor{chicagomaroon}{\textbf{Correct}} & 8,211 & 58.6\% \\
+Difference of opinion ($<$2\% WP) & 5,811 & 41.4\% \\
+Questionable (2--5\% WP) & 0 & 0.0\% \\
+Clear mistake ($>$5\% WP) & 1 & 0.007\% \\
+\midrule
+\textbf{Total} & \textbf{14,023} & 100\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\begin{finding}
+Virtually all deviations are close calls. Only 1 play out of 14,023 was a clear mistake.
+\end{finding}
+
+\vspace{0.3cm}
+{\small This reflects the nature of the decision: outcomes differ by only 1 point.}
+\end{frame}
+
+% 2pt Learning
+\begin{frame}{Are Coaches Learning? (Two-Point)}
+\begin{columns}
+\begin{column}{0.55\textwidth}
+\includegraphics[width=\textwidth]{outputs/figures/two_point_guide.png}
+\end{column}
+\begin{column}{0.45\textwidth}
+\textbf{Optimal rate over time:}
+\begin{itemize}
+\item 2015: 54.3\%
+\item 2024: 64.8\%
+\item Trend: \textbf{+1.03 pp/year}
+\item $p$-value: \textbf{0.0003}
+\end{itemize}
+
+\vspace{0.5cm}
+\pause
+\begin{finding}
+Unlike fourth down, coaches \textit{are} improving at 2pt decisions
+\end{finding}
+\end{column}
+\end{columns}
+\end{frame}
+
+% The Gap
+\begin{frame}{The Massive Conservatism Gap}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+& \textbf{Actual Rate} & \textbf{Optimal Rate} \\
+\midrule
+Two-point attempts & 9.1\% & 44.1\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\textbf{35 percentage points too conservative}
+
+\vspace{0.3cm}
+The model recommends going for 2 whenever trailing---coaches almost never do this, defaulting to PAT except in obvious late-game scenarios.
+
+\pause
+\vspace{0.5cm}
+\begin{takeaway}
+But the stakes are low: even the worst mistake costs $\sim$1--2\% WP
+\end{takeaway}
+\end{frame}
+
+%------------------------------------------
+% COMPARISON AND CONCLUSION
+%------------------------------------------
+
+\begin{frame}
+\begin{center}
+{\Huge\textcolor{chicagomaroon}{\textbf{Comparison}}}\\[0.5cm]
+{\Large Fourth Down vs.\ Two-Point}
+\end{center}
+\end{frame}
+
+% Comparison Table
+\begin{frame}{Fourth Down vs.\ Two-Point Comparison}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Fourth Down} & \textbf{Two-Point} \\
+\midrule
+Coach optimality rate & 80.5\% & 58.6\% \\
+Clear mistakes (\% of all) & 0.9\% & 0.007\% \\
+Maximum WP margin & $>$30\% & $\sim$5\% \\
+Team effects matter? & Yes ($\tau \approx 0.15$) & No ($\tau \approx 0.03$) \\
+\textbf{Learning trend} & \textbf{None} & \textbf{+1 pp/year} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\pause
+\vspace{0.5cm}
+\textbf{Paradox:} Fourth down decisions matter more but coaches perform \textit{better} at them.
+
+\vspace{0.3cm}
+Two-point decisions matter less but coaches are \textit{worse}---and improving.
+
+\pause
+\vspace{0.3cm}
+\begin{takeaway}
+Decision \textit{complexity}, not stakes, drives coaching errors
+\end{takeaway}
+\end{frame}
+
+% Conclusion
+\begin{frame}{Conclusion: Is Management Learning?}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\textbf{Fourth Down:}
+\begin{itemize}
+\item 80.5\% optimal decisions
+\item 83\% of mistakes are close calls
+\item 96.5\% knowable in real-time
+\item \textcolor{red}{\textbf{No improvement over 20 years}}
+\item Shifted from too conservative to too aggressive
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Two-Point:}
+\begin{itemize}
+\item 58.6\% optimal decisions
+\item Virtually all deviations are close calls
+\item \textcolor{chicagomaroon}{\textbf{+1 pp/year improvement}}
+\item Still 35 pp too conservative
+\item But stakes are low
+\end{itemize}
+\end{column}
+\end{columns}
+
+\pause
+\vspace{0.5cm}
+\begin{block}{Bottom Line}
+Coaches are learning at the simple decision (2pt) but not the complex one (4th down).\\
+The ``analytics revolution'' changed behavior but not accuracy.
+\end{block}
+\end{frame}
+
+% Final Takeaways
+\begin{frame}{Key Takeaways}
+\begin{enumerate}
+\item \textbf{Coaches are mostly right:} 80\% optimal on 4th down, 59\% on 2pt
+\vspace{0.3cm}
+\item \textbf{Most ``mistakes'' are close calls:} 83\% of deviations have $<$2\% WP margin
+\vspace{0.3cm}
+\item \textbf{The information exists:} 96.5\% of optimal decisions were knowable in real-time
+\vspace{0.3cm}
+\item \textbf{No improvement on 4th down:} Despite 20 years of research and increased aggression
+\vspace{0.3cm}
+\item \textbf{Improvement on 2pt:} +1 pp/year (simpler decision $\Rightarrow$ easier to learn)
+\vspace{0.3cm}
+\item \textbf{Free wins still on the table:} Teams lose $\sim$0.34 expected wins/season from 4th down errors alone
+\end{enumerate}
+\end{frame}
+
+% Thank you
+\begin{frame}
+\begin{center}
+\vspace{2cm}
+{\Huge\textcolor{chicagomaroon}{\textbf{Thank You}}}\\[1cm]
+{\large Questions?}
+\end{center}
+\end{frame}
+
+\end{document}
