@@ -1,0 +1,16 @@
+season,game_id,play_id,field_pos,yards_to_go,score_diff,time_remaining,actual_decision,ex_ante_optimal,ex_post_optimal,ex_ante_match,ex_post_match,models_agree,ex_ante_confidence,ex_ante_margin,ex_post_margin,ex_ante_wp_go,ex_ante_wp_punt,ex_ante_wp_fg,train_start,train_end,posteam,defteam,week,season_type,home_team,away_team,game_date,qtr,desc,decision_clarity,confidence_category,coach_wrong,mistake_type,wp_cost,controversy_score
+2006,2006_01_CHI_GB,3778.0,56,4,26,35,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2005,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2006,2006_02_DET_CHI,4049.0,59,3,27,34,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2005,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2006,2006_05_OAK_SF,3844.0,42,10,14,28,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,1.0,1999,2005,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2006,2006_09_KC_STL,3895.0,89,4,14,14,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2005,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_01_TB_SEA,3817.0,49,5,14,30,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_04_BAL_CLE,3930.0,57,11,14,32,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_06_CAR_ARI,4741.0,82,12,15,16,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_08_WAS_NE,4115.0,98,11,-45,30,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,0.0,0.0,0.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_12_NYJ_DAL,3625.0,82,4,31,34,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2007,2007_16_MIA_NE,4083.0,42,7,21,18,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,1.0,1999,2006,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2008,2008_03_STL_SEA,3854.0,67,10,24,36,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2007,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2008,2008_05_CHI_DET,4120.0,48,11,27,30,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2007,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2008,2008_08_SEA_SF,4035.0,55,15,21,36,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2007,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2008,2008_09_PHI_SEA,3861.0,97,10,19,38,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2007,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
+2008,2008_12_GB_NO,3899.0,62,11,22,28,punt,go_for_it,go_for_it,False,False,True,0.0,0.0,0.0,1.0,1.0,0.0,1999,2007,,,,,,,,,,close_call,toss_up,True,difference_of_opinion,0.0,1000.0
