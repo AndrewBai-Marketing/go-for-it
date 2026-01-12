@@ -113,7 +113,7 @@ Each action induces a probability distribution over successor states. Let $P(s' 
 
 \section{Data}
 
-We use play-by-play data from the 1999--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use a 7-year minimum training window starting from 1999, testing decisions from 2006--2024. The evaluation sample contains 71,849 fourth-down situations across 19 test years.
+We use play-by-play data from the 1999--2024 NFL seasons obtained via the \texttt{nflfastR} package. For the expanding window analysis, we use a 7-year minimum training window starting from 1999, testing decisions from 2006--2024. The evaluation sample contains 71,849 fourth-down situations across 19 test years.\footnote{We exclude QB kneels and spikes on fourth down from the analysis. These are clock management plays in garbage time (e.g., kneeling to end the game while winning by 40 points), not genuine fourth-down decisions. Including them would artificially inflate ``go for it'' rates in situations where no decision was actually being made.}
 
 \section{Hierarchical Bayesian Decision Framework}
 
