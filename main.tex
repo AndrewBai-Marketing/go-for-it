@@ -752,6 +752,126 @@ The selection-on-observables argument implies that coach suboptimality is not du
 
 This is good news for coaching improvement: the information exists to make better decisions. The 19.5\% deviation rate (of which only 4.8\% are clear mistakes) represents a genuine opportunity for competitive advantage.
 
+\section{Extension: Two-Point Conversion Decisions}
+
+We extend the Bayesian decision framework to analyze PAT versus two-point conversion decisions. While fourth-down decisions involve high-variance choices (keep possession vs.\ lose it, score 3 vs.\ 0), PAT/2pt decisions are inherently low-stakes: the outcomes differ by only 1 point, and both actions have well-understood success probabilities. This creates a natural contrast for testing our framework.
+
+\subsection{The Model}
+
+After scoring a touchdown, the offense chooses between kicking a PAT (1 point with $\sim$94\% probability) or attempting a two-point conversion (2 points with $\sim$48\% probability). The expected points are nearly identical: $E[\text{PAT}] = 0.94$ vs.\ $E[\text{2pt}] = 0.96$. The difference lies entirely in \textit{variance}.
+
+We apply the same Bayesian decision framework:
+\begin{equation}
+    a^* = \arg\max_{a \in \{\text{PAT}, \text{2pt}\}} \E[W \mid a, s]
+\end{equation}
+where win probability integrates over parameter uncertainty. The two-point model captures offense and defense effects:
+\begin{equation}
+    \text{logit}(p_{ij}) = \mu + \alpha_i^{\text{off}} + \alpha_j^{\text{def}}
+\end{equation}
+where $\alpha_i^{\text{off}} \sim N(0, \tau_{\text{off}}^2)$ and $\alpha_j^{\text{def}} \sim N(0, \tau_{\text{def}}^2)$.
+
+\paragraph{Key finding: Team effects are negligible.} Unlike fourth-down conversions where offensive and defensive quality matter substantially ($\tau \approx 0.15$), two-point conversion effects are tiny: $\hat{\tau}_{\text{off}} = \hat{\tau}_{\text{def}} = 0.032$ log-odds. Even the most favorable matchup (best offense vs.\ worst defense) only reaches 52\% conversion rate---still essentially a coin flip. We therefore use pooled estimates for the baseline analysis.
+
+\subsection{Coach Optimality}
+
+Applying the framework to 14,023 post-touchdown decisions from 2015--2024:
+
+\begin{table}[H]
+\centering
+\caption{Two-Point Conversion Decision Categorization (2015--2024)}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{\% of All} & \textbf{\% of Deviations} \\
+\midrule
+Correct (matched model) & 8,211 & 58.6\% & --- \\
+Difference of opinion ($<$2\% WP) & 5,811 & 41.4\% & 100.0\% \\
+Questionable (2--5\% WP) & 0 & 0.0\% & 0.0\% \\
+Clear mistake ($>$5\% WP) & 1 & 0.01\% & 0.02\% \\
+\midrule
+\textbf{Total} & \textbf{14,023} & \textbf{100\%} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The striking result: \textbf{virtually all deviations are close calls}. Only 1 play out of 14,023 (0.007\%) was a clear mistake. This reflects the fundamental nature of PAT/2pt decisions: because the outcomes differ by only 1 point, win probability margins are almost always below 2 percentage points.
+
+\subsection{Coaches Are Learning (Unlike Fourth Down)}
+
+\begin{table}[H]
+\centering
+\caption{Two-Point Decision Quality Over Time}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Season} & \textbf{N} & \textbf{Optimal \%} & \textbf{Actual 2pt \%} & \textbf{Model 2pt \%} \\
+\midrule
+2015 & 1,357 & 54.3\% & 7.5\% & 46.4\% \\
+2016 & 1,361 & 53.9\% & 8.3\% & 48.3\% \\
+2017 & 1,283 & 54.9\% & 7.1\% & 45.7\% \\
+2018 & 1,418 & 57.8\% & 9.7\% & 46.5\% \\
+2019 & 1,384 & 59.8\% & 8.6\% & 42.7\% \\
+2020 & 1,538 & 59.0\% & 9.3\% & 44.3\% \\
+2021 & 1,481 & 60.9\% & 10.8\% & 42.2\% \\
+2022 & 1,381 & 58.4\% & 9.3\% & 44.8\% \\
+2023 & 1,370 & 60.9\% & 9.6\% & 42.4\% \\
+2024 & 1,450 & 64.8\% & 10.2\% & 38.2\% \\
+\midrule
+\textbf{Trend} & & \textbf{+1.03 pp/yr} & +0.29 pp/yr & \\
+\textbf{$p$-value} & & \textbf{0.0003} & 0.011 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Unlike fourth down where we found no improvement in decision quality, coaches \textit{are} improving at PAT/2pt decisions: optimal rates increased from 54\% to 65\% over 10 years ($p = 0.0003$). This likely reflects the simpler decision structure---with only two options and clear probability estimates, the ``right'' answer is easier to internalize.
+
+\subsection{The Massive Gap: Coaches Are Too Conservative}
+
+Despite the improvement, coaches remain dramatically underaggressive:
+\begin{itemize}
+    \item \textbf{Actual two-point rate}: 9.1\%
+    \item \textbf{Model-optimal two-point rate}: 44.1\%
+\end{itemize}
+
+Coaches attempt two-point conversions 35 percentage points less often than optimal. The model recommends going for 2 whenever trailing after the touchdown (score differential $\leq -1$), because variance helps when behind. Coaches almost never do this, defaulting to the PAT except in obvious late-game scenarios.
+
+\subsection{The Simple Rule}
+
+The optimal decision rule is straightforward: go for 2 when trailing after the TD; kick PAT when ahead. The crossover point is at score differential $\approx -1$ (down by 1 after the TD, which means down by 7 before the TD).
+
+The intuition is variance-seeking when behind, variance-averse when ahead. The two-point conversion is essentially a coin flip (48\% success), while the PAT succeeds 94\% of the time. When trailing, you need things to go your way---variance helps. When leading, you want to lock in the advantage---variance hurts.
+
+\subsection{A Practical Decision Guide}
+
+Figure~\ref{fig:two_point_guide} provides a practical visualization of the optimal decision. The key insight is that \textit{the stakes are low}: even the worst possible mistake costs approximately 1--2 percentage points of win probability. Coaches who kick PAT when trailing by 1 are technically suboptimal, but the cost is negligible.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{outputs/figures/two_point_guide.png}
+\caption{Two-point conversion decision guide. The main panel shows win probability advantage of going for 2 versus kicking PAT, by score differential after the touchdown. Green region indicates going for 2 is optimal; blue indicates PAT. The gray band shows uncertainty due to matchup effects (best offense vs.\ worst defense, to worst offense vs.\ best defense). Key insight: all margins are $<$2 percentage points---these are inherently close calls.}
+\label{fig:two_point_guide}
+\end{figure}
+
+\subsection{Contrast with Fourth Down}
+
+The PAT/2pt analysis provides an instructive contrast with fourth-down decisions:
+
+\begin{table}[H]
+\centering
+\caption{Fourth Down vs.\ Two-Point Conversion Decision Comparison}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Fourth Down} & \textbf{PAT/2pt} \\
+\midrule
+Coach optimality rate & 80.5\% & 58.6\% \\
+Clear mistakes (\% of all) & 0.9\% & 0.007\% \\
+Maximum WP margin & $>$30\% & $\sim$5\% \\
+Team effects ($\tau$) & $\sim$0.15 & $\sim$0.03 \\
+Learning trend & None & +1 pp/year \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Fourth-down decisions matter more (higher variance, larger WP margins) but coaches perform better at them. PAT/2pt decisions matter less, but coaches are worse at them---and improving. This suggests that decision complexity, not stakes, drives coaching errors: fourth down involves three options and subtle game-state interactions, while PAT/2pt is a binary choice with straightforward probability tradeoffs.
+
 \section{Conclusion}
 
 We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; (4) testing real-time knowability via expanding window analysis; and (5) establishing a selection-on-observables argument by conditioning on offense and defense quality.
