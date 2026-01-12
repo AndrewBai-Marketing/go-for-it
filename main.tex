@@ -331,23 +331,27 @@ Among late-game, high-stakes situations (within 14 points, at least one minute r
 
 \begin{table}[H]
 \centering
-\caption{Costliest Fourth-Down Decisions (2006--2024)}
+\caption{Costliest Fourth-Down Decisions (2006--2024, Excluding End-of-Game)}
 \begin{tabular}{lllccc}
 \toprule
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
-2024 NE @ MIA & 4th \& 15 at opp 17, down 5, 1:00 Q4 & GO & FG & 9.7\% \\
-2021 BUF @ NE & 4th \& 14 at opp 18, down 4, 2:00 Q4 & GO & FG & 9.4\% \\
 2021 CLE @ PIT & 4th \& 12 at opp 26, down 5, 1:58 Q4 & GO & FG & 8.2\% \\
 2019 LA @ PIT & 4th \& 10 at opp 30, down 5, 1:30 Q4 & GO & FG & 7.8\% \\
 2022 SEA @ ATL & 4th \& 18 at opp 38, down 4, 1:30 Q4 & GO & FG & 7.3\% \\
+2020 HOU @ CLE & 4th \& 13 at opp 30, down 3, Q2 & PUNT & FG & 8.3\% \\
+2022 CHI @ PHI & 4th \& 26 at opp 30, up 3, Q2 & PUNT & FG & 8.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The most costly decision in our sample occurred in Week 13, 2021: \textbf{Buffalo at New England} in the infamous Monday Night Football ``wind game.'' With the Bills trailing 14--10 and 2:00 remaining, Josh Allen faced 4th \& 14 from the Patriots' 18-yard line. Rather than attempt a 35-yard field goal (roughly 85\% make probability in normal conditions), Buffalo went for it and failed. The model estimates this decision cost 9.4 percentage points of win probability.
+\begin{remark}[Model Limitation: End-of-Game Clock Management]
+Two decisions that initially appeared among the ``worst''---2024 NE @ MIA (4th \& 15, down 5, 1:00 left) and 2021 BUF @ NE (4th \& 14, down 4, 2:00 left)---are actually \textbf{correct} upon closer inspection. In both cases, the model recommends a field goal, but this analysis is flawed: if the trailing team kicks a FG to cut the deficit to 1--2 points, the opponent can simply \textit{kneel out the clock} rather than attempting to score. The model assumes the opponent will try to score after receiving the kickoff, but a team leading by any margin with under two minutes remaining can run out the clock.
 
-A common pattern emerges: teams trailing late attempt long-shot conversions instead of taking guaranteed (or near-guaranteed) points. The ``hero ball'' mentality---preferring a dramatic touchdown attempt to a methodical field goal---systematically costs win probability.
+In the BUF @ NE case, if Buffalo kicks the FG (making it 14--13), New England receives the kickoff with approximately 1:55 remaining and three timeouts. They kneel three times, game over. Buffalo's only path to victory requires an onside kick recovery, making the expected WP approximately $P(\text{onside}) \times P(\text{score}) \approx 10\% \times 50\% = 5\%$. Going for it on 4th \& 14 (with roughly 15--20\% conversion probability leading to a likely touchdown) was clearly superior.
+
+This limitation affects situations where: (1) the team is trailing by a one-possession margin, (2) a field goal would leave the opponent still leading, and (3) insufficient time remains for the opponent to be forced to play offense. We exclude such situations from the ``worst decisions'' table above, though they remain in aggregate statistics. Properly modeling end-of-game clock dynamics is an important extension for future work.
+\end{remark}
 
 \subsection{The Most Controversial Decisions}
 
