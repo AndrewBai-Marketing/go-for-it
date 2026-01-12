@@ -392,31 +392,35 @@ In \textit{meaningful} game situations (within two scores, fourth quarter), cont
 
 \subsection{When ``It Depends'' Has Precise Structure}
 
-The most interesting fourth-down situations are those where the optimal decision depends critically on team quality. Consider 4th \& 1 at the opponent's 40-yard line---the ``triple-threat zone'' where all three options (go for it, field goal, punt) are viable. A 57-yard field goal is long but makeable for elite kickers; going for it on short yardage has high conversion probability; and punting pins the opponent deep.
+The most interesting fourth-down situations are those where the optimal decision depends critically on team quality. Rather than asking ``should teams go for it more?''---the answer is trivially yes---we can ask the more precise question: \textit{how does the go-for-it threshold shift with matchup quality?}
 
-At this situation with the game tied and 8:00 remaining in the fourth quarter, our model finds razor-thin margins between options. For an average team facing an average defense:
-\begin{itemize}
-    \item Go for it: 56.2\% WP
-    \item Field goal: 56.7\% WP
-    \item Punt: 56.0\% WP
-\end{itemize}
-
-The average decision margin is just 0.5 percentage points---too close to call definitively. But this ``it depends'' has \textit{precise mathematical structure}. Figure~\ref{fig:off_def_heatmap} shows how the optimal decision shifts with offense and defense quality.
+Figure~\ref{fig:thresholds} shows the ``go-for-it threshold''---the maximum yards-to-go at which going for it dominates kicking---as a function of field position for different team quality scenarios. The differences are substantial:
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{outputs/figures/decision_heatmap_off_def_quality.png}
-\caption{Optimal fourth-down decision as a function of offense quality (x-axis) and opponent defense quality (y-axis). Situation: 4th \& 1 at opponent's 40, tied, 8:00 left in Q4. Left panel shows decision regions (green = go, blue = punt, red = field goal). Right panel shows the WP advantage of going for it versus the best kicking option. The white circle marks league-average teams. Decision boundaries are sharp: a team 1$\sigma$ above average in offense facing a below-average defense should always go for it, while a below-average offense facing an elite defense should kick.}
-\label{fig:off_def_heatmap}
+\includegraphics[width=\textwidth]{outputs/figures/decision_thresholds_by_quality.png}
+\caption{Fourth-down go-for-it thresholds by team quality and field position. Each line shows the maximum yards-to-go at which going for it is optimal. Above the line: go for it. Below: kick. At midfield, an elite offense should go for it on 4th \& 10, while a weak offense should only go on 4th \& 4 or shorter. The favorable/unfavorable matchup lines show the combined effect of offense quality and opponent defense quality.}
+\label{fig:thresholds}
 \end{figure}
 
-The heat map reveals several insights:
+At midfield (where field goals are not viable), the thresholds reveal dramatic differences:
+\begin{itemize}
+    \item \textbf{Average team}: Go for it on 4th \& 7 or shorter
+    \item \textbf{Elite offense}: Go for it on 4th \& 10 or shorter
+    \item \textbf{Weak offense}: Go for it on 4th \& 4 or shorter
+    \item \textbf{Favorable matchup} (good offense vs.\ bad defense): Go for it on 4th \& 13 or shorter
+    \item \textbf{Unfavorable matchup} (bad offense vs.\ good defense): Almost never go for it
+\end{itemize}
+
+The spread between favorable and unfavorable matchups is over 12 yards---meaning the same situation that clearly calls for going for it with one team is a clear punt with another. This operationalizes what coaches mean when they say ``it depends'': the optimal decision genuinely varies with matchup quality, and our model quantifies exactly how much.
+
+Three insights emerge:
 \begin{enumerate}
-    \item \textbf{Offense quality dominates}: Movement along the x-axis (offense quality) shifts the boundary more than movement along the y-axis. This reflects the asymmetry of fourth-down conversions---a good offense can exploit short-yardage situations, but even a bad defense gives up conversions at baseline rates.
+    \item \textbf{Team quality matters most at medium distances}: On 4th \& 1, everyone should go for it. On 4th \& 15, almost no one should. But on 4th \& 5--10, the optimal decision swings dramatically with team quality.
 
-    \item \textbf{Field goal becomes optimal for conservative matchups}: When facing an elite defense with a below-average offense, the 57-yard field goal attempt becomes optimal despite its difficulty. The logic: low conversion probability makes going for it unattractive, and punting yields only modest field position gain.
+    \item \textbf{Field goal range creates discontinuities}: The threshold drops sharply around the opponent's 43-yard line (60-yard FG range) as field goals become viable. Inside FG range, the threshold compresses because the FG option raises the bar for going for it.
 
-    \item \textbf{The ``go for it'' region expands rapidly}: Teams with even modest offensive advantages (+0.5$\sigma$) facing average or worse defenses should go for it. This supports the analytics consensus that most teams are too conservative---the ``go for it'' region covers more territory than coaches typically utilize.
+    \item \textbf{The ``analytics consensus'' understates heterogeneity}: Popular fourth-down charts show a single threshold (typically 4th \& 4 at midfield). Our analysis suggests this is correct for average teams but dramatically wrong for teams at the extremes. Elite offenses are leaving wins on the table by not going for it on 4th \& 8; weak offenses may be hurting themselves by going for it on 4th \& 5.
 \end{enumerate}
 
 This visualization operationalizes the selection-on-observables argument: coaches observe both their offensive quality and the opponent's defensive quality. By conditioning on this matchup information, we can identify situations where the data clearly favor one action---and situations where ``it depends'' is genuinely the correct answer.
