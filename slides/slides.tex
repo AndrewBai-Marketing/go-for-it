@@ -292,31 +292,57 @@ where $k$ = timeout differential
 \end{frame}
 
 \begin{frame}{Clock Consumption Model}
-\textbf{Critical innovation:} Asymmetric clock consumption by action-outcome
+\textbf{Model:} Expected time until next change of possession, conditional on action-outcome
+\[
+T(a, o) = \E[\text{seconds until next possession change} \mid \text{action} = a, \text{outcome} = o]
+\]
 
-\vspace{0.5cm}
+\vspace{0.3cm}
+\textbf{Estimation:} From 1999--2024 NFL play-by-play, we compute sample means:
+\[
+\hat{T}(a, o) = \frac{1}{n_{a,o}} \sum_{i: A_i = a, O_i = o} (\tau_i - \tau_i')
+\]
+where $\tau_i$ is time at decision and $\tau_i'$ is time at next change of possession
+
+\vspace{0.3cm}
 \begin{center}
-\begin{tabular}{lc}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Action + Outcome} & \textbf{Clock Burned} \\
+\textbf{Action + Outcome} & $\hat{T}$ \textbf{(seconds)} & \textbf{Intuition} \\
 \midrule
-Go + convert & $\sim$151 seconds \\
-Go + fail & $\sim$48 seconds \\
-Punt & $\sim$69 seconds \\
-FG make & $\sim$99 seconds \\
-FG miss & $\sim$48 seconds \\
+Go + convert & 151 & Retain possession, run more plays \\
+Go + fail & 48 & Opponent gets ball, runs their drive \\
+Punt & 69 & Opponent at worse field position \\
+FG make & 99 & Kickoff + opponent drive \\
+FG miss & 48 & Opponent at LOS (like failed conv.) \\
 \bottomrule
 \end{tabular}
 \end{center}
+\end{frame}
+
+\begin{frame}{Clock Model: Strategic Implications}
+\textbf{Key asymmetry:} Converting burns $\sim$3x more clock than failing (151s vs 48s)
 
 \vspace{0.5cm}
-\textbf{Implications:}
+\textbf{State transition:} After action $a$ with outcome $o$:
+\[
+\tau' = \max(0, \tau - T(a, o))
+\]
+
+\vspace{0.5cm}
+\textbf{Strategic implications:}
 \begin{itemize}
 \setlength\itemsep{0.5em}
-\item When leading: converting burns clock $\rightarrow$ protects lead
-\item When trailing: burning clock hurts $\rightarrow$ less time to catch up
-\item Model handles end-of-game scenarios naturally (no hard-coded filters)
+\item \textbf{When leading:} Converting burns clock $\rightarrow$ protects lead
+\item \textbf{When trailing:} Burning clock hurts $\rightarrow$ less time to catch up
+\item \textbf{Late-game switch:} With $<$2 min remaining, use immediate play time ($\sim$5s) instead---teams in hurry-up mode, not running full drives
 \end{itemize}
+
+\vspace{0.3cm}
+\begin{finding}
+Clock model handles end-of-game scenarios naturally\\
+(no hard-coded ``garbage time'' filters needed)
+\end{finding}
 \end{frame}
 
 \begin{frame}{Estimation: Expanding Window Analysis}
