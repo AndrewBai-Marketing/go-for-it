@@ -227,7 +227,7 @@ def find_most_controversial(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
     return controversial.nlargest(n, 'controversy_score')
 
 
-def find_worst_decisions(df: pd.DataFrame, n: int = 20, exclude_end_of_game: bool = True) -> pd.DataFrame:
+def find_worst_decisions(df: pd.DataFrame, n: int = 20, exclude_end_of_game: bool = False) -> pd.DataFrame:
     """
     Find the worst decisions of all time according to the model.
 
@@ -237,32 +237,39 @@ def find_worst_decisions(df: pd.DataFrame, n: int = 20, exclude_end_of_game: boo
         df: DataFrame with categorized decisions
         n: Number of worst decisions to return
         exclude_end_of_game: If True, exclude late-game situations where opponent
-                             can run out the clock (model limitation)
+                             can run out the clock. Default is now False because
+                             the clock-adjusted model properly accounts for
+                             asymmetric time consumption in end-of-game scenarios.
+
+    Note on Clock Model:
+    --------------------
+    With the clock-adjusted decision model (use_clock_model=True in
+    BayesianDecisionAnalyzer), the model now properly accounts for the
+    asymmetric clock consumption between different action-outcome pairs:
+
+    - Converting burns ~151s (retain possession, run more plays)
+    - Failing burns ~48s (opponent gets ball)
+    - Punting burns ~69s
+    - FG make burns ~99s
+
+    This means late-game situations are handled naturally:
+    - When trailing with little time, the model correctly values keeping
+      the ball (go for it) because burning clock hurts you.
+    - When leading, the model correctly values possession because burning
+      clock helps protect the lead.
+
+    The previous hard-coded filter is no longer necessary and would actually
+    hide interesting late-game decision analysis.
     """
     candidates = df[df['coach_wrong']].copy()
 
     if exclude_end_of_game:
-        # Exclude situations where the model's recommendation may be wrong
-        # because opponent can kneel out the clock.
-        #
-        # Key insight: If trailing and under ~2:30 remaining, giving up the ball
-        # to a leading opponent means they can kneel. The model doesn't account
-        # for this - it assumes opponent will try to score.
-        #
-        # Conservative filter: Exclude 4th quarter plays where:
-        # - Team is trailing (score_diff < 0)
-        # - Less than 150 seconds (2:30) remaining
-        # - Model recommends giving up the ball (punt or FG attempt)
-        #
-        # Also exclude cases where team went for it but model said FG/punt,
-        # since these involve the clock management issue in reverse.
-
+        # Legacy filter - kept for backward compatibility but disabled by default
+        # The clock model now handles this naturally
         end_of_game_mask = (
             (candidates['time_remaining'] < 150) &  # Under 2:30 left
             (candidates['score_diff'] < 0)  # Trailing
         )
-
-        # Remove these plays from consideration
         candidates = candidates[~end_of_game_mask]
 
     return candidates.nlargest(n, 'wp_cost')
