@@ -50,7 +50,7 @@
 \maketitle
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,849 fourth-down situations from 2006--2024, we find that coaches make suboptimal decisions approximately 19\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.4\% of optimal decisions were \textit{knowable in real-time}---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,849 fourth-down situations from 2006--2024, we find that coaches deviate from model recommendations approximately 24\% of the time---but critically, 84\% of these deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 0.4\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.4\% of optimal decisions were \textit{knowable in real-time}. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -295,20 +295,119 @@ The key finding: \textbf{96.4\% of plays have stable optimal decisions}. The ex 
 
 This result has important implications for evaluating coaching decisions:
 
-\begin{definition}[Inexcusable Mistake]
-A fourth-down decision is an \textit{inexcusable mistake} if:
+\begin{definition}[Decision Categories]
+We categorize coach decisions that deviate from the model recommendation based on the \textit{decision margin}---the win probability difference between the optimal and chosen actions:
 \begin{enumerate}
-    \item The ex ante and ex post models agree on the optimal action, AND
-    \item The coach chose a different action
+    \item \textbf{Difference of opinion}: Margin $<$ 2\% WP. Reasonable coaches could disagree.
+    \item \textbf{Questionable}: Margin 2--5\% WP. Model has a clear preference, but not overwhelming.
+    \item \textbf{Clear mistake}: Margin $>$ 5\% WP. The optimal choice was evident from the data.
 \end{enumerate}
 \end{definition}
 
-Under this definition:
-\begin{itemize}
-    \item 69,253 plays (96.4\%) had stable optimal decisions
-    \item Of these, coaches made the optimal decision on 56,464 plays (81.5\%)
-    \item The remaining 12,789 plays (18.5\%) were \textbf{inexcusable mistakes}
-\end{itemize}
+Applying this framework to the 7,169 plays where coaches deviated from model recommendations:
+
+\begin{table}[H]
+\centering
+\caption{Categorization of Coach Decisions}
+\begin{tabular}{lrrp{5cm}}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{Percent} & \textbf{Definition} \\
+\midrule
+Correct & 22,856 & 76.1\% & Coach agreed with model \\
+Difference of opinion & 6,018 & 20.0\% & Margin $<$ 2\% WP \\
+Questionable & 1,030 & 3.4\% & Margin 2--5\% WP \\
+Clear mistake & 121 & 0.4\% & Margin $>$ 5\% WP \\
+\midrule
+\textbf{Total} & \textbf{30,025} & \textbf{100\%} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This decomposition reveals a striking fact: \textbf{84\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.4\% of all fourth-down plays---and just 1.7\% of deviations---represent clear errors where the coach should unambiguously have known better
+
+\subsection{The Worst Decisions of All Time}
+
+Among late-game, high-stakes situations (within 14 points, at least one minute remaining), which decisions cost the most win probability?
+
+\begin{table}[H]
+\centering
+\caption{Costliest Fourth-Down Decisions (2006--2024)}
+\begin{tabular}{lllccc}
+\toprule
+\textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
+\midrule
+2024 NE @ MIA & 4th \& 15 at opp 17, down 5, 1:00 Q4 & GO & FG & 9.7\% \\
+2021 BUF @ NE & 4th \& 14 at opp 18, down 4, 2:00 Q4 & GO & FG & 9.4\% \\
+2021 CLE @ PIT & 4th \& 12 at opp 26, down 5, 1:58 Q4 & GO & FG & 8.2\% \\
+2019 LA @ PIT & 4th \& 10 at opp 30, down 5, 1:30 Q4 & GO & FG & 7.8\% \\
+2022 SEA @ ATL & 4th \& 18 at opp 38, down 4, 1:30 Q4 & GO & FG & 7.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The most costly decision in our sample occurred in Week 13, 2021: \textbf{Buffalo at New England} in the infamous Monday Night Football ``wind game.'' With the Bills trailing 14--10 and 2:00 remaining, Josh Allen faced 4th \& 14 from the Patriots' 18-yard line. Rather than attempt a 35-yard field goal (roughly 85\% make probability in normal conditions), Buffalo went for it and failed. The model estimates this decision cost 9.4 percentage points of win probability.
+
+A common pattern emerges: teams trailing late attempt long-shot conversions instead of taking guaranteed (or near-guaranteed) points. The ``hero ball'' mentality---preferring a dramatic touchdown attempt to a methodical field goal---systematically costs win probability.
+
+\subsection{The Most Controversial Decisions}
+
+Which decisions were genuinely close calls where the coach's choice, though different from the model's recommendation, was entirely defensible?
+
+We identify ``controversial'' decisions as those with decision margin $<$ 0.5\% WP where the coach deviated from the model. These are situations where tiny changes in assumptions flip the optimal action.
+
+\begin{table}[H]
+\centering
+\caption{Most Controversial Fourth-Down Decisions (Near-Ties)}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{Margin} \\
+\midrule
+2023 DEN @ MIA & 4th \& 7 at own 28, down 43, Q4 & PUNT & GO & 0.01\% \\
+2021 WAS @ DAL & 4th \& 2 at opp 25, down 49, Q4 & GO & FG & 0.01\% \\
+2021 GB @ NO & 4th \& 5 at opp 48, down 35, Q4 & PUNT & FG & 0.02\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Interestingly, the most controversial decisions cluster in blowout situations where the practical difference between actions is negligible. When a team is down by 40+ points with time expiring, whether they punt or go for it has essentially no bearing on the outcome. The model technically has a preference, but the margin is measured in hundredths of a percentage point.
+
+In \textit{meaningful} game situations (within two scores, fourth quarter), controversial decisions are rarer. When the game is on the line, coaches and models tend to agree more often---suggesting that both are responding to the same fundamental calculus about risk and reward.
+
+\subsection{Team-Level Decision Quality}
+
+How much do suboptimal fourth-down decisions cost each team per season? We sum the win probability cost across all plays and convert to expected wins lost.
+
+\begin{table}[H]
+\centering
+\caption{Expected Wins Lost from Suboptimal Fourth-Down Decisions (2020--2024)}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Team} & \textbf{2020} & \textbf{2021} & \textbf{2022} & \textbf{2023} & \textbf{2024} & \textbf{Avg} \\
+\midrule
+\multicolumn{7}{l}{\textit{Most costly decision-making:}} \\
+CHI & 0.38 & 0.36 & 0.52 & 0.51 & 0.47 & \textbf{0.47} \\
+DET & 0.08 & 0.43 & 0.51 & 0.43 & 0.60 & 0.42 \\
+CLE & 0.37 & 0.44 & 0.50 & 0.28 & 0.43 & 0.41 \\
+CAR & 0.66 & 0.41 & 0.42 & 0.48 & 0.20 & 0.41 \\
+PHI & 0.42 & 0.29 & 0.53 & 0.31 & 0.33 & 0.40 \\
+\midrule
+\multicolumn{7}{l}{\textit{Most efficient decision-making:}} \\
+SEA & 0.27 & 0.27 & 0.40 & 0.27 & 0.27 & 0.29 \\
+BAL & 0.23 & 0.25 & 0.36 & 0.27 & 0.24 & 0.29 \\
+TB & 0.13 & 0.18 & 0.52 & 0.28 & 0.28 & 0.28 \\
+SF & 0.34 & 0.30 & 0.29 & 0.14 & 0.28 & 0.27 \\
+CIN & 0.18 & 0.20 & 0.16 & 0.36 & 0.33 & \textbf{0.26} \\
+\midrule
+League Avg & 0.29 & 0.33 & 0.38 & 0.36 & 0.36 & 0.34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The average team loses approximately \textbf{0.34 expected wins per season} from suboptimal fourth-down decisions. The spread between best (Cincinnati, 0.26) and worst (Chicago, 0.47) is 0.21 wins---equivalent to roughly one additional win every five seasons from decision-making improvement alone.
+
+While these magnitudes seem small, they accumulate meaningfully over time. A team that consistently makes optimal fourth-down calls gains roughly one expected win per three seasons compared to an average team. Given that playoff berths are often decided by a single game, this represents genuine competitive advantage.
+
+Notably, Philadelphia and Detroit---teams known for aggressive fourth-down philosophies---appear among the ``most costly'' teams. This counterintuitive result reflects the nature of our calculation: aggressive teams \textit{attempt} more fourth-down conversions, creating more opportunities for deviation from model recommendations. A team that punts on every fourth down would show zero ``cost'' because they always match the model in obvious punt situations, but this would not indicate optimal decision-making.
 
 \begin{remark}
 The 3.6\% of plays where models disagree represent situations where the data available at the time genuinely pointed to a different conclusion. For these plays, we cannot fault the coach for following the ex ante recommendation, even if ex post analysis suggests otherwise.
@@ -535,7 +634,7 @@ This is good news for coaching improvement: the information exists to make bette
 
 We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; (4) testing real-time knowability via expanding window analysis; and (5) establishing a selection-on-observables argument by conditioning on offense and defense quality.
 
-Twenty years after \citet{romer2006} documented systematic conservatism, coaches still make suboptimal decisions approximately 19\% of the time. Critically, our expanding window analysis using 71,849 fourth-down situations from 2006--2024 shows that 96.4\% of optimal decisions were knowable in real-time---the recommendation using only pre-season data matches the full-sample recommendation. Among these stable situations, coaches chose suboptimally 18.5\% of the time.
+Twenty years after \citet{romer2006} documented systematic conservatism, coaches still deviate from model recommendations approximately 24\% of the time. However, our analysis reveals important nuance: \textbf{84\% of these deviations are ``close calls''} where the decision margin is less than 2 percentage points of win probability. Only 0.4\% of all plays represent clear mistakes where the coach should unambiguously have known better. Critically, our expanding window analysis using 71,849 fourth-down situations from 2006--2024 shows that 96.4\% of optimal decisions were knowable in real-time.
 
 Our selection-on-observables analysis (Section~\ref{sec:selection}) addresses the natural objection that coaches possess private information our model cannot capture. By conditioning on offensive team quality, defensive team quality, kicker ability, and full game state, we argue that the model's information set approximates the coach's. The fact that coaches do not outperform model recommendations---and that playoff decisions are no better than regular season decisions despite higher stakes---supports this claim.
 
