@@ -303,47 +303,8 @@ T(a, o) = \E[\text{seconds until next possession change} \mid \text{action} = a,
 \hat{T}(a, o) = \frac{1}{n_{a,o}} \sum_{i: A_i = a, O_i = o} (\tau_i - \tau_i')
 \]
 where $\tau_i$ is time at decision and $\tau_i'$ is time at next change of possession
-
-\vspace{0.3cm}
-\begin{center}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Action + Outcome} & $\hat{T}$ \textbf{(seconds)} & \textbf{Intuition} \\
-\midrule
-Go + convert & 151 & Retain possession, run more plays \\
-Go + fail & 48 & Opponent gets ball, runs their drive \\
-Punt & 69 & Opponent at worse field position \\
-FG make & 99 & Kickoff + opponent drive \\
-FG miss & 48 & Opponent at LOS (like failed conv.) \\
-\bottomrule
-\end{tabular}
-\end{center}
 \end{frame}
 
-\begin{frame}{Clock Model: Strategic Implications}
-\textbf{Key asymmetry:} Converting burns $\sim$3x more clock than failing (151s vs 48s)
-
-\vspace{0.5cm}
-\textbf{State transition:} After action $a$ with outcome $o$:
-\[
-\tau' = \max(0, \tau - T(a, o))
-\]
-
-\vspace{0.5cm}
-\textbf{Strategic implications:}
-\begin{itemize}
-\setlength\itemsep{0.5em}
-\item \textbf{When leading:} Converting burns clock $\rightarrow$ protects lead
-\item \textbf{When trailing:} Burning clock hurts $\rightarrow$ less time to catch up
-\item \textbf{Late-game switch:} With $<$2 min remaining, use immediate play time ($\sim$5s) instead---teams in hurry-up mode, not running full drives
-\end{itemize}
-
-\vspace{0.3cm}
-\begin{finding}
-Clock model handles end-of-game scenarios naturally\\
-(no hard-coded ``garbage time'' filters needed)
-\end{finding}
-\end{frame}
 
 \begin{frame}{Estimation: Expanding Window Analysis}
 \textbf{Challenge:} Can we claim coaches ``should have known better''?
