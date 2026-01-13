@@ -277,36 +277,38 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 \begin{table}[H]
 \centering
 \caption{Expanding Window Analysis: Ex Ante vs. Ex Post Model Agreement (2006--2024)}
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-\textbf{Season} & \textbf{N Plays} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
+\textbf{Season} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
 \midrule
-2006 & 3,829 & 82.0\% & 78.5\% & 93.5\% \\
-2007 & 3,758 & 77.5\% & 77.3\% & 95.5\% \\
-2008 & 3,674 & 80.3\% & 78.7\% & 95.5\% \\
-2009 & 3,849 & 78.8\% & 78.1\% & 96.3\% \\
-2010 & 3,840 & 82.4\% & 79.2\% & 94.6\% \\
-2011 & 3,845 & 82.2\% & 81.1\% & 95.1\% \\
-2012 & 3,820 & 82.6\% & 80.3\% & 96.4\% \\
-2013 & 3,904 & 83.1\% & 81.2\% & 96.9\% \\
-2014 & 3,740 & 80.1\% & 80.2\% & 96.1\% \\
-2015 & 3,824 & 79.5\% & 80.7\% & 96.8\% \\
-2016 & 3,703 & 82.1\% & 80.9\% & 97.7\% \\
-2017 & 3,869 & 82.6\% & 81.2\% & 98.3\% \\
-2018 & 3,574 & 81.4\% & 81.5\% & 97.0\% \\
-2019 & 3,634 & 79.9\% & 80.0\% & 98.8\% \\
-2020 & 3,402 & 80.5\% & 79.9\% & 97.3\% \\
-2021 & 3,777 & 79.0\% & 78.8\% & 95.7\% \\
-2022 & 3,870 & 78.9\% & 78.4\% & 96.9\% \\
-2023 & 4,047 & 77.9\% & 78.7\% & 96.5\% \\
-2024 & 3,827 & 78.9\% & 79.0\% & 97.9\% \\
+2006 & 3,829 & 12.1\% & 82.0\% & 78.5\% & 93.5\% \\
+2007 & 3,758 & 14.1\% & 77.5\% & 77.3\% & 95.5\% \\
+2008 & 3,674 & 13.2\% & 80.3\% & 78.7\% & 95.5\% \\
+2009 & 3,849 & 14.4\% & 78.8\% & 78.1\% & 96.3\% \\
+2010 & 3,840 & 12.5\% & 82.4\% & 79.2\% & 94.6\% \\
+2011 & 3,845 & 11.1\% & 82.2\% & 81.1\% & 95.1\% \\
+2012 & 3,820 & 11.6\% & 82.6\% & 80.3\% & 96.4\% \\
+2013 & 3,904 & 11.9\% & 83.1\% & 81.2\% & 96.9\% \\
+2014 & 3,740 & 12.0\% & 80.1\% & 80.2\% & 96.1\% \\
+2015 & 3,824 & 12.4\% & 79.5\% & 80.7\% & 96.8\% \\
+2016 & 3,703 & 12.8\% & 82.1\% & 80.9\% & 97.7\% \\
+2017 & 3,869 & 12.4\% & 82.6\% & 81.2\% & 98.3\% \\
+2018 & 3,574 & 14.9\% & 81.4\% & 81.5\% & 97.0\% \\
+2019 & 3,634 & 16.3\% & 79.9\% & 80.0\% & 98.8\% \\
+2020 & 3,402 & 19.3\% & 80.5\% & 79.9\% & 97.3\% \\
+2021 & 3,777 & 20.9\% & 79.0\% & 78.8\% & 95.7\% \\
+2022 & 3,870 & 18.9\% & 78.9\% & 78.4\% & 96.9\% \\
+2023 & 4,047 & 19.6\% & 77.9\% & 78.7\% & 96.5\% \\
+2024 & 3,827 & 20.0\% & 78.9\% & 79.0\% & 97.9\% \\
 \midrule
-\textbf{Overall} & \textbf{71,786} & \textbf{80.5\%} & \textbf{79.7\%} & \textbf{96.5\%} \\
+\textbf{Overall} & \textbf{71,786} & \textbf{15.3\%} & \textbf{80.5\%} & \textbf{79.7\%} & \textbf{96.5\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The key finding: \textbf{96.5\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
+
+Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained flat at approximately 80\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}.
 
 \subsection{Implications for Coach Evaluation}
 
