@@ -1,7 +1,0 @@
-LEARNING ANALYSIS: HAS MLB SALARY MARKET BECOME MORE EFFICIENT?
-============================================================
-
-R-squared trend: 0.001941/year (p=0.0000)
-RMSE trend: -0.005029/year (p=0.0000)
-
-Conclusion: Market efficiency is improving
