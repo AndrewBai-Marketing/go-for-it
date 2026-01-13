@@ -55,7 +55,7 @@ class GameState:
         self.off_team = value
 
 
-# Clock consumption constants (empirically derived from NFL data)
+# Clock consumption constants (fallback when Bayesian model not available)
 # These represent mean time until next change of possession for each action-outcome
 CLOCK_CONSUMPTION = {
     'go_convert': 151,    # Go for it + convert: retain possession, run more plays
@@ -64,6 +64,13 @@ CLOCK_CONSUMPTION = {
     'fg_make': 99,        # FG make: kickoff + opponent drive
     'fg_miss': 48,        # FG miss: opponent gets ball at LOS, similar to failed conversion
 }
+
+# Try to import ClockConsumptionModel
+try:
+    from models.bayesian_models import ClockConsumptionModel
+    HAS_CLOCK_MODEL = True
+except ImportError:
+    HAS_CLOCK_MODEL = False
 
 # Threshold for "end of game" - when time remaining is below this,
 # we use immediate play time rather than full drive time.
@@ -147,10 +154,10 @@ class BayesianDecisionAnalyzer:
 
         Args:
             models: Dict with 'conversion', 'punt', 'fg', 'wp' model objects
-            use_clock_model: If True, use empirically-derived clock consumption
-                            values for each action-outcome pair. This properly
-                            accounts for time burned by subsequent drives and
-                            is essential for late-game decision accuracy.
+                   Optionally includes 'clock' for Bayesian clock model
+            use_clock_model: If True, use clock consumption model for time dynamics.
+                            This properly accounts for time burned by subsequent drives
+                            and is essential for late-game decision accuracy.
         """
         self.conversion = models['conversion']
         self.punt = models['punt']
@@ -158,6 +165,14 @@ class BayesianDecisionAnalyzer:
         self.wp = models['wp']
         self.n_samples = self.wp.n_samples
         self.use_clock_model = use_clock_model
+
+        # Check for Bayesian clock model
+        if 'clock' in models and models['clock'] is not None:
+            self.clock = models['clock']
+            self.has_bayesian_clock = True
+        else:
+            self.clock = None
+            self.has_bayesian_clock = False
 
         # Check if we have hierarchical models
         self.has_team_effects = isinstance(self.conversion, HierarchicalConversionModel)
@@ -167,14 +182,43 @@ class BayesianDecisionAnalyzer:
         self.has_off_def_effects = (HAS_OFF_DEF_MODEL and
                                      isinstance(self.conversion, HierarchicalOffDefConversionModel))
 
+    def _get_clock_consumption(self, category: str, posterior_idx: int = None) -> float:
+        """
+        Get clock consumption for a given action-outcome category.
+
+        If Bayesian clock model is available, draws from posterior.
+        Otherwise uses fixed constants.
+
+        Args:
+            category: One of 'go_convert', 'go_fail', 'punt', 'fg_make', 'fg_miss'
+            posterior_idx: If specified, return specific posterior sample
+        """
+        if self.has_bayesian_clock and self.clock is not None:
+            return self.clock.get_time_consumed(category, posterior_idx)
+        else:
+            return CLOCK_CONSUMPTION[category]
+
+    def _get_clock_consumption_samples(self, category: str) -> np.ndarray:
+        """
+        Get all posterior samples for clock consumption in given category.
+
+        If Bayesian clock model is available, returns posterior samples.
+        Otherwise returns array of constant values.
+        """
+        if self.has_bayesian_clock and self.clock is not None:
+            return self.clock.get_posterior_samples(category)
+        else:
+            return np.full(self.n_samples, CLOCK_CONSUMPTION[category])
+
     def _state_after_conversion(self, state: GameState, yards_gained: int = None,
-                                  use_clock_model: bool = True) -> Tuple[int, int]:
+                                  use_clock_model: bool = True,
+                                  posterior_idx: int = None) -> Tuple[int, int]:
         """
         Return (new_field_pos, time_remaining) after successful conversion.
         Assumes average gain of yards_to_go + 2 if not specified.
 
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        model which accounts for the full time until next change of possession.
+        If use_clock_model=True, uses the Bayesian clock consumption model
+        which accounts for the full time until next change of possession.
 
         For end-of-game scenarios (under 2 minutes), uses immediate play time
         instead of full drive time, as teams are in hurry-up mode.
@@ -186,7 +230,7 @@ class BayesianDecisionAnalyzer:
 
         if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
             # Mid-game: account for full drive time after conversion
-            time_consumed = CLOCK_CONSUMPTION['go_convert']
+            time_consumed = self._get_clock_consumption('go_convert', posterior_idx)
         else:
             # End-of-game or legacy mode: just the immediate play time
             time_consumed = IMMEDIATE_PLAY_TIME['go']
@@ -195,12 +239,13 @@ class BayesianDecisionAnalyzer:
         return new_field_pos, new_time
 
     def _state_after_failed_conversion(self, state: GameState,
-                                        use_clock_model: bool = True) -> Tuple[int, int]:
+                                        use_clock_model: bool = True,
+                                        posterior_idx: int = None) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after failed conversion.
         Opponent gets ball at spot of failed attempt.
 
-        If use_clock_model=True, uses the empirically-derived clock consumption
+        If use_clock_model=True, uses the Bayesian clock consumption model
         which accounts for the opponent's subsequent drive time.
 
         For end-of-game scenarios (under 2 minutes), uses immediate play time.
@@ -210,7 +255,7 @@ class BayesianDecisionAnalyzer:
 
         if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
             # Mid-game: account for opponent's drive time
-            time_consumed = CLOCK_CONSUMPTION['go_fail']
+            time_consumed = self._get_clock_consumption('go_fail', posterior_idx)
         else:
             # End-of-game or legacy mode: just the immediate play time
             time_consumed = IMMEDIATE_PLAY_TIME['go']
@@ -219,11 +264,12 @@ class BayesianDecisionAnalyzer:
         return opp_field_pos, new_time
 
     def _state_after_punt(self, state: GameState, net_yards: float,
-                          use_clock_model: bool = True) -> Tuple[int, int]:
+                          use_clock_model: bool = True,
+                          posterior_idx: int = None) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after punt.
 
-        If use_clock_model=True, uses the empirically-derived clock consumption
+        If use_clock_model=True, uses the Bayesian clock consumption model
         which accounts for the opponent's subsequent drive time.
 
         For end-of-game scenarios (under 2 minutes), uses immediate play time.
@@ -240,7 +286,7 @@ class BayesianDecisionAnalyzer:
 
         if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
             # Mid-game: account for opponent's drive time
-            time_consumed = CLOCK_CONSUMPTION['punt']
+            time_consumed = self._get_clock_consumption('punt', posterior_idx)
         else:
             # End-of-game or legacy mode: just the punt play time
             time_consumed = IMMEDIATE_PLAY_TIME['punt']
@@ -249,12 +295,13 @@ class BayesianDecisionAnalyzer:
         return opp_field_pos, new_time
 
     def _state_after_fg_make(self, state: GameState,
-                              use_clock_model: bool = True) -> Tuple[int, int, int]:
+                              use_clock_model: bool = True,
+                              posterior_idx: int = None) -> Tuple[int, int, int]:
         """
         Return (opponent's field_pos, time_remaining, new_score_diff) after made FG.
         Opponent gets ball at ~25 after kickoff.
 
-        If use_clock_model=True, uses the empirically-derived clock consumption
+        If use_clock_model=True, uses the Bayesian clock consumption model
         which accounts for the kickoff + opponent's subsequent drive time.
 
         For end-of-game scenarios (under 2 minutes), uses immediate play time.
@@ -264,7 +311,7 @@ class BayesianDecisionAnalyzer:
 
         if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
             # Mid-game: FG attempt + kickoff + opponent drive
-            time_consumed = CLOCK_CONSUMPTION['fg_make']
+            time_consumed = self._get_clock_consumption('fg_make', posterior_idx)
         else:
             # End-of-game or legacy mode: just the FG play time
             time_consumed = IMMEDIATE_PLAY_TIME['fg']
@@ -273,12 +320,13 @@ class BayesianDecisionAnalyzer:
         return opp_field_pos, new_time, new_score_diff
 
     def _state_after_fg_miss(self, state: GameState,
-                              use_clock_model: bool = True) -> Tuple[int, int]:
+                              use_clock_model: bool = True,
+                              posterior_idx: int = None) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after missed FG.
         Opponent gets ball at LOS or their 20, whichever is better for them.
 
-        If use_clock_model=True, uses the empirically-derived clock consumption
+        If use_clock_model=True, uses the Bayesian clock consumption model
         which accounts for the opponent's subsequent drive time.
 
         For end-of-game scenarios (under 2 minutes), uses immediate play time.
@@ -288,7 +336,7 @@ class BayesianDecisionAnalyzer:
 
         if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
             # Mid-game: opponent drive time (similar to failed conversion)
-            time_consumed = CLOCK_CONSUMPTION['fg_miss']
+            time_consumed = self._get_clock_consumption('fg_miss', posterior_idx)
         else:
             # End-of-game or legacy mode: just the FG play time
             time_consumed = IMMEDIATE_PLAY_TIME['fg']

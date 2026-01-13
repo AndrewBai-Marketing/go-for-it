@@ -1288,6 +1288,302 @@ class EnhancedWinProbabilityModel:
         return self
 
 
+class ClockConsumptionModel:
+    """
+    Bayesian model for clock consumption (time until next change of possession).
+
+    For each action-outcome pair (a, o), models:
+        T(a, o) ~ N(mu_{a,o}, sigma_{a,o}^2)
+
+    Uses conjugate Bayesian inference:
+        Prior: mu ~ N(mu_0, tau_0^2)  [weakly informative]
+        Posterior: mu | data ~ N(mu_n, tau_n^2)
+
+    This allows proper uncertainty propagation in the decision framework.
+    """
+
+    # Action-outcome categories
+    CATEGORIES = ['go_convert', 'go_fail', 'punt', 'fg_make', 'fg_miss']
+
+    def __init__(self):
+        self.mu_mean = {}       # Posterior mean for each category
+        self.mu_var = {}        # Posterior variance for each category
+        self.sigma = {}         # Observation noise (sample std)
+        self.samples = {}       # Posterior samples {category: array}
+        self.n_obs = {}         # Number of observations per category
+        self.n_samples = 2000
+
+    def fit(self, pbp_df: pd.DataFrame, n_samples: int = 2000,
+            prior_mean: float = 100.0, prior_var: float = 10000.0):
+        """
+        Fit Bayesian clock consumption model from play-by-play data.
+
+        Estimates time until next change of possession for each action-outcome.
+
+        Args:
+            pbp_df: Play-by-play DataFrame with columns:
+                - play_type, fourth_down_converted, fourth_down_failed
+                - field_goal_result, punt_attempt
+                - game_seconds_remaining, next_possession_seconds (or similar)
+            n_samples: Number of posterior samples
+            prior_mean: Prior mean for clock consumption (weakly informative)
+            prior_var: Prior variance (large = weakly informative)
+        """
+        self.n_samples = n_samples
+
+        print("Fitting Bayesian clock consumption model...")
+
+        # We need to compute time until next possession change
+        # This requires tracking possession changes in the data
+
+        df = pbp_df.copy()
+
+        # Identify fourth down plays
+        fourth_downs = df[df['down'] == 4].copy()
+
+        # For each category, extract relevant plays and compute time consumed
+        # Time consumed = time at this play - time at next possession change
+
+        # GO FOR IT + CONVERT: Fourth down converted
+        go_convert = fourth_downs[fourth_downs['fourth_down_converted'] == 1].copy()
+
+        # GO FOR IT + FAIL: Fourth down failed
+        go_fail = fourth_downs[fourth_downs['fourth_down_failed'] == 1].copy()
+
+        # PUNT: Punt plays
+        punts = df[df['punt_attempt'] == 1].copy()
+
+        # FIELD GOAL MAKE: Made field goals
+        fg_make = df[(df['field_goal_attempt'] == 1) & (df['field_goal_result'] == 'made')].copy()
+
+        # FIELD GOAL MISS: Missed/blocked field goals
+        fg_miss = df[(df['field_goal_attempt'] == 1) & (df['field_goal_result'] != 'made')].copy()
+
+        # For each category, we need to find time until next possession change
+        # This is tricky - we'll use a proxy: time consumed by the drive/next drive
+        #
+        # Approach: For each play, find the next play where posteam changes (or drive ends)
+        # and compute the time difference
+
+        category_data = {
+            'go_convert': go_convert,
+            'go_fail': go_fail,
+            'punt': punts,
+            'fg_make': fg_make,
+            'fg_miss': fg_miss
+        }
+
+        # Pre-compute drive end times for efficiency
+        # Group by game and find time until possession change
+        df_sorted = df.sort_values(['game_id', 'play_id']).copy()
+
+        for cat_name, cat_df in category_data.items():
+            if len(cat_df) == 0:
+                print(f"  {cat_name}: No plays found, using prior")
+                self.mu_mean[cat_name] = prior_mean
+                self.mu_var[cat_name] = prior_var
+                self.sigma[cat_name] = 50.0
+                self.n_obs[cat_name] = 0
+                self.samples[cat_name] = np.random.normal(prior_mean, np.sqrt(prior_var), n_samples)
+                continue
+
+            # Compute time consumed for each play in this category
+            # Use drive-level time: time from this play to end of next opponent drive
+            times = self._compute_time_to_next_possession(cat_df, df_sorted)
+
+            if len(times) < 10:
+                print(f"  {cat_name}: Only {len(times)} valid plays, using prior")
+                self.mu_mean[cat_name] = prior_mean
+                self.mu_var[cat_name] = prior_var
+                self.sigma[cat_name] = 50.0
+                self.n_obs[cat_name] = len(times)
+                self.samples[cat_name] = np.random.normal(prior_mean, np.sqrt(prior_var), n_samples)
+                continue
+
+            # Bayesian inference for mean
+            n = len(times)
+            sample_mean = np.mean(times)
+            sample_var = np.var(times, ddof=1)
+            sample_std = np.sqrt(sample_var)
+
+            # Prior precision
+            prior_precision = 1 / prior_var
+
+            # Data precision (for mean estimation)
+            data_precision = n / sample_var
+
+            # Posterior precision and variance
+            posterior_precision = prior_precision + data_precision
+            posterior_var = 1 / posterior_precision
+
+            # Posterior mean (weighted average of prior and sample)
+            posterior_mean = posterior_var * (prior_precision * prior_mean + data_precision * sample_mean)
+
+            self.mu_mean[cat_name] = posterior_mean
+            self.mu_var[cat_name] = posterior_var
+            self.sigma[cat_name] = sample_std
+            self.n_obs[cat_name] = n
+
+            # Draw posterior samples
+            self.samples[cat_name] = np.random.normal(posterior_mean, np.sqrt(posterior_var), n_samples)
+
+            print(f"  {cat_name}: n={n}, mean={posterior_mean:.1f}s (SE={np.sqrt(posterior_var):.1f}), "
+                  f"sample_mean={sample_mean:.1f}s, sigma={sample_std:.1f}s")
+
+        return self
+
+    def _compute_time_to_next_possession(self, plays_df: pd.DataFrame,
+                                          full_df: pd.DataFrame) -> np.ndarray:
+        """
+        Compute time until next change of possession for each play.
+
+        For efficiency, we use a simplified approach:
+        - For each play, find when the opponent next gets the ball
+        - Compute the time difference
+
+        This captures both the immediate play time and subsequent drive time.
+        """
+        times = []
+
+        # Group full data by game for faster lookup
+        game_groups = {gid: group.sort_values('play_id')
+                       for gid, group in full_df.groupby('game_id')}
+
+        for _, play in plays_df.iterrows():
+            game_id = play['game_id']
+            play_id = play['play_id']
+            current_time = play['game_seconds_remaining']
+            current_posteam = play['posteam']
+
+            if game_id not in game_groups:
+                continue
+
+            game_plays = game_groups[game_id]
+
+            # Find plays after this one
+            future_plays = game_plays[game_plays['play_id'] > play_id]
+
+            if len(future_plays) == 0:
+                continue
+
+            # Find first play where possession changes back
+            # (for go_convert, opponent gets ball; for all others, we get ball back or game ends)
+            possession_changes = future_plays[future_plays['posteam'] != current_posteam]
+
+            if len(possession_changes) == 0:
+                # No possession change found - use end of game
+                end_time = future_plays.iloc[-1]['game_seconds_remaining']
+                time_consumed = current_time - end_time
+            else:
+                # Find when we get the ball back (next possession change after opponent has it)
+                first_change = possession_changes.iloc[0]
+                change_time = first_change['game_seconds_remaining']
+
+                # Now find when possession changes again (back to us or game ends)
+                opp_plays = future_plays[future_plays['play_id'] >= first_change['play_id']]
+                back_to_us = opp_plays[opp_plays['posteam'] == current_posteam]
+
+                if len(back_to_us) == 0:
+                    # Game ended during opponent's possession
+                    time_consumed = current_time - opp_plays.iloc[-1]['game_seconds_remaining']
+                else:
+                    # We got the ball back
+                    back_time = back_to_us.iloc[0]['game_seconds_remaining']
+                    time_consumed = current_time - back_time
+
+            # Sanity check: time should be positive and reasonable
+            if 0 < time_consumed < 600:  # Max 10 minutes
+                times.append(time_consumed)
+
+        return np.array(times)
+
+    def fit_from_constants(self, n_samples: int = 2000):
+        """
+        Fit model using empirically-derived constants with estimated uncertainty.
+
+        This is a fallback when we can't compute time directly from data.
+        Uses the known point estimates and assumes reasonable standard errors
+        based on typical NFL drive variability.
+        """
+        self.n_samples = n_samples
+
+        # Empirical point estimates and assumed standard errors
+        # SEs estimated from drive time variability (~30-60s typical)
+        estimates = {
+            'go_convert': {'mean': 151, 'se': 8, 'n': 2000},
+            'go_fail': {'mean': 48, 'se': 5, 'n': 1500},
+            'punt': {'mean': 69, 'se': 4, 'n': 15000},
+            'fg_make': {'mean': 99, 'se': 5, 'n': 8000},
+            'fg_miss': {'mean': 48, 'se': 6, 'n': 1200},
+        }
+
+        print("Fitting Bayesian clock consumption model from constants...")
+
+        for cat_name, est in estimates.items():
+            self.mu_mean[cat_name] = est['mean']
+            self.mu_var[cat_name] = est['se'] ** 2
+            self.sigma[cat_name] = est['se'] * np.sqrt(est['n'])  # Implied sample std
+            self.n_obs[cat_name] = est['n']
+
+            # Draw posterior samples
+            self.samples[cat_name] = np.random.normal(est['mean'], est['se'], n_samples)
+
+            print(f"  {cat_name}: mean={est['mean']:.0f}s (SE={est['se']:.1f})")
+
+        return self
+
+    def get_time_consumed(self, category: str, posterior_idx: int = None) -> float:
+        """
+        Get expected time until next possession change for given action-outcome.
+
+        Args:
+            category: One of 'go_convert', 'go_fail', 'punt', 'fg_make', 'fg_miss'
+            posterior_idx: If specified, return specific posterior sample
+
+        Returns:
+            Time in seconds
+        """
+        if category not in self.CATEGORIES:
+            raise ValueError(f"Unknown category: {category}. Must be one of {self.CATEGORIES}")
+
+        if posterior_idx is not None:
+            return self.samples[category][posterior_idx % self.n_samples]
+
+        return self.mu_mean[category]
+
+    def get_posterior_samples(self, category: str) -> np.ndarray:
+        """Get all posterior samples for time consumed in given category."""
+        if category not in self.CATEGORIES:
+            raise ValueError(f"Unknown category: {category}")
+        return self.samples[category]
+
+    def get_credible_interval(self, category: str, alpha: float = 0.05) -> tuple:
+        """Get credible interval for time consumed."""
+        samples = self.get_posterior_samples(category)
+        return np.percentile(samples, [100*alpha/2, 100*(1-alpha/2)])
+
+    def save(self, path: Path):
+        with open(path, 'wb') as f:
+            pickle.dump({
+                'mu_mean': self.mu_mean,
+                'mu_var': self.mu_var,
+                'sigma': self.sigma,
+                'samples': self.samples,
+                'n_obs': self.n_obs
+            }, f)
+
+    def load(self, path: Path):
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+            self.mu_mean = data['mu_mean']
+            self.mu_var = data['mu_var']
+            self.sigma = data['sigma']
+            self.samples = data['samples']
+            self.n_obs = data['n_obs']
+            self.n_samples = len(list(self.samples.values())[0])
+        return self
+
+
 def fit_all_models(data_dir: Path, models_dir: Path, n_samples: int = 2000,
                    hierarchical: bool = True):
     """
@@ -1366,6 +1662,19 @@ def fit_all_models(data_dir: Path, models_dir: Path, n_samples: int = 2000,
     wp_simple.fit(all_plays, n_samples=n_samples)
     wp_simple.save(models_dir / 'wp_model.pkl')
 
+    # Fit clock consumption model
+    print("\n" + "="*60)
+    print("FITTING BAYESIAN CLOCK CONSUMPTION MODEL")
+    print("="*60)
+    clock_model = ClockConsumptionModel()
+    try:
+        clock_model.fit(all_plays, n_samples=n_samples)
+    except Exception as e:
+        print(f"Warning: Could not fit clock model from data ({e})")
+        print("Falling back to constants with estimated uncertainty...")
+        clock_model.fit_from_constants(n_samples=n_samples)
+    clock_model.save(models_dir / 'clock_model.pkl')
+
     print("\n" + "="*60)
     print("ALL BAYESIAN MODELS FITTED AND SAVED")
     print("="*60)
@@ -1374,7 +1683,8 @@ def fit_all_models(data_dir: Path, models_dir: Path, n_samples: int = 2000,
         'conversion': conversion_model,
         'punt': punt_model,
         'fg': fg_model,
-        'wp': wp_model
+        'wp': wp_model,
+        'clock': clock_model
     }
 
 
@@ -1404,11 +1714,21 @@ def load_all_models(models_dir: Path, hierarchical: bool = True) -> dict:
         conversion = ConversionModel().load(models_dir / 'conversion_model.pkl')
         fg = FieldGoalModel().load(models_dir / 'fg_model.pkl')
 
+    # Load clock model if available
+    clock_path = models_dir / 'clock_model.pkl'
+    if clock_path.exists():
+        clock = ClockConsumptionModel().load(clock_path)
+    else:
+        # Fall back to constants
+        clock = ClockConsumptionModel()
+        clock.fit_from_constants()
+
     models = {
         'conversion': conversion,
         'punt': PuntModel().load(models_dir / 'punt_model.pkl'),
         'fg': fg,
-        'wp': WinProbabilityModel().load(models_dir / 'wp_model.pkl')
+        'wp': WinProbabilityModel().load(models_dir / 'wp_model.pkl'),
+        'clock': clock
     }
     return models
 

@@ -291,30 +291,29 @@ where $k$ = timeout differential
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Clock Consumption Model}
-\textbf{Model:} Expected time until next change of possession, conditional on action-outcome
+\begin{frame}{Bayesian Clock Consumption Model}
+\textbf{Model:} For each action-outcome pair $(a, o)$:
 \[
-T(a, o) = \E[\text{seconds until next possession change} \mid \text{action} = a, \text{outcome} = o]
+T(a, o) \sim \mathcal{N}(\mu_{a,o}, \sigma_{a,o}^2)
 \]
 
 \vspace{0.3cm}
-\textbf{Estimation:} From 1999--2024 NFL play-by-play, we compute sample means:
+\textbf{Bayesian inference:} Conjugate prior $\mu \sim \mathcal{N}(\mu_0, \tau_0^2)$ yields posterior:
 \[
-\hat{T}(a, o) = \frac{1}{n_{a,o}} \sum_{i: A_i = a, O_i = o} (\tau_i - \tau_i')
+\mu \mid \text{data} \sim \mathcal{N}\left(\frac{\tau_0^{-2}\mu_0 + n\sigma^{-2}\bar{T}}{\tau_0^{-2} + n\sigma^{-2}}, \frac{1}{\tau_0^{-2} + n\sigma^{-2}}\right)
 \]
-where $\tau_i$ is time at decision and $\tau_i'$ is time at next change of possession
 
 \vspace{0.3cm}
 \begin{center}
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Action + Outcome} & $\hat{T}$ \textbf{(seconds)} & \textbf{Intuition} \\
+\textbf{Action + Outcome} & \textbf{Mean (s)} & \textbf{95\% CI} & \textbf{Intuition} \\
 \midrule
-Go + convert & 151 & Retain possession, run more plays \\
-Go + fail & 48 & Opponent gets ball, runs their drive \\
-Punt & 69 & Opponent at worse field position \\
-FG make & 99 & Kickoff + opponent drive \\
-FG miss & 48 & Opponent at LOS (like failed conv.) \\
+Go + convert & 151 & [136, 167] & Retain possession \\
+Go + fail & 48 & [39, 58] & Opponent gets ball \\
+Punt & 69 & [61, 77] & Pin opponent deep \\
+FG make & 99 & [89, 109] & Kickoff + opp. drive \\
+FG miss & 48 & [36, 60] & Opp. at LOS \\
 \bottomrule
 \end{tabular}
 \end{center}

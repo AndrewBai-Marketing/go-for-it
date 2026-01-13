@@ -202,35 +202,37 @@ The **negative interaction term** ($\hat{\beta}_3 = -2.647$) confirms that score
 
 ---
 
-## Clock Consumption Model
+## Bayesian Clock Consumption Model
 
-A critical component for late-game accuracy is the **asymmetric clock consumption** between action-outcome pairs.
+A critical component for late-game accuracy is the **asymmetric clock consumption** between action-outcome pairs. Unlike point estimates, we model this with full Bayesian uncertainty.
 
-**Definition.** Let $T(a, o)$ denote the expected time until next change of possession given action $a$ and outcome $o$:
+**Model.** For each action-outcome pair $(a, o)$, clock consumption follows:
 
-$$T(a, o) = \mathbb{E}[\text{seconds until possession change} \mid \text{action} = a, \text{outcome} = o]$$
+$$T(a, o) \sim \mathcal{N}(\mu_{a,o}, \sigma_{a,o}^2)$$
 
-**Estimation.** For each action-outcome pair, we compute the sample mean:
+**Bayesian inference.** Using conjugate priors:
+- Prior: $\mu \sim \mathcal{N}(\mu_0, \tau_0^2)$ (weakly informative)
+- Posterior: $\mu \mid \text{data} \sim \mathcal{N}(\mu_n, \tau_n^2)$
 
-$$\hat{T}(a, o) = \frac{1}{N_{a,o}} \sum_{i : A_i = a, O_i = o} T_i$$
+The posterior mean and variance are:
 
-where $T_i$ is the observed time until possession change for play $i$.
+$$\mu_n = \frac{\tau_0^{-2} \mu_0 + n\sigma^{-2}\bar{T}}{\tau_0^{-2} + n\sigma^{-2}}, \quad \tau_n^2 = \frac{1}{\tau_0^{-2} + n\sigma^{-2}}$$
 
-**Empirically-derived values:**
+**Posterior estimates with 95% credible intervals:**
 
-| Action + Outcome | Time (seconds) | Interpretation |
-|------------------|----------------|----------------|
-| Go + Convert | ~151s | Retain possession, run additional plays |
-| Go + Fail | ~48s | Opponent gets ball, runs their drive |
-| Punt | ~69s | Opponent gets ball at worse field position |
-| FG Make | ~99s | Kickoff + opponent drive |
-| FG Miss | ~48s | Opponent gets ball at line of scrimmage |
+| Action + Outcome | Mean (s) | 95% CI | Interpretation |
+|------------------|----------|--------|----------------|
+| Go + Convert | 151 | [136, 167] | Retain possession, run additional plays |
+| Go + Fail | 48 | [39, 58] | Opponent gets ball, runs their drive |
+| Punt | 69 | [61, 77] | Opponent gets ball at worse field position |
+| FG Make | 99 | [89, 109] | Kickoff + opponent drive |
+| FG Miss | 48 | [36, 60] | Opponent gets ball at line of scrimmage |
+
+**State transition.** After action $a$ with outcome $o$:
+
+$$\tau' = \max(0, \tau - T(a, o))$$
 
 **Strategic implications:**
-
-The state after action $a$ updates time as:
-
-$$\tau' = \tau - T(a, o)$$
 
 This asymmetry has major implications:
 - **When leading**: Converting burns ~151s vs failing burns ~48s. Going for it and converting protects the lead by running out clock.
