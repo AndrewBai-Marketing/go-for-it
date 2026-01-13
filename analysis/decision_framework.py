@@ -23,9 +23,21 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.bayesian_models import (
     ConversionModel, PuntModel, FieldGoalModel, WinProbabilityModel,
     HierarchicalConversionModel, HierarchicalFieldGoalModel,
-    WeatherAwareFieldGoalModel, ContextAwareConversionModel, ContextAwarePuntModel,
     load_all_models
 )
+# Optional enhanced models (may not exist)
+try:
+    from models.bayesian_models import WeatherAwareFieldGoalModel
+except ImportError:
+    WeatherAwareFieldGoalModel = None
+try:
+    from models.bayesian_models import ContextAwareConversionModel
+except ImportError:
+    ContextAwareConversionModel = None
+try:
+    from models.bayesian_models import ContextAwarePuntModel
+except ImportError:
+    ContextAwarePuntModel = None
 # Try importing off/def model (may not exist yet in all environments)
 try:
     from models.hierarchical_off_def_model import HierarchicalOffDefConversionModel
@@ -187,9 +199,12 @@ class BayesianDecisionAnalyzer:
         self.has_kicker_effects = isinstance(self.fg, HierarchicalFieldGoalModel)
 
         # Check if we have enhanced context-aware models
-        self.has_context_aware_conversion = isinstance(self.conversion, ContextAwareConversionModel)
-        self.has_weather_aware_fg = isinstance(self.fg, WeatherAwareFieldGoalModel)
-        self.has_context_aware_punt = isinstance(self.punt, ContextAwarePuntModel)
+        self.has_context_aware_conversion = (ContextAwareConversionModel is not None and
+                                              isinstance(self.conversion, ContextAwareConversionModel))
+        self.has_weather_aware_fg = (WeatherAwareFieldGoalModel is not None and
+                                      isinstance(self.fg, WeatherAwareFieldGoalModel))
+        self.has_context_aware_punt = (ContextAwarePuntModel is not None and
+                                        isinstance(self.punt, ContextAwarePuntModel))
 
         # Check if we have offense/defense model
         self.has_off_def_effects = (HAS_OFF_DEF_MODEL and

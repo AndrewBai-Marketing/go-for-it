@@ -180,17 +180,27 @@ Punts from deeper in own territory travel further (positive $\beta$), reflecting
 
 ### Win Probability Model
 
-Win probability is logistic in game state features with a critical **score×time interaction**:
+Win probability is modeled using a **neural network** trained on 710,664 plays from 2006-2024. The architecture is a 3-layer multilayer perceptron (128-64-32 hidden units) with ReLU activations and 20% dropout, trained with early stopping to minimize binary cross-entropy loss.
 
-$$\mathbb{P}(\text{win} \mid s) = \sigma\left(\beta_0 + \beta_1 \frac{\Delta}{14} + \beta_2 \frac{\tau}{3600} + \beta_3 \frac{\Delta \cdot \tau}{14 \cdot 3600} + \beta_4 \frac{x - 50}{50} + \beta_5 \frac{k}{3}\right)$$
+**Input features:**
+- Score differential ($\Delta$)
+- Time remaining ($\tau$)
+- Field position ($x$ yards from opponent's end zone)
+- Down and yards to go
+- Timeout differential ($k$)
+- Half indicator
+- Goal-to-go indicator
+- Interaction terms: score×time, field position×time
+- Binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), goal-line ($x \leq 5$)
 
-where:
-- $\Delta$ is score differential
-- $\tau$ is seconds remaining
-- $x$ is yards from opponent's end zone
-- $k$ is timeout differential
+**Model validation:**
+- 5-fold cross-validated **Brier score: 0.164** (±0.0004)
+- Expected calibration error (ECE): **0.0049** (nearly perfect calibration)
+- Across deciles of predicted WP, actual win rates match predictions closely
 
-The **negative interaction term** ($\hat{\beta}_3 = -2.647$) confirms that score differential matters more as time decreases. A 7-point lead with 5 minutes left is worth more than a 7-point lead with 30 minutes left.
+**Why neural network over logistic regression?**
+
+The neural network substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. For example, a team trailing by 3 with 16 seconds remaining at the opponent's 2-yard line (1st & goal) has a win probability of approximately **71%** under the neural model—reflecting the ~67% historical touchdown rate from this position—compared to only ~14% under a logistic specification that cannot capture the nonlinear interaction between field position and time in such extreme scenarios.
 
 ---
 
@@ -234,52 +244,15 @@ For end-of-game scenarios ($\tau < 120$ seconds), we use immediate play time (~5
 
 ---
 
-## Model Validation: Comparison with Next Gen Stats
-
-As a validation check, we compared our model's recommendations against NFL Next Gen Stats (NGS), a widely-cited industry analytics source. A notable disagreement arises on one of the costliest decisions in our dataset: the 2021 BUF @ TEN game where Buffalo went for it on 4th & 1 from the Tennessee 3-yard line with 22 seconds remaining while trailing by 3.
-
-**Our model strongly favors field goal:** E[W | FG] = 46.9% vs E[W | GO] = 12.5%. NGS reportedly recommended going for it. Which analysis is correct?
-
-### The Arithmetic Supports Our Model
-
-The key insight is that even *after converting*, Buffalo's win probability is low. With 22 seconds remaining and no timeouts, scoring a touchdown from the 3-yard line is far from automatic. Historical data (2006-2024) shows that teams trailing by 1-7 points with 10-30 seconds remaining at the opponent's 30-40 yard line:
-- Score a touchdown: **8%**
-- Kick a field goal: **39%**
-- Fail to score: **53%**
-
-**Back-of-envelope calculation:**
-```
-E[W | convert] = 0.08 × 95% + 0.39 × 50% + 0.53 × 2% ≈ 28%
-E[W | go]      = 66% × 28% + 34% × 2% ≈ 19%
-E[W | fg]      = 66% × 50% + 34% × 2% ≈ 34%
-```
-
-The FG advantage is approximately **15 percentage points**—directionally consistent with our model's 34% margin.
-
-### Reverse-Engineering the NGS Recommendation
-
-For NGS's "go for it" recommendation to be correct, at least one of these would need to hold:
-- Win probability after converting ≈ **94%** (actual: ~28%)
-- TD scoring rate from 35 yards with 20 seconds ≈ **60%** (actual: 8%)
-- Fourth & 1 conversion rate ≈ **125%** (impossible)
-
-None of these assumptions is plausible.
-
-### Conclusion
-
-Our framework produces recommendations grounded in historical data and basic probability theory. When model outputs disagree with external sources, we can decompose the decision into verifiable components. In this case, the disagreement stems from a fundamental question—"what is the probability of scoring a touchdown from the 35-yard line with 20 seconds remaining?"—and the historical answer (8%) strongly favors the field goal.
-
----
-
 ## Key Findings
 
 ### Fourth Down Decisions (2006-2024)
 
-- **74.6% optimal** overall (N = 71,849)
-- **77.7% of mistakes are close calls** (decision margin < 2 percentage points)
+- **71.0% match rate** with model recommendations overall (N = 71,849)
+- **83% of deviations are close calls** (decision margin < 2 percentage points)
 - Only **0.9% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
 - Go-for-it rates increased from 12.6% (2006-2014) → 19.2% (2019-2024)
-- Decision **quality slightly improved** in middle era (76.0%, 2015-2018) but settled at 75.2% recently
+- Model recommends go-for-it **29%** of the time vs coaches' actual **15%**
 
 ### Two-Point Conversions
 
@@ -289,7 +262,7 @@ Our framework produces recommendations grounded in historical data and basic pro
 
 ### Takeaway
 
-Coaches are learning at the simple decision (two-point conversions) but the complex decision (fourth downs) shows only modest improvement.
+Coaches are learning at the simple decision (two-point conversions) but the complex decision (fourth downs) shows no improvement over time. The analytics revolution changed behavior (more aggression) but not accuracy.
 
 ---
 
