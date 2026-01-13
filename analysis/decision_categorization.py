@@ -115,23 +115,18 @@ def categorize_decisions(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_wp_cost(row):
-    """Calculate the WP cost of the coach's decision vs optimal."""
-    actual = row['actual_decision']
+    """
+    Calculate the WP cost of the coach's decision vs optimal.
 
-    wp_actual = {
-        'go_for_it': row['ex_ante_wp_go'],
-        'punt': row['ex_ante_wp_punt'],
-        'field_goal': row['ex_ante_wp_fg']
-    }.get(actual, 0)
+    The cost is simply the ex_ante_margin - the difference between the best
+    and second-best options. This is correct even when one option (like a
+    very long FG) has 0 WP because it's infeasible.
 
-    optimal = row['ex_ante_optimal']
-    wp_optimal = {
-        'go_for_it': row['ex_ante_wp_go'],
-        'punt': row['ex_ante_wp_punt'],
-        'field_goal': row['ex_ante_wp_fg']
-    }.get(optimal, 0)
-
-    return wp_optimal - wp_actual
+    Note: We use ex_ante_margin rather than computing wp_optimal - wp_actual
+    because infeasible options (wp=0) would give misleading costs.
+    """
+    # The margin already captures the cost correctly
+    return row['ex_ante_margin']
 
 
 def generate_summary_statistics(df: pd.DataFrame):

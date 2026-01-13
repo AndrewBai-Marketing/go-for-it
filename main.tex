@@ -344,27 +344,29 @@ This decomposition reveals a striking fact: \textbf{83\% of ``mistakes'' are act
 
 \subsection{The Worst Decisions of All Time}
 
-Among late-game, high-stakes situations (within 14 points, at least one minute remaining), which decisions cost the most win probability?
+Among late-game, high-stakes situations, which decisions cost the most win probability?
 
 \begin{table}[H]
 \centering
-\caption{Costliest Fourth-Down Decisions (2006--2024, Excluding End-of-Game)}
+\caption{Costliest Fourth-Down Decisions (2006--2024)}
 \label{tab:worst_decisions}
 \begin{tabular}{lllcc}
 \toprule
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
-2023 MIN @ LV & 4th \& 4 at opp 28, up 3, 0:18 Q4 & PUNT & FG & 12.2\% \\
-2019 BUF @ NYJ & 4th \& 5 at opp 35, up 1, 0:19 Q4 & PUNT & FG & 11.0\% \\
-2024 PIT @ WAS & 4th \& 15 at own 16, up 7, Q1 & GO & PUNT & 8.4\% \\
-2020 HOU @ CLE & 4th \& 13 at opp 30, down 3, Q2 & PUNT & FG & 8.3\% \\
-2022 CHI @ PHI & 4th \& 26 at opp 30, up 3, Q2 & PUNT & FG & 8.0\% \\
+2021 BUF @ TEN & 4th \& 1, opp 3, down 3, 0:22 Q4 & GO & FG & 34.3\% \\
+2016 BAL @ JAX & 4th \& 2, own 49, down 1, 2:14 Q4 & GO & PUNT & 26.8\% \\
+2020 DAL @ SEA & 4th \& 3, own 47, down 1, 2:37 Q4 & GO & PUNT & 26.7\% \\
+2012 DAL @ CAR & 4th \& 1, own 40, down 2, 2:11 Q4 & GO & PUNT & 26.0\% \\
+2020 DEN @ NYJ & 4th \& 3, own 50, down 2, 2:05 Q4 & GO & PUNT & 24.8\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{remark}[Interpreting the Worst Decisions]
-The top two entries illustrate a subtle but costly error: punting from field goal range in the final seconds while \textit{leading}. In the 2023 MIN @ LV game, Minnesota lined up in field goal formation at the Raiders' 28-yard line with 18 seconds remaining and a 3-point lead, then executed a fake field goal \textit{punt}---a baffling choice that cost 12.2 percentage points of win probability. A routine 46-yard field goal would have extended the lead to 6 points, virtually guaranteeing victory. The 2019 BUF @ NYJ play is similar: Buffalo punted from the Jets' 35-yard line with 19 seconds left and a 1-point lead instead of attempting a 52-yard field goal.
+The costliest mistake in our sample is the 2021 Bills @ Titans game, where Buffalo went for it on 4th \& 1 from the Tennessee 3-yard line with 22 seconds remaining while trailing by 3. The model strongly favors a field goal to tie---converting gives only 12.5\% win probability (not enough time for another possession even if successful), while a 21-yard field goal to force overtime yields 46.9\% win probability. Josh Allen was stopped for no gain, and the Bills lost.
+
+The remaining entries share a common pattern: going for it from one's own territory in the final 2--3 minutes when trailing by 1--3 points. In these situations, the model strongly prefers punting: a failed conversion gives the opponent excellent field position to run out the clock or kick a field goal, while a successful punt forces the opponent to execute a longer drive with time pressure. The 26--27\% margins reflect the high leverage of these situations---a single decision can swing win probability by a quarter.
 \end{remark}
 
 \begin{remark}[Clock-Aware Model: End-of-Game Scenarios]
