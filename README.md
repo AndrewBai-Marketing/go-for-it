@@ -8,14 +8,6 @@ A fully Bayesian decision-theoretic framework for analyzing fourth down and two-
 
 ## Overview
 
-This project develops a rigorous framework for evaluating NFL coaching decisions. Unlike existing approaches that rely on point estimates, this framework:
-
-1. Optimizes **win probability** directly (not expected points)
-2. Propagates **parameter uncertainty** through to decision uncertainty via fully Bayesian inference
-3. Uses **hierarchical Bayes** to capture team-specific and kicker-specific effects with empirical Bayes shrinkage
-4. Incorporates **asymmetric clock consumption** for accurate late-game analysis
-5. Tests **real-time knowability** via expanding window estimation
-
 ---
 
 ## Mathematical Framework
@@ -204,7 +196,7 @@ The **negative interaction term** ($\hat{\beta}_3 = -2.647$) confirms that score
 
 ## Bayesian Clock Consumption Model
 
-A critical component for late-game accuracy is the **asymmetric clock consumption** between action-outcome pairs. Unlike point estimates, we model this with full Bayesian uncertainty.
+A critical component for late-game accuracy is the **asymmetric clock consumption** between action-outcome pairs. We model this with full Bayesian uncertainty.
 
 **Model.** For each action-outcome pair $(a, o)$, clock consumption follows:
 
@@ -234,7 +226,7 @@ $$\tau' = \max(0, \tau - T(a, o))$$
 
 **Strategic implications:**
 
-This asymmetry has major implications:
+This asymmetry has implies:
 - **When leading**: Converting burns ~151s vs failing burns ~48s. Going for it and converting protects the lead by running out clock.
 - **When trailing**: Burning clock hurts because less time remains to catch up. Failed conversions (48s) are less costly than successful ones (151s) from a clock perspective.
 
