@@ -282,6 +282,30 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
 \end{itemize}
 
 %===========================================================
+\section{Model Validation: Comparison with Next Gen Stats}
+%===========================================================
+
+As a validation check, we compared our model against NFL Next Gen Stats (NGS), a widely-cited industry source. A notable disagreement arises on the BUF @ TEN decision above: our model says FG was optimal (+34.3\% WP), but NGS reportedly recommended going for it.
+
+\textbf{The arithmetic strongly supports our model:}
+\begin{itemize}[nosep]
+  \item Even \textit{after converting}, Buffalo faces low win probability
+  \item Historical data (2006--2024): teams trailing 1--7 pts with 10--30 sec at opponent's 30--40 yard line score TD only \textbf{8\%} of the time
+  \item Back-of-envelope: $\E[W|\texttt{go}] \approx 0.66 \times 0.28 + 0.34 \times 0.02 \approx 19\%$
+  \item Back-of-envelope: $\E[W|\texttt{fg}] \approx 0.66 \times 0.50 + 0.34 \times 0.02 \approx 34\%$
+  \item FG advantage: $\sim$15 percentage points (consistent with model)
+\end{itemize}
+
+\textbf{For NGS to be correct, one of these must hold:}
+\begin{itemize}[nosep]
+  \item WP after convert $\approx$ 94\% (actual: $\sim$28\%)
+  \item TD rate from 35 yds with 20 sec $\approx$ 60\% (actual: 8\%)
+  \item 4th \& 1 conversion rate $\approx$ 125\% (impossible)
+\end{itemize}
+
+\textbf{Conclusion:} Our model's recommendations are grounded in historical data and basic probability theory. External analytics sources may not properly account for the low probability of scoring with limited time remaining.
+
+%===========================================================
 \section{Two-Point Conversions: A Simpler Decision}
 %===========================================================
 
