@@ -246,11 +246,11 @@ For end-of-game scenarios ($\tau < 120$ seconds), we use immediate play time (~5
 
 ### Fourth Down Decisions (2006-2024)
 
-- **80.5% optimal** overall
-- **83% of mistakes are close calls** (decision margin < 2 percentage points)
-- Only **0.5% are clear mistakes** where the optimal action was obvious
-- Go-for-it rates increased from 12.5% → 20.0% (1999-2024)
-- Decision **quality has not improved**—coaches shifted from excessive conservatism to excessive aggression
+- **74.6% optimal** overall (N = 71,849)
+- **77.7% of mistakes are close calls** (decision margin < 2 percentage points)
+- Only **0.9% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
+- Go-for-it rates increased from 12.6% (2006-2014) → 19.2% (2019-2024)
+- Decision **quality slightly improved** in middle era (76.0%, 2015-2018) but settled at 75.2% recently
 
 ### Two-Point Conversions
 
@@ -260,7 +260,7 @@ For end-of-game scenarios ($\tau < 120$ seconds), we use immediate play time (~5
 
 ### Takeaway
 
-Coaches are learning at the simple decision (two-point conversions) but not the complex one (fourth downs).
+Coaches are learning at the simple decision (two-point conversions) but the complex decision (fourth downs) shows only modest improvement.
 
 ---
 
