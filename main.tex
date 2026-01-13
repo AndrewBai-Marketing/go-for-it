@@ -54,7 +54,7 @@
 \end{center}
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Critically, our model incorporates \textit{asymmetric clock consumption}: converting a fourth down burns approximately 150 seconds until the next change of possession (retaining the ball), while failing burns only 48 seconds---a distinction essential for late-game analysis. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,786 fourth-down situations from 2006--2024, we find that coaches deviate from model recommendations approximately 19.5\% of the time---but critically, 83\% of these deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 0.5\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.5\% of optimal decisions were \textit{knowable in real-time}. Despite the analytics revolution increasing league-wide go-for-it rates from 12.5\% to 20.0\% between 1999 and 2024, we find no improvement in decision quality---coaches have simply shifted from excessive conservatism to excessive aggression, leaving expected ``free wins'' still on the table. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a neural network trained on 710,664 plays, which substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to fourth-down situations from 2006--2024, we find that coaches match model recommendations 72.3\% of the time---but critically, 79\% of deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 1.3\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.5\% of optimal decisions were \textit{knowable in real-time}. Despite the analytics revolution increasing league-wide go-for-it rates from 12.5\% to 20.0\% between 1999 and 2024, we find no improvement in decision quality---coaches have simply shifted from excessive conservatism to excessive aggression, leaving expected ``free wins'' still on the table. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -354,27 +354,25 @@ Among late-game, high-stakes situations, which decisions cost the most win proba
 \toprule
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
-2016 BAL @ JAX & 4th \& 2, own 49, down 1, 2:14 Q4 & GO & PUNT & 26.8\% \\
-2020 DAL @ SEA & 4th \& 3, own 47, down 1, 2:37 Q4 & GO & PUNT & 26.7\% \\
-2012 DAL @ CAR & 4th \& 1, own 40, down 2, 2:11 Q4 & GO & PUNT & 26.0\% \\
-2020 DEN @ NYJ & 4th \& 3, own 50, down 2, 2:05 Q4 & GO & PUNT & 24.8\% \\
-2019 CLE @ PIT & 4th \& 2, own 46, down 1, 2:02 Q4 & GO & PUNT & 23.5\% \\
+2010 CHI @ DET & 4th \& 7, opp 38, tied, 4:24 Q4 & PUNT & FG & 17.9\% \\
+2015 SF @ LA & 4th \& 4, opp 37, tied, 1:39 Q4 & PUNT & FG & 16.8\% \\
+2016 NYG @ DAL & 4th \& 1, opp 37, up 1, 1:12 Q4 & PUNT & GO & 13.7\% \\
+2018 LAC @ SF & 4th \& 1, opp 37, up 2, 3:57 Q4 & PUNT & GO & 13.1\% \\
+2010 CLE @ CAR & 4th \& 2, opp 36, up 1, 1:07 Q4 & PUNT & GO & 13.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{remark}[Interpreting the Worst Decisions]
-The costliest decisions share a common pattern: going for it from one's own territory in the final 2--3 minutes when trailing by 1--3 points. In these situations, the model strongly prefers punting: a failed conversion gives the opponent excellent field position to run out the clock or kick a field goal, while a successful punt forces the opponent to execute a longer drive with time pressure. The 23--27\% margins reflect the high leverage of these situations---a single decision can swing win probability by nearly a quarter.
+The costliest decisions share a common pattern: punting from opponent territory in close late-game situations. The top two cases involve teams punting when a field goal attempt would have been clearly preferable---at the opponent's 37--38 yard line (55-yard kicks), coaches chose to give up possession entirely rather than attempt a makeable field goal. The remaining cases involve punting on short yardage (4th \& 1 or 4th \& 2) from opponent territory when the model strongly favored going for it. The 13--18\% margins reflect genuinely suboptimal decisions where the coach selected the dominated action.
 
-Notably absent from this list is the 2021 Bills @ Titans game, where Buffalo went for it on 4th \& 1 from the Tennessee 3-yard line with 22 seconds remaining while trailing by 3. While earlier logistic regression models suggested a field goal was optimal, our neural network win probability model---which correctly captures goal-line dynamics in endgame scenarios---shows that going for it was actually the correct decision. The model estimates E[WP $|$ GO] = 54.6\% versus E[WP $|$ FG] = 44.8\%, reflecting the $\sim$67\% historical touchdown rate from 1st \& goal inside the 3-yard line. Josh Allen was stopped for no gain, but this was execution failure, not decision error.
+These results contrast sharply with popular narratives. The 2021 Bills @ Titans game, where Buffalo went for it on 4th \& 1 from the Tennessee 3-yard line with 22 seconds remaining while trailing by 3, is \textit{not} among the worst decisions. Our neural network win probability model shows going for it was correct: E[WP $|$ GO] = 54.6\% versus E[WP $|$ FG] = 44.8\%, reflecting the $\sim$67\% historical touchdown rate from this position. Josh Allen was stopped for no gain, but this was execution failure, not decision error.
 \end{remark}
 
-\begin{remark}[Clock-Aware Model: End-of-Game Scenarios]
-Our model incorporates asymmetric clock consumption---converting burns $\sim$151 seconds while failing burns $\sim$48 seconds---which is essential for late-game analysis. This allows the model to naturally handle end-of-game scenarios without hard-coded filters. When a team is trailing with little time remaining, the model correctly recognizes that burning clock (by converting and running additional plays) hurts their chances, while going for it and failing preserves more time.
+\begin{remark}[End-of-Game Filtering]
+Following standard practice in the sports analytics literature \citep{baldwin2021nfl4th}, we exclude plays with fewer than 60 seconds remaining from our analysis. In these situations, win probability models become unreliable because outcomes depend heavily on factors our model does not capture: timeout availability, clock management strategy, and whether the opponent can simply kneel out the clock. For example, a team trailing by 3 with 20 seconds remaining faces a fundamentally different decision calculus than one trailing by 3 with 2 minutes remaining---the former involves Hail Mary considerations while the latter involves standard expected value calculations.
 
-However, one limitation remains: in situations where a trailing team could kick a field goal to cut the deficit to 1--2 points with under 2 minutes remaining, the opponent can simply \textit{kneel out the clock}. The model's win probability calculations assume the opponent will run normal plays after receiving possession, but a team leading by any margin with insufficient time remaining can run out the clock without ever facing offensive risk.
-
-A famous historical example is Andy Reid's punt in the 2006 NFC Divisional Playoff. Trailing the Saints 27--24 with 1:56 remaining at their own 39-yard line facing 4th \& 15, Reid elected to punt. The Saints simply kneeled out the clock from their own 22-yard line. Punting was effectively 0\% WP, while going for it---even with just 15\% conversion probability---preserved some positive chance of winning. This edge case illustrates that while our clock model substantially improves end-of-game analysis, extreme clock-out scenarios require additional consideration.
+This filtering removes 1,029 plays (1.4\% of our sample). The excluded plays are disproportionately high-leverage situations where our model's assumptions are least valid. By focusing on plays with $\geq$60 seconds remaining, we ensure our recommendations reflect genuine decision quality rather than artifacts of edge-case modeling limitations.
 \end{remark}
 
 \subsection{The Most Controversial Decisions}
@@ -950,6 +948,11 @@ Holmstr{\"o}m, B. (1999).
 Romer, D. (2006).
 \newblock Do firms maximize? Evidence from professional football.
 \newblock \textit{Journal of Political Economy}, 114(2), 340--365.
+
+\bibitem[Baldwin(2021)]{baldwin2021nfl4th}
+Baldwin, B. (2021).
+\newblock nfl4th: Functions to calculate optimal fourth down decisions.
+\newblock R package version 1.0.0. \url{https://www.nfl4th.com/}
 
 \end{thebibliography}
 

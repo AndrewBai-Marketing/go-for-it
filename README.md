@@ -204,43 +204,15 @@ The neural network substantially outperforms logistic regression for edge cases 
 
 ---
 
-## Bayesian Clock Consumption Model
+## End-of-Game Filtering
 
-A critical component for late-game accuracy is the **asymmetric clock consumption** between action-outcome pairs. We model this with full Bayesian uncertainty.
+Following standard practice in sports analytics (Baldwin 2021, nfl4th), we exclude plays with fewer than 60 seconds remaining from our analysis. In these situations, win probability models become unreliable because outcomes depend heavily on factors not captured in our model:
 
-**Model.** For each action-outcome pair $(a, o)$, clock consumption follows:
+- **Timeout availability** and clock management strategy
+- **Kneel-out scenarios** where the opponent can simply run out the clock
+- **Hail Mary situations** requiring different probability calculations
 
-$$T(a, o) \sim \mathcal{N}(\mu_{a,o}, \sigma_{a,o}^2)$$
-
-**Bayesian inference.** Using conjugate priors:
-- Prior: $\mu \sim \mathcal{N}(\mu_0, \tau_0^2)$ (weakly informative)
-- Posterior: $\mu \mid \text{data} \sim \mathcal{N}(\mu_n, \tau_n^2)$
-
-The posterior mean and variance are:
-
-$$\mu_n = \frac{\tau_0^{-2} \mu_0 + n\sigma^{-2}\bar{T}}{\tau_0^{-2} + n\sigma^{-2}}, \quad \tau_n^2 = \frac{1}{\tau_0^{-2} + n\sigma^{-2}}$$
-
-**Posterior estimates with 95% credible intervals:**
-
-| Action + Outcome | Mean (s) | 95% CI | Interpretation |
-|------------------|----------|--------|----------------|
-| Go + Convert | 151 | [136, 167] | Retain possession, run additional plays |
-| Go + Fail | 48 | [39, 58] | Opponent gets ball, runs their drive |
-| Punt | 69 | [61, 77] | Opponent gets ball at worse field position |
-| FG Make | 99 | [89, 109] | Kickoff + opponent drive |
-| FG Miss | 48 | [36, 60] | Opponent gets ball at line of scrimmage |
-
-**State transition.** After action $a$ with outcome $o$:
-
-$$\tau' = \max(0, \tau - T(a, o))$$
-
-**Strategic implications:**
-
-This asymmetry has implies:
-- **When leading**: Converting burns ~151s vs failing burns ~48s. Going for it and converting protects the lead by running out clock.
-- **When trailing**: Burning clock hurts because less time remains to catch up. Failed conversions (48s) are less costly than successful ones (151s) from a clock perspective.
-
-For end-of-game scenarios ($\tau < 120$ seconds), we use immediate play time (~5-6 seconds) rather than full drive time, as teams are in hurry-up mode.
+This filtering removes approximately 1.4% of plays. The excluded plays are disproportionately high-leverage situations where our model's assumptions are least valid.
 
 ---
 
@@ -248,11 +220,11 @@ For end-of-game scenarios ($\tau < 120$ seconds), we use immediate play time (~5
 
 ### Fourth Down Decisions (2006-2024)
 
-- **71.0% match rate** with model recommendations overall (N = 71,849)
-- **83% of deviations are close calls** (decision margin < 2 percentage points)
-- Only **0.9% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
+- **72.3% match rate** with model recommendations overall
+- **79% of deviations are close calls** (decision margin < 2 percentage points)
+- Only **1.3% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
 - Go-for-it rates increased from 12.6% (2006-2014) → 19.2% (2019-2024)
-- Model recommends go-for-it **29%** of the time vs coaches' actual **15%**
+- Model recommends go-for-it **30%** of the time vs coaches' actual **14%**
 
 ### Two-Point Conversions
 
