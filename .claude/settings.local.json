@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tasklist:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd comprehensive paper summary document\n\n- Create paper_summary.tex following academic summary format\n- Covers fourth down and two-point conversion analysis\n- Key findings:\n  - 80.1% ex ante optimal on fourth down \\(no improvement trend\\)\n  - 96.4% of decisions knowable in real-time\n  - 0.27 wins lost per team per season \\(increasing over time\\)\n  - Two-point: +1.0 pp/year improvement \\(simpler decision\\)\n- Includes worst decisions table, Romer comparison, robustness checks\n- Lists suggestions for additional analysis\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git branch:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(pdflatex:*)",
+      "Bash(xxd:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(git pull:*)",
+      "Bash(git filter-branch:*)",
+      "Bash(git stash:*)",
+      "Bash(pip install:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(git for-each-ref:*)",
+      "Bash(xargs -r -n 1 git update-ref -d)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git fsck:*)",
+      "Bash(git ls-tree:*)"
+    ]
+  }
+}

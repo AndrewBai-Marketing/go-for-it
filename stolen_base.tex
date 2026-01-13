@@ -1,0 +1,301 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{float}
+
+\title{Stolen Base Decision Analysis: \\A Bayesian Decision-Theoretic Framework}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We develop a Bayesian decision-theoretic framework to evaluate stolen base decisions in Major League Baseball. Using pitch-level Statcast data from 2023--2024, we identify 91,755 steal opportunities and 767 actual attempts. We estimate a Bayesian logistic regression model for steal success probability conditional on game state using MCMC, then compare observed decisions against the break-even threshold derived from run expectancy tables. Our analysis finds that teams succeed at a 74.7\% rate, which exceeds the 72.2\% break-even threshold by 2.5 percentage points. Approximately 65.3\% of steal attempts have posterior mean success probabilities above break-even. These results suggest that MLB teams are appropriately selective when choosing to attempt stolen bases, correctly identifying high-probability situations.
+\end{abstract}
+
+\section{Introduction}
+
+The stolen base decision in baseball presents a classic risk-reward tradeoff. A successful steal advances the runner, increasing expected runs. A failed attempt results in an out, decreasing expected runs and potentially ending a rally. The optimal decision depends on the probability of success relative to a ``break-even'' threshold determined by the run expectancy impact of success versus failure.
+
+This paper applies Bayesian decision theory to evaluate whether MLB teams make optimal stolen base decisions. We address three questions:
+\begin{enumerate}
+    \item What is the break-even success probability for steal attempts by game state?
+    \item Do teams' observed success rates exceed this threshold?
+    \item Are teams appropriately selective in choosing when to attempt steals?
+\end{enumerate}
+
+\section{Data}
+
+\subsection{Data Source}
+
+We use pitch-level Statcast data obtained via the \texttt{pybaseball} package, covering the 2023 and 2024 MLB seasons. The raw dataset contains 1,437,933 pitches.
+
+\subsection{Identifying Steal Opportunities}
+
+A \textit{steal opportunity} is defined as a plate appearance where:
+\begin{itemize}
+    \item A runner occupies first or second base
+    \item The next base is unoccupied (i.e., second base open for steals of second, third base open for steals of third)
+    \item There are fewer than two outs
+\end{itemize}
+
+We aggregate pitch-level data to the plate appearance level, identifying whether a steal was attempted and whether it succeeded. Steal events are identified from the play description field using pattern matching for phrases such as ``steals 2nd,'' ``steals 3rd,'' ``caught stealing 2nd,'' etc.
+
+\subsection{Sample Statistics}
+
+Table~\ref{tab:sample} summarizes the dataset.
+
+\begin{table}[H]
+\centering
+\caption{Sample Statistics}
+\label{tab:sample}
+\begin{tabular}{lr}
+\toprule
+Metric & Value \\
+\midrule
+Total steal opportunities & 91,755 \\
+Steal attempts & 767 \\
+Attempt rate & 0.84\% \\
+Successful steals & 573 \\
+Success rate (conditional on attempt) & 74.7\% \\
+\midrule
+By season: & \\
+\quad 2023 opportunities & 46,619 \\
+\quad 2023 attempts & 385 \\
+\quad 2024 opportunities & 45,136 \\
+\quad 2024 attempts & 382 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Model}
+
+\subsection{Success Probability Model}
+
+Let $Y_i \in \{0, 1\}$ denote the outcome of steal attempt $i$, where $Y_i = 1$ indicates success. We model the success probability as:
+\begin{equation}
+    P(Y_i = 1 \mid \mathbf{x}_i) = \sigma(\mathbf{x}_i^\top \boldsymbol{\beta})
+\end{equation}
+where $\sigma(z) = 1/(1 + e^{-z})$ is the logistic function and $\mathbf{x}_i$ is a vector of covariates.
+
+\subsubsection{Covariates}
+
+We include the following game-state covariates:
+\begin{itemize}
+    \item \textbf{Outs}: Number of outs (0 or 1), entered as a continuous variable
+    \item \textbf{Inning}: Normalized as $(\text{inning} - 5) / 4$ to center around mid-game
+    \item \textbf{Score differential}: Batting team's lead (positive) or deficit (negative)
+    \item \textbf{Stealing third}: Indicator for whether the runner is attempting to steal third base (vs.\ second)
+    \item \textbf{Left-handed pitcher}: Indicator for LHP on the mound
+\end{itemize}
+
+The model specification is:
+\begin{equation}
+    \text{logit}(p_i) = \beta_0 + \beta_1 \cdot \text{outs}_i + \beta_2 \cdot \text{inning}_i + \beta_3 \cdot \text{score\_diff}_i + \beta_4 \cdot \mathbf{1}[\text{steal 3B}]_i + \beta_5 \cdot \mathbf{1}[\text{LHP}]_i
+\end{equation}
+
+\subsubsection{Prior Specification}
+
+We adopt weakly informative priors for all coefficients:
+\begin{equation}
+    \beta_j \stackrel{\text{iid}}{\sim} \mathcal{N}(0, 2.5^2), \quad j = 0, \ldots, p
+\end{equation}
+This prior centers coefficients at zero (no effect) with a standard deviation of 2.5, which on the log-odds scale allows for effects ranging from approximately $-5$ to $+5$ with high probability. This is weakly informative: it regularizes extreme estimates while remaining dominated by the likelihood for moderate sample sizes.
+
+\subsubsection{Posterior Inference}
+
+We sample from the posterior distribution using Metropolis-Hastings MCMC with adaptive proposal tuning:
+\begin{equation}
+    p(\boldsymbol{\beta} \mid \mathbf{y}) \propto \underbrace{\prod_{i=1}^{n} p_i^{y_i} (1 - p_i)^{1 - y_i}}_{\text{likelihood}} \times \underbrace{\prod_{j=0}^{p} \phi(\beta_j; 0, 2.5)}_{\text{prior}}
+\end{equation}
+where $p_i = \sigma(\mathbf{x}_i^\top \boldsymbol{\beta})$ and $\phi(\cdot; \mu, \sigma)$ denotes the normal density.
+
+We run 1,000 warmup iterations (discarded) followed by 5,000 posterior samples. During warmup, proposal standard deviations are adapted to achieve approximately 44\% acceptance rates. Convergence is assessed via effective sample size calculations based on autocorrelation.
+
+\subsection{Parameter Estimates}
+
+Table~\ref{tab:model} reports the estimated coefficients.
+
+\begin{table}[H]
+\centering
+\caption{Posterior Estimates for Success Probability Model}
+\label{tab:model}
+\begin{tabular}{lrrrl}
+\toprule
+Parameter & Post.\ Mean & Post.\ SD & 95\% Credible Interval & \\
+\midrule
+Intercept & 1.31 & 0.15 & $[1.02, 1.60]$ & * \\
+Outs & $-0.42$ & 0.18 & $[-0.75, -0.08]$ & * \\
+Inning & 0.36 & 0.13 & $[0.09, 0.61]$ & * \\
+Score differential & $-0.28$ & 0.23 & $[-0.72, 0.17]$ & \\
+Stealing 3rd & 0.99 & 0.34 & $[0.34, 1.69]$ & * \\
+Left-handed pitcher & 0.28 & 0.23 & $[-0.16, 0.73]$ & \\
+\bottomrule
+\multicolumn{5}{l}{\footnotesize * 95\% credible interval excludes zero}
+\end{tabular}
+\end{table}
+
+\subsubsection{Interpretation}
+
+\begin{itemize}
+    \item \textbf{Baseline success rate}: The intercept of 1.31 corresponds to a baseline success probability of $\sigma(1.31) = 78.8\%$.
+    \item \textbf{Outs effect}: Each additional out decreases the log-odds by 0.43, corresponding to approximately 8 percentage points lower success probability. This may reflect that with one out, defenses are more willing to concede the base.
+    \item \textbf{Inning effect}: Later innings are associated with higher success. A one-standard-deviation increase in inning (about 4 innings) increases success probability by approximately 7 percentage points.
+    \item \textbf{Stealing third}: Attempts to steal third have significantly higher success rates (+0.94 log-odds, about 15 pp). This likely reflects extreme selection---teams only attempt steal of third in very favorable situations.
+    \item \textbf{Pitcher handedness}: Left-handed pitchers do not significantly affect success probability in our sample.
+\end{itemize}
+
+\section{Break-Even Analysis}
+
+\subsection{Run Expectancy Framework}
+
+The break-even success probability $\pi^*$ is derived from run expectancy (RE24) tables. For a steal attempt to have positive expected value:
+\begin{equation}
+    \pi \cdot \text{RE}_{\text{success}} + (1 - \pi) \cdot \text{RE}_{\text{fail}} > \text{RE}_{\text{current}}
+\end{equation}
+
+Solving for the break-even:
+\begin{equation}
+    \pi^* = \frac{\text{RE}_{\text{current}} - \text{RE}_{\text{fail}}}{\text{RE}_{\text{success}} - \text{RE}_{\text{fail}}}
+\end{equation}
+
+\subsection{Break-Even by Situation}
+
+Using standard run expectancy values, the break-even thresholds are:
+
+\begin{table}[H]
+\centering
+\caption{Break-Even Success Probability by Situation}
+\label{tab:breakeven}
+\begin{tabular}{llc}
+\toprule
+Steal & Outs & Break-Even $\pi^*$ \\
+\midrule
+2nd base & 0 & 71.5\% \\
+2nd base & 1 & 72.6\% \\
+3rd base & 0 & 75.0\% \\
+3rd base & 1 & 72.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The break-even is highest for stealing third with no outs (75\%) because the marginal value of advancing from second to third is relatively small compared to the cost of making an out with no outs.
+
+\section{Results}
+
+\subsection{Decision Quality}
+
+We evaluate steal decisions by comparing predicted success probabilities to break-even thresholds.
+
+\begin{table}[H]
+\centering
+\caption{Decision Analysis Summary}
+\label{tab:decisions}
+\begin{tabular}{lr}
+\toprule
+Metric & Value \\
+\midrule
+Steal attempts & 767 \\
+Attempts above break-even & 501 (65.3\%) \\
+Observed success rate & 74.7\% \\
+Average break-even (for attempts) & 72.2\% \\
+Success margin & +2.5 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Year-by-Year Analysis}
+
+\begin{table}[H]
+\centering
+\caption{Steal Metrics by Season}
+\label{tab:years}
+\begin{tabular}{lccccc}
+\toprule
+Season & Opportunities & Attempts & Attempt Rate & Success Rate & Margin \\
+\midrule
+2023 & 46,619 & 385 & 0.83\% & 75.3\% & +3.1 pp \\
+2024 & 45,136 & 382 & 0.85\% & 74.1\% & +1.9 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Interpretation}
+
+Our key finding is that \textbf{teams appear to be appropriately selective} when choosing to attempt stolen bases:
+
+\begin{enumerate}
+    \item \textbf{Success rate exceeds break-even}: The observed 74.7\% success rate is 2.5 percentage points above the average break-even threshold of 72.2\%. This means steal attempts are, on average, positive expected value plays.
+
+    \item \textbf{Majority of attempts are above break-even}: 65.3\% of steal attempts have posterior mean success probabilities exceeding the situation-specific break-even. The remaining 34.7\% may reflect (a) posterior uncertainty, (b) unobserved factors like runner speed or catcher arm strength, or (c) genuinely suboptimal decisions.
+
+    \item \textbf{Selection effect}: The high success rate is \textit{expected} precisely because teams are selective. They only attempt steals when conditions are favorable---good jump, slow pitcher delivery, weak catcher arm, fast runner, etc. The 74.7\% success rate is not evidence that teams should steal more; rather, it reflects that teams correctly identify high-probability situations.
+\end{enumerate}
+
+\section{Discussion}
+
+\subsection{Selection Bias}
+
+A fundamental challenge in this analysis is selection bias. We observe success rates conditional on the decision to attempt a steal. Teams presumably only attempt steals when they believe the probability of success is high. Therefore, the observed 74.7\% success rate cannot be extrapolated to suggest that ``teams should steal more often.''
+
+If teams attempted to steal in a random sample of opportunities, the success rate would likely be much lower. The appropriate interpretation is that teams are doing a good job of \textit{identifying when to steal}, not that they are stealing too infrequently.
+
+\subsection{Unobserved Factors}
+
+Our model captures game-state variables (outs, inning, score, base being stolen) but does not include:
+\begin{itemize}
+    \item Runner speed and base-stealing ability
+    \item Catcher arm strength and pop time
+    \item Pitcher delivery time and pickoff frequency
+    \item Count and pitch type
+    \item Element of surprise
+\end{itemize}
+
+These factors are presumably incorporated into teams' decisions, which explains why their realized success rate (74.7\%) exceeds what our simple model would predict for many attempts.
+
+\subsection{Comparison to Fourth Down Analysis}
+
+Unlike NFL fourth-down decisions---where teams have historically been too conservative---stolen base decisions appear to be approximately optimal. Several factors may explain this difference:
+
+\begin{enumerate}
+    \item \textbf{Continuous feedback}: Base stealers receive immediate feedback (safe/out), allowing rapid learning.
+    \item \textbf{Individual skill}: Stolen bases depend heavily on individual runner ability, which is well-measured.
+    \item \textbf{Clear decision criteria}: The break-even analysis for steals is straightforward and well-understood.
+    \item \textbf{Smaller stakes}: A caught stealing, while costly, is not as psychologically salient as a failed fourth-down conversion.
+\end{enumerate}
+
+\section{Conclusion}
+
+Using a Bayesian decision-theoretic framework, we find that MLB teams make approximately optimal stolen base decisions. The observed success rate of 74.7\% exceeds the break-even threshold of 72.2\%, and 65.3\% of attempts are predicted to be above break-even. Unlike NFL fourth-down decisions, where teams are demonstrably too conservative, stolen base decisions appear to reflect appropriate risk assessment.
+
+The key limitation of this analysis is selection bias: we cannot observe counterfactual success rates for non-attempts. Future work could incorporate player-level covariates (sprint speed, catcher pop time) to better predict success probabilities and identify potential missed opportunities.
+
+\appendix
+
+\section{MCMC Diagnostics}
+
+\subsection{Convergence}
+
+We assess MCMC convergence using effective sample size (ESS) computed from autocorrelation. For all parameters, we obtain ESS $> 500$, indicating adequate mixing. The chains were initialized at the observed log-odds success rate for the intercept and zero for other coefficients.
+
+\subsection{Posterior Predictive Check}
+
+The posterior mean predicted success rate for attempts matches the observed rate (both approximately 75\%), indicating adequate model calibration. The primary value of the Bayesian approach is uncertainty quantification: the 95\% credible intervals properly reflect parameter uncertainty, which propagates to predictions.
+
+\section{Data Processing Details}
+
+Steal events were identified from the \texttt{des} (description) field in Statcast data using the following patterns:
+\begin{itemize}
+    \item Success: ``steals (2nd$|$3rd$|$home)''
+    \item Failure: ``caught stealing (2nd$|$3rd$|$home)''
+\end{itemize}
+
+Plate appearances were aggregated from pitch-level data, with steal outcomes attached to the plate appearance in which they occurred.
+
+\end{document}
