@@ -29,8 +29,8 @@ $$s = (\Delta, \tau, x, d)$$
 where:
 - $\Delta \in \mathbb{Z}$ is the **score differential** (positive if the possession team is winning)
 - $\tau \in [0, T]$ is the **time remaining** in seconds
-- $x \in \{1, \ldots, 99\}$ is the **field position** measured in yards from the opponent's end zone
-- $d \in \{1, \ldots, 99\}$ is the **yards to go** for a first down
+- $x \in \lbrace 1, \ldots, 99 \rbrace$ is the **field position** measured in yards from the opponent's end zone
+- $d \in \lbrace 1, \ldots, 99 \rbrace$ is the **yards to go** for a first down
 
 The full state space also includes timeouts and half indicators, but the reduced state captures the most decision-relevant variation.
 
@@ -38,7 +38,7 @@ The full state space also includes timeouts and half indicators, but the reduced
 
 On fourth down, the coach chooses an action $a$ from:
 
-$$\mathcal{A} = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$$
+$$\mathcal{A} = \lbrace\texttt{go}, \texttt{punt}, \texttt{fg}\rbrace$$
 
 where:
 - $\texttt{go}$ denotes attempting to convert the fourth down
@@ -53,7 +53,7 @@ Each action induces a probability distribution over successor states. Let $P(s' 
 
 **Going for it.** Let $\pi(d; \theta)$ denote the probability of converting with $d$ yards to go. The transition is:
 
-$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot \mathbb{1}\{s' = s_{\text{convert}}\} + (1 - \pi(d; \theta)) \cdot \mathbb{1}\{s' = s_{\text{fail}}\}$$
+$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot \mathbb{1}\lbrace s' = s_{\text{convert}}\rbrace + (1 - \pi(d; \theta)) \cdot \mathbb{1}\lbrace s' = s_{\text{fail}}\rbrace$$
 
 where $s_{\text{convert}}$ retains possession with updated field position, and $s_{\text{fail}}$ gives the opponent the ball at the current spot.
 
@@ -65,7 +65,7 @@ where the bounds reflect touchbacks and downing inside the 20.
 
 **Field goal.** Let $\phi(x; \theta)$ denote the probability of making a field goal from $x$ yards (kick distance = $x + 17$):
 
-$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot \mathbb{1}\{+3, \text{kickoff}\} + (1 - \phi(x; \theta)) \cdot \mathbb{1}\{\text{opp. at } \max(x, 20)\}$$
+$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot \mathbb{1}\lbrace +3, \text{kickoff}\rbrace + (1 - \phi(x; \theta)) \cdot \mathbb{1}\lbrace \text{opp. at } \max(x, 20)\rbrace$$
 
 ### 4. The Objective: Maximizing Win Probability
 
