@@ -833,6 +833,45 @@ Despite the improvement, coaches remain dramatically underaggressive:
 
 Coaches attempt two-point conversions 35 percentage points less often than optimal. The model recommends going for 2 whenever trailing after the touchdown (score differential $\leq -1$), because variance helps when behind. Coaches almost never do this, defaulting to the PAT except in obvious late-game scenarios.
 
+\subsection{The Down 8 vs Down 9 Paradox}
+
+A striking pattern emerges when examining specific game situations. Table~\ref{tab:two_point_situations} presents two-point decision quality by pre-touchdown score differential.
+
+\begin{table}[H]
+\centering
+\caption{Two-Point Conversion Decisions by Game Situation (2016--2024)}
+\label{tab:two_point_situations}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Situation} & \textbf{N} & \textbf{Model: 2pt Optimal} & \textbf{Actual 2pt Rate} & \textbf{Comply When Should} \\
+\midrule
+Down 8 $\to$ Down 2 & 175 & 72\% & \textbf{81\%} & \textbf{84\%} \\
+Down 9 $\to$ Down 3 & 105 & 72\% & 1\% & \textbf{0\%} \\
+\midrule
+Down 14 $\to$ Down 8 & 404 & 73\% & 9\% & 13\% \\
+Down 15 $\to$ Down 9 & 87 & 77\% & 25\% & 25\% \\
+Down 7 $\to$ Down 1 & 1,022 & 59\% & 4\% & 3\% \\
+Tied $\to$ Up 6 & 2,330 & 46\% & 1\% & 1\% \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item \textit{Notes:} ``Down 8 $\to$ Down 2'' means pre-TD score differential was $-8$, so post-TD differential is $-2$. ``Comply When Should'' is the rate at which coaches go for 2 when the model says 2pt is optimal.
+\end{tablenotes}
+\end{table}
+
+The paradox: when down 8 (trailing by 2 after the touchdown), coaches go for 2 at an 81\% rate---\textit{higher} than the model-optimal rate of 72\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an identical 72\% optimal rate. In 76 situations where the model recommended going for 2 when down 9, coaches kicked the PAT \textit{every single time}.
+
+The behavioral explanation is straightforward:
+\begin{itemize}
+    \item \textbf{Down 8:} Going for 2 ties the game \textit{immediately}. The payoff is salient and certain conditional on success.
+    \item \textbf{Down 9:} Going for 2 means a field goal can tie \textit{later}. The payoff is deferred and probabilistic.
+\end{itemize}
+
+This pattern is consistent with present bias and probability neglect: coaches respond to immediate, certain payoffs (``go for 2 to tie'') but fail to account for deferred, probabilistic payoffs (``go for 2 so a future FG ties''). The heuristic ``go for 2 when it ties the game'' is well-known; the more complex calculation ``go for 2 when it sets up a tying field goal'' requires forward-looking probability integration that coaches systematically fail to perform.
+
+The down 7 situation (trailing by 1 after TD) shows similar conservatism: going for 2 avoids overtime if the opponent scores a touchdown, but coaches attempt it only 4\% of the time despite a 59\% optimal rate. Again, the deferred and probabilistic nature of the benefit---avoiding a \textit{possible future} overtime---fails to motivate action.
+
 \subsection{The Simple Rule}
 
 The optimal decision rule is straightforward: go for 2 when trailing after the TD; kick PAT when ahead. The crossover point is at score differential $\approx -1$ (down by 1 after the TD, which means down by 7 before the TD).
