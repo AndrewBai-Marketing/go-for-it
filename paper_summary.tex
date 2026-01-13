@@ -110,26 +110,86 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 \section{Fourth Down: The Math}
 %===========================================================
 
-\textbf{Decision problem:} At each fourth down, coach chooses $a \in \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$ to maximize win probability.
+\subsection*{The State Space}
 
-\textbf{State space:} $s = (\text{score\_diff}, \text{field\_pos}, \text{yards\_to\_go}, \text{time}, \text{timeouts})$
-
-\textbf{Win probability for each action:}
-
-\begin{align}
-\text{WP}_{\texttt{go}}(s) &= p_{\text{convert}}(s) \cdot \text{WP}(s' | \text{convert}) + (1 - p_{\text{convert}}(s)) \cdot \text{WP}(s' | \text{fail}) \\[0.5em]
-\text{WP}_{\texttt{punt}}(s) &= \text{WP}(s' | \text{punt}) \\[0.5em]
-\text{WP}_{\texttt{fg}}(s) &= p_{\text{make}}(s) \cdot \text{WP}(s' | \text{make}) + (1 - p_{\text{make}}(s)) \cdot \text{WP}(s' | \text{miss})
-\end{align}
-
-\textbf{Optimal action:} $a^* = \arg\max_{a} \text{WP}_a(s)$
-
-\textbf{Model components}:
+The state of the game at any moment is represented by the tuple:
+$$s = (\Delta, \tau, x, d)$$
+where:
 \begin{itemize}[nosep]
-  \item $p_{\text{convert}}$: Hierarchical logistic regression on yards to go \known
-  \item $p_{\text{punt}}$: Normal model for net punt yards (mean $\approx$ 40 yds) \known
-  \item $p_{\text{make}}$: Logistic regression on kick distance \known
-  \item $\text{WP}$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
+  \item $\Delta \in \mathbb{Z}$ is the \textbf{score differential} (positive if the possession team is winning)
+  \item $\tau \in [0, T]$ is the \textbf{time remaining} in seconds
+  \item $x \in \{1, \ldots, 99\}$ is the \textbf{field position} measured in yards from the opponent's end zone
+  \item $d \in \{1, \ldots, 99\}$ is the \textbf{yards to go} for a first down
+\end{itemize}
+
+\subsection*{The Action Space}
+
+On fourth down, the coach chooses an action $a$ from:
+$$\mathcal{A} = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$$
+where \texttt{go} denotes attempting to convert, \texttt{punt} denotes punting, and \texttt{fg} denotes attempting a field goal. The field goal action is infeasible when $x > 60$ (requiring a kick longer than 77 yards).
+
+\subsection*{Transition Dynamics}
+
+Each action induces a probability distribution over successor states. Let $P(s' \mid s, a; \theta)$ denote the transition probability parameterized by $\theta$.
+
+\textbf{Going for it.} Let $\pi(d; \theta)$ denote the probability of converting with $d$ yards to go:
+$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot \mathbb{1}\{s' = s_{\text{convert}}\} + (1 - \pi(d; \theta)) \cdot \mathbb{1}\{s' = s_{\text{fail}}\}$$
+
+\textbf{Punting.} Let $Y(x; \theta)$ denote net punt yards from field position $x$. The opponent receives the ball at $x' = \min(\max(100 - (x - Y), 1), 80)$.
+
+\textbf{Field goal.} Let $\phi(x; \theta)$ denote the probability of making a field goal from $x$ yards:
+$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot \mathbb{1}\{+3, \text{kickoff}\} + (1 - \phi(x; \theta)) \cdot \mathbb{1}\{\text{opp. at } \max(x, 20)\}$$
+
+\subsection*{The Objective: Maximizing Win Probability}
+
+The coach's objective is to maximize the probability of winning. The expected win probability for action $a$ in state $s$ is:
+$$\mathbb{E}[W \mid a, s] = \sum_{s'} W(s') \cdot P(s' \mid s, a)$$
+where $W(s')$ is the probability of winning from successor state $s'$. The optimal action is:
+$$a^* = \arg\max_{a \in \mathcal{A}} \mathbb{E}[W \mid a, s]$$
+
+\subsection*{Fully Bayesian Framework}
+
+The key innovation is treating the transition parameters $\theta$ as \textbf{uncertain} rather than known. We place a prior $p(\theta)$ on the parameters and update to the posterior $p(\theta \mid \mathcal{D})$ given observed data $\mathcal{D}$.
+
+The Bayesian expected win probability integrates over parameter uncertainty:
+$$\mathbb{E}[W \mid a, s] = \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+
+This integral is computed via Monte Carlo. For $M$ posterior draws $\theta^{(1)}, \ldots, \theta^{(M)} \sim p(\theta \mid \mathcal{D})$:
+$$\mathbb{E}[W \mid a, s] \approx \frac{1}{M} \sum_{m=1}^{M} W(s' \mid a, s, \theta^{(m)})$$
+
+\begin{definition}[Bayes-Optimal Decision]
+The Bayes-optimal action is:
+$$a^* = \arg\max_{a \in \mathcal{A}} \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+\end{definition}
+
+This decision criterion accounts for both \textbf{transition uncertainty} (given parameters $\theta$, outcomes are stochastic) and \textbf{parameter uncertainty} (the parameters $\theta$ themselves are uncertain).
+
+\subsection*{Decision Confidence (Posterior Probability of Optimality)}
+
+A key advantage of the Bayesian framework is quantifying \textbf{uncertainty about which action is optimal}.
+
+\begin{definition}[Decision Confidence]
+The posterior probability that action $a$ is optimal is:
+$$\mathbb{P}(a \text{ is optimal} \mid s, \mathcal{D}) = \mathbb{P}_{\theta \mid \mathcal{D}}\left(W_a(s; \theta) > \max_{a' \neq a} W_{a'}(s; \theta)\right)$$
+\end{definition}
+
+This is estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \mathcal{D})$, compute $W_a(s; \theta^{(m)})$ for each action, and calculate the fraction of draws for which action $a$ has the highest WP.
+
+\textbf{Interpretation:}
+\begin{itemize}[nosep]
+  \item $\mathbb{P}(\texttt{go} \text{ is optimal}) \approx 1$ $\to$ \textbf{obvious} go-for-it decision
+  \item $\mathbb{P}(\texttt{go} \text{ is optimal}) \approx 0.5$ $\to$ \textbf{close call} where data does not clearly favor one action
+\end{itemize}
+
+This allows us to distinguish between \textbf{clear mistakes} (coach chose suboptimally when the data strongly favored another action) and \textbf{close calls} (coach's choice was reasonable given decision uncertainty).
+
+\subsection*{Model Components}
+
+\begin{itemize}[nosep]
+  \item $\pi(d; \theta)$: Hierarchical logistic regression on yards to go \known
+  \item $Y(x; \theta)$: Normal model for net punt yards (mean $\approx$ 40 yds) \known
+  \item $\phi(x; \theta)$: Logistic regression on kick distance \known
+  \item $W(s)$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
 \end{itemize}
 
 \textbf{End-of-game filtering:} Following Baldwin (2021, nfl4th), we exclude plays with $<$60 seconds remaining where WP models become unreliable due to clock management and kneel-out scenarios. This removes 1.4\% of plays.
