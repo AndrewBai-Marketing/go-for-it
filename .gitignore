@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Data files (too large for git)
+data/*.parquet
+data/*.csv
+data/*.pkl
+!data/acquire_data.py
+
+# Model files (trained models - regenerate from data)
+models/*.pkl
+models/*.joblib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.nav
+*.snm
+*.vrb
+
+# Keep important LaTeX source files
+!slides/*.tex
+!*.tex
+
+# Outputs that can be regenerated
+outputs/figures/*.png
+outputs/figures/*.pdf
+outputs/tables/*.csv
+
+# Keep LaTeX tables
+!outputs/tables/*.tex
+
+# Unrelated project directories
+stolen_base_analysis/
+salary_efficiency/
