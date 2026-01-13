@@ -140,9 +140,6 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 
 \subsection*{Ex Ante vs Ex Post Optimal Decisions}
 
-\begin{contributionbox}
-\textbf{Expanding window design:} For each test year $Y$, train models on 1999--$(Y-1)$, then evaluate year $Y$ decisions. This tests whether optimal decisions were \textit{knowable at the time}.
-\end{contributionbox}
 
 \begin{center}
 \begin{tabular}{lccccc}
@@ -210,7 +207,7 @@ Clear ($>$5\% margin) & 10,987 & 15.3\% & 3.0\% \\
 %===========================================================
 
 \begin{contributionbox}
-\textbf{Expected wins lost by team and season} (expanding window, ex ante optimal):
+\textbf{Expected wins lost by team and season} :
 \begin{center}
 \begin{tabular}{lcccccc}
 \toprule
@@ -273,7 +270,6 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
   \item Close games in Q4 where possessing the ball has high value
 \end{itemize}
 
-\textbf{Note on BUF @ TEN (2021):} Earlier logistic WP models flagged Buffalo's 4th \& 1 from the TEN 3 with 22 seconds left (down 3) as the ``worst decision ever.'' Our neural network WP model---which correctly captures goal-line dynamics---shows GO was actually \textit{correct}: E[WP$|$GO] = 54.6\% vs E[WP$|$FG] = 44.8\%. Josh Allen's failed run was execution failure, not decision error.
 
 %===========================================================
 \section{Two-Point Conversions: A Simpler Decision}
