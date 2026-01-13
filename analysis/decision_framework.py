@@ -23,6 +23,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.bayesian_models import (
     ConversionModel, PuntModel, FieldGoalModel, WinProbabilityModel,
     HierarchicalConversionModel, HierarchicalFieldGoalModel,
+    WeatherAwareFieldGoalModel, ContextAwareConversionModel, ContextAwarePuntModel,
     load_all_models
 )
 # Try importing off/def model (may not exist yet in all environments)
@@ -44,6 +45,13 @@ class GameState:
     off_team: str = None    # offensive team abbreviation (e.g., 'PHI')
     def_team: str = None    # defensive team abbreviation (e.g., 'NYG')
     kicker_id: str = None   # kicker player ID for FG model
+    punter_id: str = None   # punter player ID for punt model
+
+    # Contextual factors for enhanced models
+    is_home: bool = False   # True if offense is home team
+    is_dome: bool = False   # True if playing in dome/closed stadium
+    temp: float = 65.0      # Temperature in Fahrenheit
+    wind: float = 5.0       # Wind speed in mph
 
     # Backward compatibility: alias 'team' to 'off_team'
     @property
@@ -177,6 +185,11 @@ class BayesianDecisionAnalyzer:
         # Check if we have hierarchical models
         self.has_team_effects = isinstance(self.conversion, HierarchicalConversionModel)
         self.has_kicker_effects = isinstance(self.fg, HierarchicalFieldGoalModel)
+
+        # Check if we have enhanced context-aware models
+        self.has_context_aware_conversion = isinstance(self.conversion, ContextAwareConversionModel)
+        self.has_weather_aware_fg = isinstance(self.fg, WeatherAwareFieldGoalModel)
+        self.has_context_aware_punt = isinstance(self.punt, ContextAwarePuntModel)
 
         # Check if we have offense/defense model
         self.has_off_def_effects = (HAS_OFF_DEF_MODEL and
@@ -355,8 +368,13 @@ class BayesianDecisionAnalyzer:
         while failing burns only ~48s (opponent gets ball).
         """
         # Get conversion probabilities (all posterior samples)
-        # Use offense/defense effects if available, else team-only effects
-        if self.has_off_def_effects and (state.off_team is not None or state.def_team is not None):
+        # Use context-aware model if available, else fall back to hierarchical
+        if self.has_context_aware_conversion:
+            p_convert = self.conversion.get_posterior_samples(
+                state.yards_to_go, off_team=state.off_team, def_team=state.def_team,
+                is_home=state.is_home, is_dome=state.is_dome
+            )
+        elif self.has_off_def_effects and (state.off_team is not None or state.def_team is not None):
             p_convert = self.conversion.get_posterior_samples(
                 state.yards_to_go, off_team=state.off_team, def_team=state.def_team
             )
@@ -392,8 +410,14 @@ class BayesianDecisionAnalyzer:
         With clock model enabled, accounts for the ~69s typically burned
         by the punt play + opponent's subsequent drive.
         """
-        # Get expected punt distance
-        punt_yards = self.punt.get_posterior_samples(state.field_pos)
+        # Get expected punt distance - use context-aware model if available
+        if self.has_context_aware_punt:
+            punt_yards = self.punt.get_posterior_samples(
+                state.field_pos, wind=state.wind, is_dome=state.is_dome,
+                punter_id=state.punter_id
+            )
+        else:
+            punt_yards = self.punt.get_posterior_samples(state.field_pos)
 
         # Use mean punt distance for state transition
         mean_punt = punt_yards.mean()
@@ -418,24 +442,31 @@ class BayesianDecisionAnalyzer:
         """
         fg_distance = state.field_pos + 17  # Add 17 for snap/hold
 
-        # FG is not a realistic option beyond ~63 yards (NFL record is 66)
-        # Return -inf WP to make this option dominated
-        if fg_distance > 63:
-            return np.full(self.n_samples, -np.inf)
-
-        # For long FGs (58-63 yards), cap probability at realistic levels
-        # NFL data shows ~15-20% make rate for 58-60 yards, ~5-10% for 60+
-        if fg_distance > 60:
-            # 60-63 yards: very low probability (~10%)
-            p_make = np.full(self.n_samples, 0.10)
-        elif fg_distance > 58:
-            # 58-60 yards: low probability (~20%)
-            p_make = np.full(self.n_samples, 0.20)
-        elif self.has_kicker_effects and state.kicker_id is not None:
-            # Use kicker-specific probability if available
-            p_make = self.fg.get_posterior_samples(fg_distance, kicker_id=state.kicker_id)
+        # Use weather-aware model if available (handles extreme distances internally)
+        if self.has_weather_aware_fg:
+            # Weather-aware model handles weather effects, but still cap at realistic distances
+            # NFL record is 66 yards, but beyond 63 is extremely rare and risky
+            if fg_distance > 63:
+                return np.full(self.n_samples, -np.inf)
+            p_make = self.fg.get_posterior_samples(
+                fg_distance, kicker_id=state.kicker_id,
+                temp=state.temp, wind=state.wind
+            )
         else:
-            p_make = self.fg.get_posterior_samples(fg_distance)
+            # Fall back to original logic with hard cutoffs
+            # FG is not a realistic option beyond ~63 yards (NFL record is 66)
+            if fg_distance > 63:
+                return np.full(self.n_samples, -np.inf)
+
+            # For long FGs (58-63 yards), cap probability at realistic levels
+            if fg_distance > 60:
+                p_make = np.full(self.n_samples, 0.10)
+            elif fg_distance > 58:
+                p_make = np.full(self.n_samples, 0.20)
+            elif self.has_kicker_effects and state.kicker_id is not None:
+                p_make = self.fg.get_posterior_samples(fg_distance, kicker_id=state.kicker_id)
+            else:
+                p_make = self.fg.get_posterior_samples(fg_distance)
 
         # State after make (uses clock model if enabled)
         opp_pos, new_time, new_score = self._state_after_fg_make(state, use_clock_model=self.use_clock_model)
