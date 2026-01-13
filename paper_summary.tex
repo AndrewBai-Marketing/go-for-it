@@ -124,12 +124,12 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 
 \textbf{Optimal action:} $a^* = \arg\max_{a} \text{WP}_a(s)$
 
-\textbf{Model components} \known:
+\textbf{Model components}:
 \begin{itemize}[nosep]
-  \item $p_{\text{convert}}$: Hierarchical logistic regression on yards to go
-  \item $p_{\text{punt}}$: Normal model for net punt yards (mean $\approx$ 40 yds)
-  \item $p_{\text{make}}$: Logistic regression on kick distance
-  \item $\text{WP}$: Logistic model on score diff, time, field position, timeouts
+  \item $p_{\text{convert}}$: Hierarchical logistic regression on yards to go \known
+  \item $p_{\text{punt}}$: Normal model for net punt yards (mean $\approx$ 40 yds) \known
+  \item $p_{\text{make}}$: Logistic regression on kick distance \known
+  \item $\text{WP}$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
 \end{itemize}
 
 \textbf{New: Bayesian clock consumption model} \new:
@@ -264,11 +264,11 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
 \toprule
 \textbf{Year} & \textbf{Game} & \textbf{Situation} & \textbf{Did} & \textbf{Should} & \textbf{WP Cost} \\
 \midrule
-2021 & BUF @ TEN & 4th \& 1, opp 3, $-3$, 0:22 Q4 & Go & FG & 34.3\% \\
 2016 & BAL @ JAX & 4th \& 2, own 49, $-1$, 2:14 Q4 & Go & Punt & 26.8\% \\
 2020 & DAL @ SEA & 4th \& 3, own 47, $-1$, 2:37 Q4 & Go & Punt & 26.7\% \\
 2012 & DAL @ CAR & 4th \& 1, own 40, $-2$, 2:11 Q4 & Go & Punt & 26.0\% \\
 2020 & DEN @ NYJ & 4th \& 3, own 50, $-2$, 2:05 Q4 & Go & Punt & 24.8\% \\
+2019 & CLE @ PIT & 4th \& 2, own 46, $-1$, 2:02 Q4 & Go & Punt & 23.5\% \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -281,29 +281,7 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
   \item Trailing by 1--3 points where field position matters
 \end{itemize}
 
-%===========================================================
-\section{Model Validation: Comparison with Next Gen Stats}
-%===========================================================
-
-As a validation check, we compared our model against NFL Next Gen Stats (NGS), a widely-cited industry source. A notable disagreement arises on the BUF @ TEN decision above: our model says FG was optimal (+34.3\% WP), but NGS reportedly recommended going for it.
-
-\textbf{The arithmetic strongly supports our model:}
-\begin{itemize}[nosep]
-  \item Even \textit{after converting}, Buffalo faces low win probability
-  \item Historical data (2006--2024): teams trailing 1--7 pts with 10--30 sec at opponent's 30--40 yard line score TD only \textbf{8\%} of the time
-  \item Back-of-envelope: $\E[W|\texttt{go}] \approx 0.66 \times 0.28 + 0.34 \times 0.02 \approx 19\%$
-  \item Back-of-envelope: $\E[W|\texttt{fg}] \approx 0.66 \times 0.50 + 0.34 \times 0.02 \approx 34\%$
-  \item FG advantage: $\sim$15 percentage points (consistent with model)
-\end{itemize}
-
-\textbf{For NGS to be correct, one of these must hold:}
-\begin{itemize}[nosep]
-  \item WP after convert $\approx$ 94\% (actual: $\sim$28\%)
-  \item TD rate from 35 yds with 20 sec $\approx$ 60\% (actual: 8\%)
-  \item 4th \& 1 conversion rate $\approx$ 125\% (impossible)
-\end{itemize}
-
-\textbf{Conclusion:} Our model's recommendations are grounded in historical data and basic probability theory. External analytics sources may not properly account for the low probability of scoring with limited time remaining.
+\textbf{Note on BUF @ TEN (2021):} Earlier logistic WP models flagged Buffalo's 4th \& 1 from the TEN 3 with 22 seconds left (down 3) as the ``worst decision ever.'' Our neural network WP model---which correctly captures goal-line dynamics---shows GO was actually \textit{correct}: E[WP$|$GO] = 54.6\% vs E[WP$|$FG] = 44.8\%. Josh Allen's failed run was execution failure, not decision error.
 
 %===========================================================
 \section{Two-Point Conversions: A Simpler Decision}
@@ -376,8 +354,9 @@ Fourth down is suboptimal (Romer 2006) & \known \\
 Win probability $>$ expected points for decisions & \known \\
 \midrule
 Bayesian framework with full posterior uncertainty & \new \\
+Neural network WP model (Brier: 0.164, ECE: 0.005) & \new \\
 Expanding window (ex ante vs ex post) design & \new \\
-96.4\% of optimal decisions knowable in real-time & \new \\
+96.5\% of optimal decisions knowable in real-time & \new \\
 No improvement in fourth down decision quality & \new \\
 Bayesian clock consumption model & \new \\
 Team-level wins lost analysis & \new \\
