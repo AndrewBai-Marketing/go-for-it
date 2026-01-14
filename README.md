@@ -193,15 +193,19 @@ $$\mathbb{P}(\text{make} \mid d, \text{kicker} = j) = \sigma(\alpha + \beta (d -
 - $\hat{\beta} = -0.105$ (SE: 0.004)
 - Between-kicker variance: $\hat{\tau}^2 = 0.031$
 
-### Punt Model
+### Hierarchical Punt Model
 
 **Likelihood:**
 
-$$Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)$$
+$$Y \mid x, \text{punter} = j \sim \mathcal{N}(\alpha + \beta x + \gamma_j, \sigma^2)$$
 
-where $Y$ is net punt yards and $x$ is field position.
+where $Y$ is net punt yards, $x$ is field position, and $\gamma_j$ is the punter-specific effect.
 
-**Posterior estimates:** $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), $\hat{\sigma} = 9.3$ yards.
+**Hierarchical structure:**
+- $\gamma_j \sim \mathcal{N}(0, \tau^2)$ = punter-specific effect
+- Punters with few observations shrink toward the population mean
+
+**Population-level estimates:** $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), $\hat{\sigma} = 9.3$ yards.
 
 ### Win Probability Model
 

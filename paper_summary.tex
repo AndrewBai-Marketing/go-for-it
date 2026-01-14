@@ -213,7 +213,7 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
 
 \begin{itemize}[nosep]
   \item $\pi(d; \theta)$: Hierarchical logistic regression with in-game context features \new
-  \item $Y(x; \theta)$: $Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)$ for net punt yards \known
+  \item $Y(x; \theta)$: $Y \mid x, \text{punter} = j \sim \mathcal{N}(\alpha + \beta x + \gamma_j, \sigma^2)$ with punter effects \new
   \item $\phi(x; \theta)$: $\text{logit}(p) = \alpha + \beta(d - 35) + \gamma_{\text{kicker}}$ with kicker effects \new
   \item $W(s)$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
 \end{itemize}
