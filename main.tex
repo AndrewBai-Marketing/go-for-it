@@ -240,7 +240,7 @@ where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures kicker ability relative to
 \begin{equation}
     Y \mid x, \text{punter} = j \sim \mathcal{N}(\alpha + \beta x + \gamma_j, \sigma^2)
 \end{equation}
-where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures punter ability relative to league average. The population-level estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), and $\hat{\sigma} = 9.3$ yards. Punts from deeper in own territory travel further (positive $\beta$), reflecting punter adjustment to field position.
+where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures punter ability relative to league average. The population-level estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), and $\hat{\sigma} = 9.3$ yards. The between-punter variance is $\hat{\tau}^2 = 1.84$, implying a punter standard deviation of 1.36 yards---the best punters add roughly 2--3 yards of net punt distance compared to average. Punts from deeper in own territory travel further (positive $\beta$), reflecting punter adjustment to field position.
 
 \paragraph{Win probability model.} We model win probability using a neural network trained on 710,664 plays from 2006--2024. The architecture is a 3-layer multilayer perceptron (128-64-32 hidden units) with ReLU activations and 20\% dropout, trained with early stopping to minimize binary cross-entropy loss. Input features include score differential, time remaining, field position, down, yards to go, timeout differential, half indicator, goal-to-go indicator, and interaction terms (score$\times$time, field position$\times$time). We also include binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), and goal-line ($x \leq 5$) situations.
 

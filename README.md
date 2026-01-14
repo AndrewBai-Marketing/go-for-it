@@ -205,7 +205,11 @@ where $Y$ is net punt yards, $x$ is field position, and $\gamma_j$ is the punter
 - $\gamma_j \sim \mathcal{N}(0, \tau^2)$ = punter-specific effect
 - Punters with few observations shrink toward the population mean
 
-**Population-level estimates:** $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), $\hat{\sigma} = 9.3$ yards.
+**Population-level estimates:**
+- $\hat{\alpha} = 32.8$ (SE: 0.41)
+- $\hat{\beta} = 0.154$ (SE: 0.006)
+- $\hat{\sigma} = 9.3$ yards
+- Between-punter variance: $\hat{\tau}^2 = 1.84$, implying punter SD of 1.36 yards
 
 ### Win Probability Model
 
