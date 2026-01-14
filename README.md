@@ -122,33 +122,57 @@ This allows us to distinguish between:
 
 ## Component Models
 
-### Hierarchical Conversion Model
+### Hierarchical Conversion Model with In-Game Context
 
-Conversion probability is modeled as logistic in yards to go with **both** offensive and defensive team random effects:
+Conversion probability is modeled as logistic in yards to go with **in-game context features** and team random effects:
 
-$$\mathbb{P}(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})$$
+$$\mathbb{P}(\text{convert} \mid d, g, e, p, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta_d d + \beta_g g + \beta_e e + \beta_p p + \gamma_j^{\text{off}} + \delta_k^{\text{def}})$$
 
 where $\sigma(\cdot)$ is the logistic function, and:
+- $d$ is yards to go
+- $g$ is a **goal-to-go indicator** (1 if at opponent's goal line)
+- $e$ is **standardized in-game EPA** (team's cumulative rush + pass EPA in that game)
+- $p$ is **standardized drive play count**
 - $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ captures offensive team conversion ability
 - $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ captures defensive team stopping ability
 
-Both effects are shrunk toward zero via **empirical Bayes**, with shrinkage factor:
+Both team effects are shrunk toward zero via **empirical Bayes**, with shrinkage factor:
 
 $$B_k = \frac{\text{SE}_k^2}{\text{SE}_k^2 + \tau^2}$$
 
-This ensures stable estimates even for teams with few observations.
-
 **Population-level estimates** (1999-2024, N = 13,884 attempts):
-- $\hat{\alpha} = 0.660$ (SE: 0.026)
-- $\hat{\beta} = -0.160$ (SE: 0.005)
+- $\hat{\alpha} = 0.722$
+- $\hat{\beta}_d = -0.133$ (yards to go)
+- $\hat{\beta}_g = -1.129$ (goal-to-go **hurts** conversion, P(β<0) = 100%)
+- $\hat{\beta}_e = 0.490$ (in-game EPA helps)
+- $\hat{\beta}_p = 1.201$ (longer drives help)
 
-| Yards to Go | Conversion % | 95% CI |
-|-------------|--------------|--------|
-| 1 | 64.8% | [62.9%, 66.4%] |
-| 2 | 60.7% | [58.9%, 62.2%] |
-| 3 | 56.4% | [54.8%, 57.9%] |
-| 5 | 47.6% | [46.0%, 49.3%] |
-| 10 | 27.4% | [24.9%, 30.4%] |
+**The goal-to-go effect is critical.** At 4th & 1, conversion probability drops from 64.3% (non-goal-to-go) to 36.8% (goal-to-go)—a **27.5 percentage point penalty**. The odds ratio is 0.32, meaning goal-to-go situations are roughly one-third as likely to convert. This reflects defensive adjustments near the goal line (stacking the box).
+
+| Yards to Go | Conversion % (non-GTG) | 95% CI |
+|-------------|------------------------|--------|
+| 1 | 64.3% | [63.0%, 65.6%] |
+| 2 | 61.2% | [60.0%, 62.4%] |
+| 3 | 58.0% | [56.9%, 59.1%] |
+| 5 | 51.4% | [50.3%, 52.4%] |
+| 10 | 35.2% | [33.4%, 36.8%] |
+
+### Why In-Game Context Matters: Explaining the "Coach Edge"
+
+A natural objection to any fourth-down model is that coaches have **private information** the model doesn't capture. Initial analysis appeared to support this: coaches who "defied" model recommendations (going for it when the model said punt) converted at **higher rates** than when they agreed with the model.
+
+The in-game context model **eliminates this apparent coach edge**. The explanation is **Simpson's Paradox**:
+
+- Coaches who override the model to go for it tend to do so in **favorable observable contexts**: high EPA (performing well in-game), longer drives (momentum), and crucially, **non-goal-to-go situations**
+- Coaches who align with the model's "go for it" recommendation are often in **goal-to-go situations** (4th & goal from the 1), where the model recommends going for it but conversion rates are much lower
+
+**Key statistics:**
+- Coaches who "defied" the model: 2.1% goal-to-go rate
+- Coaches who "aligned" with the model: 26.5% goal-to-go rate
+
+After controlling for goal-to-go, EPA, and drive play count:
+- **Coach edge: -1.6 pp (p = 0.27, NOT significant)**
+- Coaches do **not** have private information that improves upon the model
 
 ### Hierarchical Field Goal Model
 
@@ -220,17 +244,32 @@ This filtering removes approximately 1.4% of plays. The excluded plays are dispr
 
 ### Fourth Down Decisions (2006-2024)
 
-- **72.3% match rate** with model recommendations overall
-- **79% of deviations are close calls** (decision margin < 2 percentage points)
-- Only **1.3% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
-- Go-for-it rates increased from 12.6% (2006-2014) → 19.2% (2019-2024)
-- Model recommends go-for-it **30%** of the time vs coaches' actual **14%**
+- **82.2% match rate** with model recommendations overall
+- **82% of deviations are close calls** (decision margin < 2 percentage points)
+- Only **0.3% are clear mistakes** (margin ≥ 5pp) where the optimal action was obvious
+- Go-for-it rates increased from 12% (2006-2017) → 20% (2020-2024)
+- Average team loses **0.28 expected wins per season** from suboptimal fourth-down decisions
 
 ### Two-Point Conversions
 
 - **58.6% optimal** overall
-- Virtually all deviations are close calls
 - Optimality improving at **+1.0 pp/year** ($p = 0.0003$)
+
+### The Down 8 vs Down 9 Paradox
+
+A striking behavioral economics finding from two-point conversion analysis:
+
+| Situation | Model: 2pt Optimal | Actual 2pt Rate | Coach Compliance |
+|-----------|-------------------|-----------------|------------------|
+| Down 8 → Down 2 | **85%** | 79% | **84%** |
+| Down 9 → Down 3 | **91%** | 1% | **1%** |
+
+Down 9 has an even *higher* optimal 2pt rate than Down 8 (91% vs 85%), yet coaches comply 84% of the time when down 8 and only 1% when down 9. The difference:
+
+- **Down 8:** Going for 2 ties the game *immediately*. The payoff is salient and certain.
+- **Down 9:** Going for 2 means a field goal can tie *later*. The payoff is deferred and probabilistic.
+
+This is consistent with **present bias** and **probability neglect**: coaches respond to immediate payoffs but fail to account for deferred, probabilistic ones.
 
 ### Takeaway
 
@@ -247,7 +286,9 @@ We implement an **expanding window analysis** with a 7-year minimum training win
 2. Compute optimal decisions under the ex ante model
 3. Compare to ex post (full sample) recommendations
 
-**Result:** 96.5% of optimal decisions were knowable in real-time.
+**Result:** **96.1% of optimal decisions were knowable in real-time** (ex ante and ex post models agree on the optimal action).
+
+This finding is remarkably consistent across all 19 test years (2006-2024), with agreement rates ranging from 93.9% to 97.9%.
 
 ---
 
