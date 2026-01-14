@@ -80,17 +80,22 @@ def run_full_defensible_analysis():
         })
         print(f"    Strict: {n_strict/n_total:.1%}, Defensible: {n_defensible/n_total:.1%}")
 
-    # POST-2015: All years with both metrics
+    # POST-2015: All years with both metrics (2015 is rule change year)
     print("\n" + "="*50)
-    print("POST-RULE ERA (2016-2024)")
+    print("POST-RULE ERA (2015-2024)")
     print("="*50)
 
-    for year in range(2016, 2025):
+    for year in range(2015, 2025):
         decisions = get_decisions_for_year(pbp, year)
         if decisions is None or len(decisions) == 0:
             continue
 
-        train_start, train_end = 2015, year - 1
+        # 2015: Use 2015 data itself (ex post)
+        # 2016+: Use expanding window from 2015
+        if year == 2015:
+            train_start, train_end = 2015, 2015
+        else:
+            train_start, train_end = 2015, year - 1
         print(f"\n{year}: Training on {train_start}-{train_end}")
 
         two_pt_model, pat_model = train_era_models(pbp, train_start, train_end)
@@ -166,10 +171,10 @@ def create_defensible_learning_figure(df=None):
     ax.plot(post['year'], post['defensible_optimal_rate'] * 100, 's-',
             color='#2ecc71', linewidth=2.5, markersize=10)
 
-    # Add vertical line at rule change
-    ax.axvline(x=2015, color='black', linestyle='--', linewidth=2, alpha=0.5)
+    # Add vertical line at rule change (between 2014 and 2015)
+    ax.axvline(x=2014.5, color='black', linestyle='--', linewidth=2, alpha=0.5)
     ax.annotate('2015 Rule Change\n(PAT moved to 15-yd line)',
-                xy=(2015, 50), fontsize=10, ha='center',
+                xy=(2014.5, 50), fontsize=10, ha='center',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     # Add trend line for post-2015 defensible
@@ -185,9 +190,9 @@ def create_defensible_learning_figure(df=None):
 
     # Annotate the dropoff
     pre_avg = pre['defensible_optimal_rate'].mean() * 100
-    post_2016 = post[post['year'] == 2016]['defensible_optimal_rate'].values[0] * 100
-    ax.annotate(f'Dropoff:\n{pre_avg:.0f}% → {post_2016:.0f}%',
-                xy=(2015.5, 85), fontsize=10, color='#c0392b',
+    post_2015 = post[post['year'] == 2015]['defensible_optimal_rate'].values[0] * 100
+    ax.annotate(f'Dropoff:\n{pre_avg:.0f}% → {post_2015:.0f}%',
+                xy=(2014.5, 88), fontsize=10, color='#c0392b',
                 bbox=dict(boxstyle='round', facecolor='#ffcccc', alpha=0.8))
 
     ax.set_xlabel('Season', fontsize=12)
