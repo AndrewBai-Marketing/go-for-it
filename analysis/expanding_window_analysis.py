@@ -20,8 +20,14 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from models.bayesian_models import (
-    ConversionModel, PuntModel, FieldGoalModel, WinProbabilityModel
+    ConversionModel, PuntModel, FieldGoalModel, WinProbabilityModel,
+    HierarchicalFieldGoalModel, HierarchicalPuntModel
 )
+try:
+    from models.hierarchical_off_def_model import HierarchicalOffDefConversionModel
+    HAS_OFF_DEF_MODEL = True
+except ImportError:
+    HAS_OFF_DEF_MODEL = False
 from analysis.decision_framework import BayesianDecisionAnalyzer, GameState
 from data.acquire_data import (
     clean_pbp_data, extract_fourth_downs, extract_punt_plays,
@@ -88,31 +94,85 @@ def prepare_cumulative_data(pbp: pd.DataFrame, end_year: int):
     }
 
 
-def fit_models_on_data(data: dict, n_samples: int = 1000):
-    """Fit all Bayesian models on given data."""
-    # Conversion model
-    conversion = ConversionModel()
-    if len(data['attempts']) > 100:
-        conversion.fit(data['attempts'], n_samples=n_samples)
-    else:
-        print(f"  Warning: Only {len(data['attempts'])} attempts, skipping conversion model")
-        return None
+def fit_models_on_data(data: dict, n_samples: int = 1000, use_hierarchical: bool = True):
+    """
+    Fit all Bayesian models on given data.
 
-    # Punt model
-    punt = PuntModel()
-    if len(data['punts']) > 100:
-        punt.fit(data['punts'], n_samples=n_samples)
+    Args:
+        data: Dict with 'attempts', 'punts', 'fgs', 'cleaned' DataFrames
+        n_samples: Number of posterior samples
+        use_hierarchical: If True, use hierarchical models with team/kicker effects
+    """
+    # Conversion model - use hierarchical off/def model if available
+    if use_hierarchical and HAS_OFF_DEF_MODEL:
+        conversion = HierarchicalOffDefConversionModel()
+        if len(data['attempts']) > 500:  # Need more data for hierarchical
+            try:
+                conversion.fit(data['attempts'], n_samples=n_samples)
+                print(f"    Fitted hierarchical off/def conversion model")
+            except Exception as e:
+                print(f"    Warning: Hierarchical conversion failed ({e}), using basic model")
+                conversion = ConversionModel()
+                conversion.fit(data['attempts'], n_samples=n_samples)
+        else:
+            print(f"    Using basic conversion model (only {len(data['attempts'])} attempts)")
+            conversion = ConversionModel()
+            conversion.fit(data['attempts'], n_samples=n_samples)
     else:
-        print(f"  Warning: Only {len(data['punts'])} punts, skipping punt model")
-        return None
+        conversion = ConversionModel()
+        if len(data['attempts']) > 100:
+            conversion.fit(data['attempts'], n_samples=n_samples)
+        else:
+            print(f"  Warning: Only {len(data['attempts'])} attempts, skipping conversion model")
+            return None
 
-    # FG model
-    fg = FieldGoalModel()
-    if len(data['fgs']) > 100:
-        fg.fit(data['fgs'], n_samples=n_samples)
+    # Punt model - use hierarchical punter model
+    if use_hierarchical:
+        punt = HierarchicalPuntModel()
+        if len(data['punts']) > 500:  # Need more data for hierarchical
+            try:
+                punt.fit(data['punts'], n_samples=n_samples)
+                n_punters = len(punt.punter_effects)
+                print(f"    Fitted hierarchical punt model with {n_punters} punters")
+            except Exception as e:
+                print(f"    Warning: Hierarchical punt failed ({e}), using basic model")
+                punt = PuntModel()
+                punt.fit(data['punts'], n_samples=n_samples)
+        else:
+            print(f"    Using basic punt model (only {len(data['punts'])} punts)")
+            punt = PuntModel()
+            punt.fit(data['punts'], n_samples=n_samples)
     else:
-        print(f"  Warning: Only {len(data['fgs'])} FGs, skipping FG model")
-        return None
+        punt = PuntModel()
+        if len(data['punts']) > 100:
+            punt.fit(data['punts'], n_samples=n_samples)
+        else:
+            print(f"  Warning: Only {len(data['punts'])} punts, skipping punt model")
+            return None
+
+    # FG model - use hierarchical kicker model
+    if use_hierarchical:
+        fg = HierarchicalFieldGoalModel()
+        if len(data['fgs']) > 500:  # Need more data for hierarchical
+            try:
+                fg.fit(data['fgs'], n_samples=n_samples)
+                n_kickers = len(fg.kicker_effects)
+                print(f"    Fitted hierarchical FG model with {n_kickers} kickers")
+            except Exception as e:
+                print(f"    Warning: Hierarchical FG failed ({e}), using basic model")
+                fg = FieldGoalModel()
+                fg.fit(data['fgs'], n_samples=n_samples)
+        else:
+            print(f"    Using basic FG model (only {len(data['fgs'])} FGs)")
+            fg = FieldGoalModel()
+            fg.fit(data['fgs'], n_samples=n_samples)
+    else:
+        fg = FieldGoalModel()
+        if len(data['fgs']) > 100:
+            fg.fit(data['fgs'], n_samples=n_samples)
+        else:
+            print(f"  Warning: Only {len(data['fgs'])} FGs, skipping FG model")
+            return None
 
     # WP model
     wp = WinProbabilityModel()
@@ -146,6 +206,74 @@ def analyze_play(state: GameState, analyzer: BayesianDecisionAnalyzer):
         }
     except Exception as e:
         return None
+
+
+def build_team_kicker_mapping(fgs_df: pd.DataFrame, season: int) -> dict:
+    """
+    Build a mapping from team -> primary kicker for a given season.
+
+    Uses data up through the given season to find each team's most recent
+    primary kicker (the one with most FG attempts in their most recent season).
+    """
+    # Filter to data up through this season
+    df = fgs_df[fgs_df['season'] <= season].copy()
+
+    if len(df) == 0:
+        return {}
+
+    # For each team, find the most recent season they have data for
+    team_kickers = {}
+
+    for team in df['posteam'].dropna().unique():
+        team_df = df[df['posteam'] == team]
+        if len(team_df) == 0:
+            continue
+
+        # Get the most recent season for this team
+        most_recent = team_df['season'].max()
+        recent_df = team_df[team_df['season'] == most_recent]
+
+        # Find the kicker with most attempts in that season
+        kicker_counts = recent_df.groupby('kicker_player_id').size()
+        if len(kicker_counts) > 0:
+            primary_kicker = kicker_counts.idxmax()
+            team_kickers[team] = primary_kicker
+
+    return team_kickers
+
+
+def build_team_punter_mapping(punts_df: pd.DataFrame, season: int) -> dict:
+    """
+    Build a mapping from team -> primary punter for a given season.
+
+    Uses data up through the given season to find each team's most recent
+    primary punter (the one with most punt attempts in their most recent season).
+    """
+    # Filter to data up through this season
+    df = punts_df[punts_df['season'] <= season].copy()
+
+    if len(df) == 0:
+        return {}
+
+    # For each team, find the most recent season they have data for
+    team_punters = {}
+
+    for team in df['posteam'].dropna().unique():
+        team_df = df[df['posteam'] == team]
+        if len(team_df) == 0:
+            continue
+
+        # Get the most recent season for this team
+        most_recent = team_df['season'].max()
+        recent_df = team_df[team_df['season'] == most_recent]
+
+        # Find the punter with most attempts in that season
+        punter_counts = recent_df.groupby('punter_player_id').size()
+        if len(punter_counts) > 0:
+            primary_punter = punter_counts.idxmax()
+            team_punters[team] = primary_punter
+
+    return team_punters
 
 
 def run_expanding_window_analysis(
@@ -196,8 +324,14 @@ def run_expanding_window_analysis(
     print(f"  Punts: {len(full_data['punts']):,}")
     print(f"  FGs: {len(full_data['fgs']):,}")
 
-    ex_post_models = fit_models_on_data(full_data, n_samples=n_samples)
+    ex_post_models = fit_models_on_data(full_data, n_samples=n_samples, use_hierarchical=True)
     ex_post_analyzer = BayesianDecisionAnalyzer(ex_post_models)
+
+    # Build team -> kicker/punter mappings for full sample (for ex post analysis)
+    full_team_kicker_map = build_team_kicker_mapping(full_data['fgs'], last_test_year)
+    full_team_punter_map = build_team_punter_mapping(full_data['punts'], last_test_year)
+    print(f"  Full sample team-kicker mappings: {len(full_team_kicker_map)} teams")
+    print(f"  Full sample team-punter mappings: {len(full_team_punter_map)} teams")
 
     # Step 4: Train expanding window models and analyze
     print("\n" + "="*80)
@@ -216,7 +350,7 @@ def run_expanding_window_analysis(
         print(f"  Training data: {len(train_data['cleaned']):,} plays")
         print(f"    4th down attempts: {len(train_data['attempts']):,}")
 
-        ex_ante_models = fit_models_on_data(train_data, n_samples=n_samples)
+        ex_ante_models = fit_models_on_data(train_data, n_samples=n_samples, use_hierarchical=True)
 
         if ex_ante_models is None:
             print(f"  Skipping {test_year} due to insufficient training data")
@@ -224,26 +358,63 @@ def run_expanding_window_analysis(
 
         ex_ante_analyzer = BayesianDecisionAnalyzer(ex_ante_models)
 
+        # Build team -> kicker/punter mappings for this training window
+        # This tells us each team's primary kicker/punter as of the training data cutoff
+        team_kicker_map = build_team_kicker_mapping(train_data['fgs'], train_end_year)
+        team_punter_map = build_team_punter_mapping(train_data['punts'], train_end_year)
+        print(f"    Team-kicker mappings: {len(team_kicker_map)} teams")
+        print(f"    Team-punter mappings: {len(team_punter_map)} teams")
+
         # Analyze each 4th down in test year
         test_plays = test_fourth_downs[test_year]
-        print(f"  Analyzing {len(test_plays):,} 4th down plays...")
+
+        # Filter out plays with <60 seconds remaining (per methodology)
+        # WP models are unreliable in end-of-game situations
+        test_plays = test_plays[test_plays['game_seconds_remaining'] >= 60].copy()
+        print(f"  Analyzing {len(test_plays):,} 4th down plays (after 60s filter)...")
 
         for idx, row in tqdm(test_plays.iterrows(), total=len(test_plays),
                             desc=f"  Year {test_year}"):
             try:
+                # Get team info
+                off_team = row.get('posteam', None)
+                def_team = row.get('defteam', None)
+
+                # Look up the team's kicker and punter from training data
+                kicker_id = team_kicker_map.get(off_team, None)
+                punter_id = team_punter_map.get(off_team, None)
+
                 state = GameState(
                     field_pos=int(row['yardline_100']),
                     yards_to_go=int(row['ydstogo']),
                     score_diff=int(row['score_diff']),
                     time_remaining=int(row['game_seconds_remaining']),
-                    timeout_diff=int(row.get('timeout_diff', 0))
+                    timeout_diff=int(row.get('timeout_diff', 0)),
+                    off_team=off_team,
+                    def_team=def_team,
+                    kicker_id=kicker_id,
+                    punter_id=punter_id
                 )
 
                 # Ex ante analysis (what was knowable at the time)
                 ex_ante_result = analyze_play(state, ex_ante_analyzer)
 
                 # Ex post analysis (with full hindsight)
-                ex_post_result = analyze_play(state, ex_post_analyzer)
+                # Use full sample kicker/punter for ex post (may differ from ex ante)
+                ex_post_kicker = full_team_kicker_map.get(off_team, None)
+                ex_post_punter = full_team_punter_map.get(off_team, None)
+                ex_post_state = GameState(
+                    field_pos=int(row['yardline_100']),
+                    yards_to_go=int(row['ydstogo']),
+                    score_diff=int(row['score_diff']),
+                    time_remaining=int(row['game_seconds_remaining']),
+                    timeout_diff=int(row.get('timeout_diff', 0)),
+                    off_team=off_team,
+                    def_team=def_team,
+                    kicker_id=ex_post_kicker,
+                    punter_id=ex_post_punter
+                )
+                ex_post_result = analyze_play(ex_post_state, ex_post_analyzer)
 
                 if ex_ante_result is None or ex_post_result is None:
                     continue

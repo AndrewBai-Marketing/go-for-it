@@ -23,7 +23,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.bayesian_models import (
     ConversionModel, PuntModel, FieldGoalModel, WinProbabilityModel,
     HierarchicalConversionModel, HierarchicalFieldGoalModel,
-    load_all_models
+    HierarchicalPuntModel, load_all_models
 )
 # Optional enhanced models (may not exist)
 try:
@@ -161,6 +161,9 @@ class BayesianDecisionAnalyzer:
         self.has_context_aware_punt = (ContextAwarePuntModel is not None and
                                         isinstance(self.punt, ContextAwarePuntModel))
 
+        # Check if we have hierarchical punter model
+        self.has_punter_effects = isinstance(self.punt, HierarchicalPuntModel)
+
         # Check if we have offense/defense model
         self.has_off_def_effects = (HAS_OFF_DEF_MODEL and
                                      isinstance(self.conversion, HierarchicalOffDefConversionModel))
@@ -280,6 +283,8 @@ class BayesianDecisionAnalyzer:
                 state.field_pos, wind=state.wind, is_dome=state.is_dome,
                 punter_id=state.punter_id
             )
+        elif self.has_punter_effects and state.punter_id is not None:
+            punt_yards = self.punt.get_posterior_samples(state.field_pos, punter_id=state.punter_id)
         else:
             punt_yards = self.punt.get_posterior_samples(state.field_pos)
 

@@ -337,6 +337,204 @@ class PuntModel:
         return self
 
 
+class HierarchicalPuntModel:
+    """
+    Hierarchical Bayesian model for punt net distance with punter effects.
+
+    net_yards = alpha + beta * field_pos + gamma_punter + epsilon
+    epsilon ~ N(0, sigma^2)
+
+    Uses empirical Bayes for partial pooling:
+    - gamma_punter ~ N(0, tau^2) where tau^2 is estimated from data
+    - Punters with few attempts shrink toward league average
+    - Punters with many attempts get estimates closer to their raw performance
+    """
+
+    def __init__(self):
+        self.beta_mean = None       # Population [alpha, beta]
+        self.beta_cov = None        # Population covariance
+        self.sigma = None           # Residual std
+        self.punter_effects = {}    # {punter_id: gamma} shrunk effects
+        self.punter_se = {}         # {punter_id: se} standard errors
+        self.punter_raw = {}        # {punter_id: raw_gamma} unshrunk effects
+        self.punter_n = {}          # {punter_id: n_punts}
+        self.tau_squared = None     # Between-punter variance
+        self.samples = None
+        self.punter_samples = {}    # {punter_id: samples}
+        self.n_samples = 2000
+        self.punter_list = []       # Ordered list of punters
+
+    def fit(self, punts_df: pd.DataFrame, n_samples: int = 2000, prior_var: float = 100.0,
+            min_punts: int = 20):
+        """
+        Fit hierarchical punt model using empirical Bayes.
+
+        Args:
+            punts_df: DataFrame with 'yardline_100', 'punt_net_yards', 'punter_player_id'
+            n_samples: Number of posterior samples
+            prior_var: Prior variance on population coefficients
+            min_punts: Minimum punts to include a punter
+        """
+        self.n_samples = n_samples
+
+        # Clean data
+        df = punts_df.dropna(subset=['yardline_100', 'punt_net_yards', 'punter_player_id']).copy()
+
+        print(f"Fitting hierarchical punt model with {len(df)} punts")
+        print(f"Unique punters: {df['punter_player_id'].nunique()}")
+
+        # Step 1: Fit population model (no punter effects)
+        field_pos = df['yardline_100'].values
+        y = df['punt_net_yards'].values
+        X_pop = np.column_stack([np.ones(len(df)), field_pos])
+
+        self.beta_mean, self.beta_cov, self.sigma = fit_bayesian_linear(X_pop, y, prior_var)
+        print(f"Population: alpha = {self.beta_mean[0]:.1f}, beta = {self.beta_mean[1]:.4f}")
+
+        # Step 2: Compute residuals and estimate punter effects
+        punter_stats = []
+
+        for punter_id, group in df.groupby('punter_player_id'):
+            n_k = len(group)
+            if n_k < min_punts:
+                continue
+
+            # Predicted net yards under population model
+            X_k = np.column_stack([np.ones(n_k), group['yardline_100'].values])
+            predicted = X_k @ self.beta_mean
+
+            # Actual net yards
+            actual = group['punt_net_yards'].values
+
+            # Raw punter effect (average residual)
+            raw_gamma = (actual - predicted).mean()
+
+            # Standard error of the mean residual
+            se = (actual - predicted).std() / np.sqrt(n_k)
+
+            punter_stats.append({
+                'punter_id': punter_id,
+                'raw_gamma': raw_gamma,
+                'se': se,
+                'n': n_k
+            })
+
+        if not punter_stats:
+            print("  Warning: No punters with enough data, using population model")
+            self.samples = np.random.multivariate_normal(
+                self.beta_mean, self.beta_cov, size=n_samples
+            )
+            self.samples = np.column_stack([self.samples, np.full(n_samples, self.sigma)])
+            return self
+
+        stats_df = pd.DataFrame(punter_stats)
+        print(f"Punters with {min_punts}+ punts: {len(stats_df)}")
+
+        # Step 3: Estimate between-punter variance (tau^2) using method of moments
+        raw_var = stats_df['raw_gamma'].var()
+        mean_se_sq = (stats_df['se'] ** 2).mean()
+        self.tau_squared = max(0, raw_var - mean_se_sq)
+
+        print(f"Estimated between-punter variance (tau^2): {self.tau_squared:.4f}")
+        print(f"Implied punter SD: {np.sqrt(self.tau_squared):.2f} yards")
+
+        # Step 4: Compute shrunk estimates using empirical Bayes
+        for _, row in stats_df.iterrows():
+            punter_id = row['punter_id']
+            se_sq = row['se'] ** 2
+
+            # Shrinkage factor (0 = full shrinkage, 1 = no shrinkage)
+            B = se_sq / (se_sq + self.tau_squared) if self.tau_squared > 0 else 1.0
+
+            # Shrunk estimate
+            shrunk_gamma = (1 - B) * row['raw_gamma']
+
+            self.punter_effects[punter_id] = shrunk_gamma
+            self.punter_se[punter_id] = row['se']
+            self.punter_raw[punter_id] = row['raw_gamma']
+            self.punter_n[punter_id] = row['n']
+
+        self.punter_list = list(self.punter_effects.keys())
+
+        # Print top/bottom punters
+        sorted_punters = sorted(self.punter_effects.items(), key=lambda x: x[1], reverse=True)
+        print(f"\nTop 5 punters (above average):")
+        for pid, gamma in sorted_punters[:5]:
+            raw = self.punter_raw[pid]
+            n = self.punter_n[pid]
+            print(f"  {pid[:20]}: +{gamma:.1f} yds (raw: +{raw:.1f}, n={n})")
+
+        print(f"\nBottom 5 punters (below average):")
+        for pid, gamma in sorted_punters[-5:]:
+            raw = self.punter_raw[pid]
+            n = self.punter_n[pid]
+            print(f"  {pid[:20]}: {gamma:.1f} yds (raw: {raw:.1f}, n={n})")
+
+        # Step 5: Draw posterior samples
+        self.samples = np.random.multivariate_normal(
+            self.beta_mean, self.beta_cov, size=n_samples
+        )
+        self.samples = np.column_stack([self.samples, np.full(n_samples, self.sigma)])
+
+        # Draw punter-specific samples
+        for punter_id in self.punter_list:
+            gamma = self.punter_effects[punter_id]
+            se = self.punter_se[punter_id]
+            # Sample punter effect with uncertainty
+            self.punter_samples[punter_id] = np.random.normal(gamma, se, size=n_samples)
+
+        return self
+
+    def get_posterior_samples(self, field_pos: int, punter_id: str = None) -> np.ndarray:
+        """
+        Get all posterior samples for net punt yards.
+
+        Args:
+            field_pos: Yards from opponent's end zone
+            punter_id: Optional punter identifier for punter-specific estimate
+        """
+        mu = self.samples[:, 0] + self.samples[:, 1] * field_pos
+
+        # Add punter effect if available
+        if punter_id is not None and punter_id in self.punter_samples:
+            mu = mu + self.punter_samples[punter_id]
+
+        return np.clip(mu, 10, 70)
+
+    def save(self, path: Path):
+        with open(path, 'wb') as f:
+            pickle.dump({
+                'beta_mean': self.beta_mean,
+                'beta_cov': self.beta_cov,
+                'sigma': self.sigma,
+                'samples': self.samples,
+                'punter_effects': self.punter_effects,
+                'punter_se': self.punter_se,
+                'punter_raw': self.punter_raw,
+                'punter_n': self.punter_n,
+                'tau_squared': self.tau_squared,
+                'punter_samples': self.punter_samples,
+                'punter_list': self.punter_list
+            }, f)
+
+    def load(self, path: Path):
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+            self.beta_mean = data['beta_mean']
+            self.beta_cov = data['beta_cov']
+            self.sigma = data['sigma']
+            self.samples = data['samples']
+            self.n_samples = len(self.samples)
+            self.punter_effects = data['punter_effects']
+            self.punter_se = data['punter_se']
+            self.punter_raw = data['punter_raw']
+            self.punter_n = data['punter_n']
+            self.tau_squared = data['tau_squared']
+            self.punter_samples = data['punter_samples']
+            self.punter_list = data['punter_list']
+        return self
+
+
 class FieldGoalModel:
     """
     Bayesian model for field goal make probability.
