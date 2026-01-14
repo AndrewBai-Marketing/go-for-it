@@ -862,7 +862,14 @@ Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
 \end{tablenotes}
 \end{table}
 
-The paradox: when down 8 (trailing by 2 after the touchdown), coaches go for 2 at a 79\% rate---close to the model-optimal rate of 85\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an even higher 91\% optimal rate. In 107 situations where the model recommended going for 2 when down 9, coaches kicked the PAT in all but one.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{outputs/figures/two_point_paradox.png}
+\caption{The two-point conversion paradox. Blue bars show the model-optimal rate at which coaches should go for 2; red bars show actual coach behavior. Despite Down 9 having a \textit{higher} optimal 2pt rate than Down 8 (91\% vs.\ 85\%), coaches comply 84\% of the time when down 8 but only 1\% when down 9. The difference: going for 2 when down 8 ties the game immediately, while going for 2 when down 9 sets up a future tying field goal.}
+\label{fig:two_point_paradox}
+\end{figure}
+
+The paradox is striking (Figure~\ref{fig:two_point_paradox}): when down 8 (trailing by 2 after the touchdown), coaches go for 2 at a 79\% rate---close to the model-optimal rate of 85\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an even higher 91\% optimal rate. In 107 situations where the model recommended going for 2 when down 9, coaches kicked the PAT in all but one.
 
 The behavioral explanation is straightforward:
 \begin{itemize}
