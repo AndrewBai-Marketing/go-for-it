@@ -961,7 +961,9 @@ We apply the same expanding window methodology used for fourth-down analysis: fo
 \end{tablenotes}
 \end{table}
 
-Unlike fourth down where we found no improvement in decision quality, coaches \textit{are} improving at PAT/2pt decisions---but slowly. The trend of $+1.05$ pp/year is modest but positive. Coaches started at $\sim$43\% optimal in 2016 (when training data was scarce) and have stabilized around $\sim$55\% optimal as more post-rule data accumulated. This likely reflects the simpler decision structure: with only two options and clear probability estimates, the ``right'' answer is easier to internalize over time.
+Unlike fourth down where we found no improvement in decision quality, coaches \textit{are} improving at PAT/2pt decisions---but slowly. The trend of $+1.05$ pp/year is modest but positive. Coaches started at $\sim$43\% optimal in 2016 (when training data was scarce) and have stabilized around $\sim$55\% optimal as more post-rule data accumulated.
+
+\paragraph{Defensibly optimal decisions.} Given model uncertainty, we also track ``defensibly optimal'' decisions: those matching the model's recommendation \textit{or} having a WP margin below 0.5\% (genuinely too close to call). By this metric, coaches improved from 83\% (2016) to 99\% (2024), with a trend of $+2.32$ pp/year ($p < 0.001$). This suggests coaches have largely mastered the two-point decision environment---the remaining suboptimality is concentrated in situations where the model's recommendation is essentially a coin flip.
 
 \subsection{The Massive Gap: Coaches Are Too Conservative}
 

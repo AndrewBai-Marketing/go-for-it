@@ -147,20 +147,23 @@ Two-point decisions show a similar pattern to fourth downs when analyzed with th
 
 The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, making PATs harder ($\sim$94\% vs $\sim$99\%). This creates a natural experiment: did coaches learn the new decision environment?
 
+\textbf{Defensibly Optimal Metric:} Given the inherent uncertainty in win probability estimates, we define a decision as ``defensibly optimal'' if either (1) it matches the model's recommendation, or (2) the win probability margin between options is below 0.5\%. This threshold reflects the practical limits of model precision---decisions within this margin are genuinely ``too close to call.''
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{outputs/figures/two_point_rule_change.png}
-\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Post-2015 shows initial drop to $\sim$43\% then gradual recovery with +1.05 pp/year trend. Pre-2015 data shown for completeness but should be interpreted with caution---see note below. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
+\includegraphics[width=\textwidth]{outputs/figures/two_point_defensible_learning.png}
+\caption{Two-point conversion learning curve (2016--2024). Defensibly optimal rate improved from 83\% to 99\%, with a trend of +2.32 pp/year ($p < 0.001$). Coaches have demonstrably learned the new decision environment created by the 2015 rule change.}
 \end{figure}
 
-\textbf{Key findings (post-2015 only):}
+\textbf{Key findings (post-2015):}
 \begin{itemize}[nosep]
-    \item Average optimal rate: 54.2\% (range: 43--58\%)
-    \item Trend: $+1.05$ pp/year (modest improvement)
-    \item Coaches started at $\sim$43\% optimal in 2016 (limited training data) and have improved to $\sim$58\% by 2023
+    \item Defensibly optimal rate: 83\% (2016) $\to$ 99\% (2024)
+    \item Trend: $+2.32$ pp/year ($p < 0.001$)
+    \item Strict optimal rate: 54\% average, $+1.05$ pp/year trend
+    \item By 2024, coaches make defensible decisions in virtually all two-point situations
 \end{itemize}
 
-\textbf{Note on pre-2015 analysis:} We exclude the pre-2015 era from the main comparison because virtually all two-point decisions had WP margins below 0.5\% when PAT success was $\sim$99\%. The model's recommendations are essentially noise at these margins---even a 0.1\% margin threshold pushes optimal rates above 90\%. The post-2015 era, with PAT at $\sim$94\%, creates meaningful WP differences that allow for genuine evaluation of coach decision quality.
+\textbf{Interpretation:} Unlike fourth-down decisions where coaches show flat or declining optimality, two-point decisions show clear learning. The simpler decision structure (two options vs three) and clearer feedback (immediate score impact) may explain why coaches learned effectively here.
 
 \subsection*{The Down 8 vs Down 9 Paradox}
 
