@@ -122,15 +122,15 @@ where $\hat{\gamma}_j^{\text{raw}}$ are the unpooled team effects and $\overline
 
 The full data likelihood, conditional on all parameters:
 
-$$p(\mathbf{y} \mid \beta, \gamma, \delta) = \prod_{i=1}^{n} \pi_i^{y_i} (1 - \pi_i)^{1 - y_i}$$
+$$\mathcal{L}(\beta, \gamma, \delta) = \prod_{i} \pi_i^{y_i} (1 - \pi_i)^{1 - y_i}$$
 
-where $\pi_i = \sigma(\mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}})$ and $\sigma(\cdot)$ is the logistic function.
+where $\pi_i = \sigma(\mathbf{x}_i^\top \beta + \gamma_{\text{off}[i]} + \delta_{\text{def}[i]})$ and $\sigma(\cdot)$ is the logistic function.
 
 ### Posterior Distribution
 
-By Bayes' theorem, the joint posterior is:
+By Bayes' theorem, the joint posterior is proportional to the likelihood times the priors:
 
-$$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gamma, \delta) \cdot p(\beta) \cdot \prod_{j=1}^{J} p(\gamma_j \mid \tau_{\text{off}}^2) \cdot \prod_{k=1}^{K} p(\delta_k \mid \tau_{\text{def}}^2)$$
+$$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto \mathcal{L}(\beta, \gamma, \delta) \cdot p(\beta) \cdot \left[\prod_j p(\gamma_j)\right] \cdot \left[\prod_k p(\delta_k)\right]$$
 
 ### Laplace Approximation
 
