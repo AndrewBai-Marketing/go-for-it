@@ -183,16 +183,47 @@ This is estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \mathcal
 
 This allows us to distinguish between \textbf{clear mistakes} (coach chose suboptimally when the data strongly favored another action) and \textbf{close calls} (coach's choice was reasonable given decision uncertainty).
 
+\subsection*{Full Hierarchical Model Structure}
+
+The conversion model has three levels: (i) observations, (ii) unit-level parameters, and (iii) hyperparameters.
+
+\textbf{Level 1: Observation model.} For observation $i$ with yards to go $d_i$, goal-to-go indicator $g_i$, in-game EPA $e_i$, drive play count $p_i$, offensive team $j[i]$, and defensive team $k[i]$:
+$$y_i \mid \beta, \gamma, \delta \sim \text{Bernoulli}(\pi_i), \quad \text{logit}(\pi_i) = \mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}}$$
+where $\mathbf{x}_i = (1, d_i, g_i, e_i, p_i)^\top$ and $\beta = (\alpha, \beta_d, \beta_g, \beta_e, \beta_p)^\top$.
+
+\textbf{Level 2: Unit-level priors.}
+\begin{align*}
+  \gamma_j^{\text{off}} &\sim \mathcal{N}(0, \tau_{\text{off}}^2), \quad j = 1, \ldots, J \\
+  \delta_k^{\text{def}} &\sim \mathcal{N}(0, \tau_{\text{def}}^2), \quad k = 1, \ldots, K
+\end{align*}
+
+\textbf{Level 3: Population parameters.} $\beta \sim \mathcal{N}(\mathbf{0}, 100 \cdot \mathbf{I})$ (weakly informative).
+
+\textbf{Joint likelihood:}
+$$p(\mathbf{y} \mid \beta, \gamma, \delta) = \prod_{i=1}^{n} \pi_i^{y_i} (1 - \pi_i)^{1 - y_i}$$
+
+\textbf{Posterior:}
+$$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gamma, \delta) \cdot p(\beta) \cdot \prod_{j=1}^{J} p(\gamma_j \mid \tau_{\text{off}}^2) \cdot \prod_{k=1}^{K} p(\delta_k \mid \tau_{\text{def}}^2)$$
+
+\textbf{Laplace approximation:} $p(\theta \mid \mathbf{y}) \approx \mathcal{N}(\hat{\theta}_{\text{MAP}}, \mathbf{H}^{-1})$ where $\mathbf{H}$ is the Hessian at MAP.
+
+\textbf{Empirical Bayes shrinkage:} Shrinkage factor $B_j = \text{SE}_j^2 / (\text{SE}_j^2 + \hat{\tau}^2)$. Shrunk estimate: $\hat{\gamma}_j = (1 - B_j) \hat{\gamma}_j^{\text{raw}}$.
+
 \subsection*{Model Components}
 
 \begin{itemize}[nosep]
-  \item $\pi(d; \theta)$: Hierarchical logistic regression on yards to go \known
-  \item $Y(x; \theta)$: Normal model for net punt yards (mean $\approx$ 40 yds) \known
-  \item $\phi(x; \theta)$: Logistic regression on kick distance \known
+  \item $\pi(d; \theta)$: Hierarchical logistic regression with in-game context features \new
+  \item $Y(x; \theta)$: $Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)$ for net punt yards \known
+  \item $\phi(x; \theta)$: $\text{logit}(p) = \alpha + \beta(d - 35) + \gamma_{\text{kicker}}$ with kicker effects \new
   \item $W(s)$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
 \end{itemize}
 
-\textbf{End-of-game filtering:} Following Baldwin (2021, nfl4th), we exclude plays with $<$60 seconds remaining where WP models become unreliable due to clock management and kneel-out scenarios. This removes 1.4\% of plays.
+\textbf{Population-level estimates:}
+\begin{itemize}[nosep]
+  \item Conversion: $\hat{\alpha} = 0.722$, $\hat{\beta}_d = -0.133$, $\hat{\beta}_g = -1.129$ (goal-to-go \textit{hurts})
+  \item Field goal: $\hat{\alpha} = 2.383$, $\hat{\beta} = -0.105$, $\hat{\tau}^2 = 0.031$
+  \item Punt: $\hat{\alpha} = 32.8$, $\hat{\beta} = 0.154$, $\hat{\sigma} = 9.3$ yards
+\end{itemize}
 
 %===========================================================
 \section{Fourth Down: Learning Over Time}
