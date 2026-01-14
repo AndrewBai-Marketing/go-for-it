@@ -151,6 +151,56 @@ The posterior probability that action $a$ is optimal is:
 
 This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \calD)$ for $m = 1, \ldots, M$, compute win probabilities under each draw, and calculate the fraction of draws for which the action is optimal. Situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 1$ are \textbf{obvious} go-for-it decisions; situations with $\Prob(\texttt{go} \text{ is optimal}) \approx 0.5$ are \textbf{close calls} where the data do not clearly favor one action.
 
+\subsection{Full Hierarchical Model Structure}
+
+We now specify the complete hierarchical Bayesian model for fourth-down conversion. The model has three levels: (i) observations, (ii) unit-level parameters, and (iii) hyperparameters governing partial pooling.
+
+\paragraph{Level 1: Observation model.} For observation $i$ with yards to go $d_i$, goal-to-go indicator $g_i$, in-game EPA $e_i$, drive play count $p_i$, offensive team $j[i]$, and defensive team $k[i]$, the outcome $y_i \in \{0, 1\}$ follows:
+\begin{equation}
+    y_i \mid \beta, \gamma, \delta \sim \text{Bernoulli}(\pi_i), \quad \text{logit}(\pi_i) = \mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}}
+\end{equation}
+where $\mathbf{x}_i = (1, d_i, g_i, e_i, p_i)^\top$ and $\beta = (\alpha, \beta_d, \beta_g, \beta_e, \beta_p)^\top$.
+
+\paragraph{Level 2: Unit-level priors.} The team-specific effects are drawn from normal distributions centered at zero:
+\begin{align}
+    \gamma_j^{\text{off}} &\sim \mathcal{N}(0, \tau_{\text{off}}^2), \quad j = 1, \ldots, J \\
+    \delta_k^{\text{def}} &\sim \mathcal{N}(0, \tau_{\text{def}}^2), \quad k = 1, \ldots, K
+\end{align}
+This induces partial pooling: teams with few observations are shrunk toward the population mean, while teams with many observations retain estimates closer to their sample averages.
+
+\paragraph{Level 3: Hyperpriors and population parameters.} The population-level coefficients receive weakly informative priors:
+\begin{equation}
+    \beta \sim \mathcal{N}(\mathbf{0}, \sigma_\beta^2 \mathbf{I}), \quad \sigma_\beta^2 = 100
+\end{equation}
+The variance components $\tau_{\text{off}}^2$ and $\tau_{\text{def}}^2$ are estimated via empirical Bayes (method of moments):
+\begin{equation}
+    \hat{\tau}^2 = \max\left\{0, \text{Var}(\hat{\gamma}_j^{\text{raw}}) - \overline{\text{SE}^2}\right\}
+\end{equation}
+where $\hat{\gamma}_j^{\text{raw}}$ are the unpooled team effects and $\overline{\text{SE}^2}$ is the average squared standard error.
+
+\paragraph{Joint likelihood.} The full data likelihood, conditional on all parameters, is:
+\begin{equation}
+    p(\mathbf{y} \mid \beta, \gamma, \delta) = \prod_{i=1}^{n} \pi_i^{y_i} (1 - \pi_i)^{1 - y_i}
+\end{equation}
+where $\pi_i = \sigma(\mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}})$ and $\sigma(\cdot)$ is the logistic function.
+
+\paragraph{Posterior distribution.} By Bayes' theorem, the joint posterior is:
+\begin{equation}
+    p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gamma, \delta) \cdot p(\beta) \cdot \prod_{j=1}^{J} p(\gamma_j \mid \tau_{\text{off}}^2) \cdot \prod_{k=1}^{K} p(\delta_k \mid \tau_{\text{def}}^2)
+\end{equation}
+
+\paragraph{Laplace approximation.} We approximate the posterior as Gaussian around the maximum a posteriori (MAP) estimate:
+\begin{equation}
+    p(\theta \mid \mathbf{y}) \approx \mathcal{N}(\hat{\theta}_{\text{MAP}}, \mathbf{H}^{-1})
+\end{equation}
+where $\mathbf{H}$ is the Hessian of the negative log-posterior evaluated at the MAP. For logistic regression with reasonable sample sizes, the Bernstein-von Mises theorem guarantees this approximation is asymptotically exact. Posterior samples are drawn as $\theta^{(m)} \sim \mathcal{N}(\hat{\theta}_{\text{MAP}}, \mathbf{H}^{-1})$ for Monte Carlo integration.
+
+\paragraph{Empirical Bayes shrinkage.} Given the estimated $\hat{\tau}^2$, the shrinkage factor for unit $j$ with standard error $\text{SE}_j$ is:
+\begin{equation}
+    B_j = \frac{\text{SE}_j^2}{\text{SE}_j^2 + \hat{\tau}^2}
+\end{equation}
+The shrunk estimate is $\hat{\gamma}_j = (1 - B_j) \hat{\gamma}_j^{\text{raw}}$, with posterior variance $(1 - B_j) \text{SE}_j^2$. Units with large standard errors (few observations) shrink heavily toward zero; units with small standard errors retain estimates close to their raw values.
+
 \subsection{Model Specification}
 
 We specify four component models, using hierarchical structure for conversion and field goal probabilities to capture team- and kicker-specific heterogeneity while borrowing strength across units via partial pooling. All models are estimated using Laplace approximation to the posterior with weakly informative priors $\beta \sim \mathcal{N}(0, 100)$.

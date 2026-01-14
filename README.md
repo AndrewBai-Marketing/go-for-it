@@ -50,7 +50,7 @@ The game state is represented as:
 
 $$s = (\Delta, \tau, x, d, h, k_1, k_2)$$
 
-where $\Delta$ is score differential, $\tau$ is time remaining, $x$ is field position (yards from opponent's end zone), $d$ is yards to go, $h$ is the half, and $k_1, k_2$ are timeouts remaining.
+where $\Delta$ is score differential, $\tau$ is time remaining (seconds), $x$ is field position (yards from opponent's end zone), $d$ is yards to go, $h$ is the half, and $k_1, k_2$ are timeouts remaining for each team.
 
 ### Action Space
 
@@ -58,44 +58,117 @@ On fourth down, the coach chooses from:
 
 $$\mathcal{A} = \lbrace\texttt{go}, \texttt{punt}, \texttt{fg}\rbrace$$
 
-### Transition Dynamics
-
-Each action induces transitions to successor states:
-
-**Going for it:**
-$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot P(s_{\text{convert}}) + (1 - \pi(d; \theta)) \cdot P(s_{\text{fail}})$$
-
-**Field goal:**
-$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot P(s_{\text{make}}) + (1 - \phi(x; \theta)) \cdot P(s_{\text{miss}})$$
-
 ### Bayesian Expected Win Probability
 
 For action $a$ in state $s$, expected win probability integrating over parameter uncertainty:
 
 $$\mathbb{E}[W \mid a, s] = \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
 
-The Bayes-optimal decision is:
+For the action `go`, this expands to:
+
+$$\mathbb{E}[W \mid \texttt{go}, s] = \int \left[\pi(d; \theta) \cdot W(s_{\text{convert}}) + (1 - \pi(d; \theta)) \cdot W(s_{\text{fail}})\right] \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+
+where $s_{\text{convert}}$ and $s_{\text{fail}}$ are the successor states conditional on conversion or failure.
+
+**Bayes-optimal decision:**
 
 $$a^* = \arg\max_{a \in \mathcal{A}} \mathbb{E}[W \mid a, s]$$
+
+### Decision Confidence
+
+The posterior probability that action $a$ is optimal:
+
+$$\mathbb{P}(a \text{ is optimal} \mid s, \mathcal{D}) = \mathbb{P}_{\theta \mid \mathcal{D}}\left(W_a(s; \theta) > \max_{a' \neq a} W_{a'}(s; \theta)\right)$$
+
+This is estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \mathcal{D})$ for $m = 1, \ldots, M$, compute win probabilities under each draw, and calculate the fraction of draws for which the action is optimal.
+
+---
+
+## Full Hierarchical Model Structure
+
+The model has three levels: (i) observations, (ii) unit-level parameters, and (iii) hyperparameters governing partial pooling.
+
+### Level 1: Observation Model
+
+For observation $i$ with yards to go $d_i$, goal-to-go indicator $g_i$, in-game EPA $e_i$, drive play count $p_i$, offensive team $j[i]$, and defensive team $k[i]$, the outcome $y_i \in \lbrace 0, 1 \rbrace$ follows:
+
+$$y_i \mid \beta, \gamma, \delta \sim \text{Bernoulli}(\pi_i), \quad \text{logit}(\pi_i) = \mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}}$$
+
+where $\mathbf{x}_i = (1, d_i, g_i, e_i, p_i)^\top$ and $\beta = (\alpha, \beta_d, \beta_g, \beta_e, \beta_p)^\top$.
+
+### Level 2: Unit-Level Priors
+
+The team-specific effects are drawn from normal distributions centered at zero:
+
+$$\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2), \quad j = 1, \ldots, J$$
+
+$$\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2), \quad k = 1, \ldots, K$$
+
+This induces partial pooling: teams with few observations are shrunk toward the population mean, while teams with many observations retain estimates closer to their sample averages.
+
+### Level 3: Hyperpriors and Population Parameters
+
+The population-level coefficients receive weakly informative priors:
+
+$$\beta \sim \mathcal{N}(\mathbf{0}, \sigma_\beta^2 \mathbf{I}), \quad \sigma_\beta^2 = 100$$
+
+The variance components $\tau_{\text{off}}^2$ and $\tau_{\text{def}}^2$ are estimated via empirical Bayes (method of moments):
+
+$$\hat{\tau}^2 = \max\left\lbrace 0, \text{Var}(\hat{\gamma}_j^{\text{raw}}) - \overline{\text{SE}^2}\right\rbrace$$
+
+where $\hat{\gamma}_j^{\text{raw}}$ are the unpooled team effects and $\overline{\text{SE}^2}$ is the average squared standard error.
+
+### Joint Likelihood
+
+The full data likelihood, conditional on all parameters:
+
+$$p(\mathbf{y} \mid \beta, \gamma, \delta) = \prod_{i=1}^{n} \pi_i^{y_i} (1 - \pi_i)^{1 - y_i}$$
+
+where $\pi_i = \sigma(\mathbf{x}_i^\top \beta + \gamma_{j[i]}^{\text{off}} + \delta_{k[i]}^{\text{def}})$ and $\sigma(\cdot)$ is the logistic function.
+
+### Posterior Distribution
+
+By Bayes' theorem, the joint posterior is:
+
+$$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gamma, \delta) \cdot p(\beta) \cdot \prod_{j=1}^{J} p(\gamma_j \mid \tau_{\text{off}}^2) \cdot \prod_{k=1}^{K} p(\delta_k \mid \tau_{\text{def}}^2)$$
+
+### Laplace Approximation
+
+We approximate the posterior as Gaussian around the maximum a posteriori (MAP) estimate:
+
+$$p(\theta \mid \mathbf{y}) \approx \mathcal{N}(\hat{\theta}_{\text{MAP}}, \mathbf{H}^{-1})$$
+
+where $\mathbf{H}$ is the Hessian of the negative log-posterior evaluated at the MAP. For logistic regression with reasonable sample sizes, the Bernstein-von Mises theorem guarantees this approximation is asymptotically exact. Posterior samples are drawn as $\theta^{(m)} \sim \mathcal{N}(\hat{\theta}_{\text{MAP}}, \mathbf{H}^{-1})$ for Monte Carlo integration.
+
+### Empirical Bayes Shrinkage
+
+Given the estimated $\hat{\tau}^2$, the shrinkage factor for unit $j$ with standard error $\text{SE}_j$ is:
+
+$$B_j = \frac{\text{SE}_j^2}{\text{SE}_j^2 + \hat{\tau}^2}$$
+
+The shrunk estimate is $\hat{\gamma}_j = (1 - B_j) \hat{\gamma}_j^{\text{raw}}$, with posterior variance $(1 - B_j) \text{SE}_j^2$. Units with large standard errors (few observations) shrink heavily toward zero; units with small standard errors retain estimates close to their raw values.
 
 ---
 
 ## Component Models
 
-### Hierarchical Conversion Model with In-Game Context
+### Hierarchical Conversion Model
 
-Conversion probability is modeled as logistic with **in-game context features** and team random effects:
+**Likelihood:**
 
 $$\mathbb{P}(\text{convert} \mid d, g, e, p, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta_d d + \beta_g g + \beta_e e + \beta_p p + \gamma_j^{\text{off}} + \delta_k^{\text{def}})$$
 
-where:
+**Features:**
 - $d$ = yards to go
 - $g$ = goal-to-go indicator
 - $e$ = standardized in-game EPA (team's cumulative rush + pass EPA in that game)
 - $p$ = standardized drive play count
-- $\gamma_j^{\text{off}}, \delta_k^{\text{def}}$ = team random effects (shrunk via empirical Bayes)
+- $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ = offensive team random effect
+- $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ = defensive team random effect
 
-**Key finding**: Goal-to-go situations convert at *lower* rates ($\hat{\beta}_g = -1.129$). At 4th & 1, conversion probability drops from 64.3% (non-goal-to-go) to 36.8% (goal-to-go)—a 27.5pp penalty.
+**Population-level estimates:** $\hat{\alpha} = 0.722$, $\hat{\beta}_d = -0.133$, $\hat{\beta}_g = -1.129$ (goal-to-go *hurts*), $\hat{\beta}_e = 0.490$, $\hat{\beta}_p = 1.201$
+
+**Key finding**: Goal-to-go situations convert at *lower* rates. At 4th & 1, conversion probability drops from 64.3% (non-goal-to-go) to 36.8% (goal-to-go)—a 27.5pp penalty.
 
 | Yards to Go | Conversion % | 95% CI |
 |-------------|--------------|--------|
@@ -107,18 +180,39 @@ where:
 
 ### Hierarchical Field Goal Model
 
-Make probability is logistic in kick distance (centered at 35 yards) with kicker-specific effects:
+**Likelihood:**
 
 $$\mathbb{P}(\text{make} \mid d, \text{kicker} = j) = \sigma(\alpha + \beta (d - 35) + \gamma_j)$$
+
+**Hierarchical structure:**
+- $\gamma_j \sim \mathcal{N}(0, \tau^2)$ = kicker-specific effect
+- Distance centered at 35 yards for numerical stability
 
 **Population-level estimates:**
 - $\hat{\alpha} = 2.383$ (SE: 0.056)
 - $\hat{\beta} = -0.105$ (SE: 0.004)
 - Between-kicker variance: $\hat{\tau}^2 = 0.031$
 
+### Punt Model
+
+**Likelihood:**
+
+$$Y \mid x \sim \mathcal{N}(\alpha + \beta x, \sigma^2)$$
+
+where $Y$ is net punt yards and $x$ is field position.
+
+**Posterior estimates:** $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), $\hat{\sigma} = 9.3$ yards.
+
 ### Win Probability Model
 
-Win probability is estimated using a neural network (3-layer MLP with 128-64-32 hidden units) trained on 710,664 plays. Features include score differential, time remaining, field position, down, yards to go, timeout differential, and interaction terms (score×time).
+Win probability is estimated using a neural network (3-layer MLP with 128-64-32 hidden units) trained on 710,664 plays from 2006-2024. Features include:
+- Score differential, time remaining, field position
+- Down, yards to go, timeout differential
+- Half indicator, goal-to-go indicator
+- Interaction terms (score×time, field position×time)
+- Binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), goal-line ($x \leq 5$)
+
+**Validation:** 5-fold cross-validated Brier score of 0.164 ($\pm 0.0004$), expected calibration error (ECE) of 0.0049.
 
 ---
 
