@@ -129,6 +129,7 @@ def analyze_decision(row, analyzer):
             time_remaining=int(row['time_remaining']) if pd.notna(row['time_remaining']) else 1800,
             posteam=row.get('posteam'),
             defteam=row.get('defteam'),
+            kicker_id=row.get('kicker_player_id'),  # Include kicker for hierarchical PAT model
         )
         result = analyzer.analyze(state)
         return {
@@ -163,39 +164,56 @@ def get_decisions_for_year(pbp, year):
 
 
 def run_analysis():
-    """Run the full pre/post rule change analysis."""
+    """
+    Run the full pre/post rule change analysis with EXPANDING WINDOW.
+
+    For each year, we train models on ALL PRIOR years in that era only.
+    This avoids data leakage and matches the fourth-down methodology.
+
+    Pre-2015 era: 2006-2014 (PAT from 2-yard line, ~99% success)
+    Post-2015 era: 2015-2024 (PAT from 15-yard line, ~94% success)
+
+    For 2015 specifically, we use 2015 data only (first post-rule year).
+    For 2016+, we use expanding window from 2015.
+    """
     print("=" * 70)
-    print("TWO-POINT RULE CHANGE ANALYSIS (FULL MODEL)")
+    print("TWO-POINT RULE CHANGE ANALYSIS (EXPANDING WINDOW)")
     print("=" * 70)
 
     pbp = load_data()
     wp_model = load_wp_model()
 
-    # Train era-specific models
-    print("\nTraining pre-rule models (2006-2014)...")
-    pre_2pt_model, pre_pat_model = train_era_models(pbp, 2006, 2014)
-
-    print("\nTraining post-rule models (2015-2024)...")
-    post_2pt_model, post_pat_model = train_era_models(pbp, 2015, 2024)
-
-    # Create analyzers
-    pre_analyzer = TwoPointDecisionAnalyzer(pre_2pt_model, pre_pat_model, wp_model)
-    post_analyzer = TwoPointDecisionAnalyzer(post_2pt_model, post_pat_model, wp_model)
-
     results = []
 
-    # Analyze pre-rule years (2006-2014)
-    print("\nAnalyzing pre-rule years (2006-2014)...")
+    # =========================================================================
+    # PRE-RULE ERA (2006-2014): Expanding window within pre-rule data
+    # =========================================================================
+    print("\n" + "="*50)
+    print("PRE-RULE ERA (2006-2014)")
+    print("="*50)
+
     for year in range(2006, 2015):
         decisions = get_decisions_for_year(pbp, year)
         if decisions is None or len(decisions) == 0:
             continue
 
+        # Train on all PRE-RULE data up to (but not including) this year
+        # For 2006, we have no prior data, so use 2006 itself (first year)
+        if year == 2006:
+            train_start, train_end = 2006, 2006
+            print(f"\n{year}: Training on {train_start}-{train_end} (first year, same-year data)")
+        else:
+            train_start, train_end = 2006, year - 1
+            print(f"\n{year}: Training on {train_start}-{train_end} (expanding window)")
+
+        two_pt_model, pat_model = train_era_models(pbp, train_start, train_end)
+        analyzer = TwoPointDecisionAnalyzer(two_pt_model, pat_model, wp_model)
+
         n_optimal = 0
         n_total = 0
 
-        for _, row in tqdm(decisions.iterrows(), total=len(decisions), desc=f"  {year}"):
-            analysis = analyze_decision(row, pre_analyzer)
+        for _, row in tqdm(decisions.iterrows(), total=len(decisions), desc=f"  Evaluating {year}"):
+            analysis = analyze_decision(row, analyzer)
             if analysis:
                 n_total += 1
                 if row['actual_decision'] == analysis['optimal_action']:
@@ -208,22 +226,40 @@ def run_analysis():
                 'n_decisions': n_total,
                 'optimal_rate': n_optimal / n_total,
                 'actual_2pt_rate': (decisions['actual_decision'] == 'two_point').mean(),
-                'pat_success_rate': pre_pat_model.overall_rate,
+                'pat_success_rate': pat_model.overall_rate,
+                'training_years': f"{train_start}-{train_end}",
             })
-            print(f"    {year}: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
+            print(f"    Result: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
 
-    # Analyze post-rule years (2015-2024)
-    print("\nAnalyzing post-rule years (2015-2024)...")
+    # =========================================================================
+    # POST-RULE ERA (2015-2024): Expanding window within post-rule data
+    # =========================================================================
+    print("\n" + "="*50)
+    print("POST-RULE ERA (2015-2024)")
+    print("="*50)
+
     for year in range(2015, 2025):
         decisions = get_decisions_for_year(pbp, year)
         if decisions is None or len(decisions) == 0:
             continue
 
+        # Train on all POST-RULE data up to (but not including) this year
+        # For 2015, we have no prior post-rule data, so use 2015 itself
+        if year == 2015:
+            train_start, train_end = 2015, 2015
+            print(f"\n{year}: Training on {train_start}-{train_end} (first post-rule year, same-year data)")
+        else:
+            train_start, train_end = 2015, year - 1
+            print(f"\n{year}: Training on {train_start}-{train_end} (expanding window)")
+
+        two_pt_model, pat_model = train_era_models(pbp, train_start, train_end)
+        analyzer = TwoPointDecisionAnalyzer(two_pt_model, pat_model, wp_model)
+
         n_optimal = 0
         n_total = 0
 
-        for _, row in tqdm(decisions.iterrows(), total=len(decisions), desc=f"  {year}"):
-            analysis = analyze_decision(row, post_analyzer)
+        for _, row in tqdm(decisions.iterrows(), total=len(decisions), desc=f"  Evaluating {year}"):
+            analysis = analyze_decision(row, analyzer)
             if analysis:
                 n_total += 1
                 if row['actual_decision'] == analysis['optimal_action']:
@@ -236,9 +272,10 @@ def run_analysis():
                 'n_decisions': n_total,
                 'optimal_rate': n_optimal / n_total,
                 'actual_2pt_rate': (decisions['actual_decision'] == 'two_point').mean(),
-                'pat_success_rate': post_pat_model.overall_rate,
+                'pat_success_rate': pat_model.overall_rate,
+                'training_years': f"{train_start}-{train_end}",
             })
-            print(f"    {year}: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
+            print(f"    Result: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
 
     df = pd.DataFrame(results)
 
@@ -246,6 +283,30 @@ def run_analysis():
     output_dir = Path(__file__).parent.parent / 'outputs' / 'tables'
     df.to_csv(output_dir / 'two_point_rule_change_analysis.csv', index=False)
     print(f"\nSaved to {output_dir / 'two_point_rule_change_analysis.csv'}")
+
+    # Print summary
+    print("\n" + "="*70)
+    print("SUMMARY")
+    print("="*70)
+
+    pre_df = df[df['era'] == 'pre']
+    post_df = df[df['era'] == 'post']
+
+    if len(pre_df) > 0:
+        print(f"\nPre-2015 (expanding window):")
+        print(f"  Average optimal rate: {pre_df['optimal_rate'].mean():.1%}")
+        print(f"  Range: {pre_df['optimal_rate'].min():.1%} - {pre_df['optimal_rate'].max():.1%}")
+        if len(pre_df) >= 3:
+            slope, _, _, _, _ = stats.linregress(pre_df['year'], pre_df['optimal_rate'])
+            print(f"  Trend: {slope*100:+.2f} pp/year")
+
+    if len(post_df) > 0:
+        print(f"\nPost-2015 (expanding window):")
+        print(f"  Average optimal rate: {post_df['optimal_rate'].mean():.1%}")
+        print(f"  Range: {post_df['optimal_rate'].min():.1%} - {post_df['optimal_rate'].max():.1%}")
+        if len(post_df) >= 3:
+            slope, _, _, _, _ = stats.linregress(post_df['year'], post_df['optimal_rate'])
+            print(f"  Trend: {slope*100:+.2f} pp/year")
 
     return df
 

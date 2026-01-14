@@ -133,27 +133,34 @@ This connects to organizational learning literature: simple heuristics (``go for
 
 \section*{Contrast with Two-Point Conversions}
 
-Two-point decisions show a \textit{similar} pattern to fourth downs when evaluated with consistent methodology. Using the full hierarchical model (with offensive and defensive team effects) applied to both eras:
+Two-point decisions show a similar pattern to fourth downs when analyzed with the full hierarchical model and expanding window methodology.
 
+\textbf{Methodology:} For each year, we train hierarchical models on all \textit{prior} years in that era only, then evaluate that year's decisions. This mirrors the fourth-down analysis exactly:
 \begin{itemize}[nosep]
-    \item Pre-2015: $\sim$59\% optimal (range: 58--62\%)
-    \item Post-2015: $\sim$59\% optimal (range: 56--61\%)
-    \item Post-2015 trend: $+0.07$ pp/year (flat)
+    \item Full hierarchical 2pt model with offensive \textit{and} defensive team effects
+    \item Hierarchical PAT model with kicker-specific effects
+    \item Same Bayesian win probability model as fourth-down analysis
+    \item Expanding window: 2017 trained on 2015-2016 data, 2018 on 2015-2017, etc.
 \end{itemize}
-
-\textbf{No learning on two-point decisions either.}
 
 \subsection*{Two-Point Rule Change Analysis (2015)}
 
-The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, changing the math entirely. This creates a natural experiment: did coaches learn the new environment?
+The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, making PATs harder ($\sim$94\% vs $\sim$99\%). This creates a natural experiment: did coaches learn the new decision environment?
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/two_point_rule_change.png}
-\caption{Two-point conversion analysis around the 2015 rule change. Left: Using era-specific hierarchical models, coaches are $\sim$59\% optimal in \textit{both} eras---no drop after the rule change when evaluated fairly. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\% after the rule change.}
+\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Left: Pre-2015 shows high variance due to limited training data in early years. Post-2015 stabilizes around 55\% optimal with a modest +1.2 pp/year trend. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
 \end{figure}
 
-\textbf{Key insight:} When we apply consistent methodology (full hierarchical model to both eras), there is no discontinuity at the rule change and no learning trend. Coaches were $\sim$59\% optimal before 2015 and remain $\sim$59\% optimal after. The decision problem changed, but coach performance relative to optimal did not.
+\textbf{Key findings (post-2015, proper expanding window):}
+\begin{itemize}[nosep]
+    \item Average optimal rate: $\sim$55\% (range: 43--58\%)
+    \item Trend: $+1.2$ pp/year (modest improvement)
+    \item Coaches are learning \textit{slowly}, unlike fourth downs where trend is flat
+\end{itemize}
+
+The pre-2015 results show high variance because early years (2006-2007) have insufficient training data for reliable hierarchical estimates. The post-2015 pattern is more stable: coaches started around 43-47\% optimal in the first years after the rule change and have gradually improved to $\sim$55\%.
 
 \subsection*{The Down 8 vs Down 9 Paradox}
 
