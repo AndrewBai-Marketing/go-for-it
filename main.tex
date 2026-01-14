@@ -556,6 +556,102 @@ This counterintuitive finding reflects a shift in error type. In 2017, the domin
 
 \paragraph{Free wins remain uncaptured.} Despite two decades of publicly available research showing that teams are systematically suboptimal on fourth down, the expected win probability cost has not declined. The ``free wins'' that \citet{romer2006} identified are still on the table. Teams are not capturing this edge---they have merely shifted the nature of their errors.
 
+\subsection{Where Did Coaches Learn? A Margin-Based Decomposition}
+
+The overall lack of improvement masks heterogeneous learning across decision types. We decompose decision quality by \textit{decision margin}---the win probability difference between the optimal and second-best action---to identify where coaches have learned and where they have not.
+
+\begin{table}[H]
+\centering
+\caption{Decision Quality by Margin Size (2006--2024)}
+\label{tab:margin_quality}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Margin} & \textbf{N Plays} & \textbf{Share} & \textbf{Optimal \%} & \textbf{Trend (pp/yr)} \\
+\midrule
+Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17^{**}$ \\
+Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20^{**}$ \\
+Clear (5--10pp) & 10,964 & 15.3\% & 98.5\% & $-0.01$ \\
+Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item $^{**} p < 0.05$. Trends estimated via OLS regression of yearly optimal rate on year.
+\end{tablenotes}
+\end{table}
+
+\paragraph{Coaches got worse on close calls.} On decisions where the margin is less than 2 percentage points---53\% of all fourth downs---optimal rates \textit{declined} by 0.17 pp/year ($p = 0.01$). This is precisely the category where ``go for it more'' intuition provides little guidance, because the optimal action depends sensitively on game state.
+
+\paragraph{No improvement on easy decisions.} On decisions with clear optimal actions (margin $>5$pp), coaches were already near-perfect (98.5\%) and stayed that way. There was no room to improve.
+
+\subsubsection{The Short Yardage Paradox}
+
+The most dramatic shift occurred in short yardage situations (4th \& 1--2), where the analytics revolution's message to ``go for it more'' landed hardest.
+
+\begin{table}[H]
+\centering
+\caption{Short Yardage (1--2 yards): The Aggression Shift}
+\label{tab:short_yardage_shift}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Early (2006--2012)} & \textbf{Late (2019--2024)} & \textbf{Change} \\
+\midrule
+Coach go-for-it rate & 32.5\% & 54.6\% & +22.1 pp \\
+Model go-for-it rate & 34.8\% & 36.6\% & +1.8 pp \\
+Optimal decision rate & 60.9\% & 56.5\% & $-4.4$ pp \\
+\midrule
+Under-aggressive errors & 20.5\% & 12.5\% & $-8.0$ pp \\
+Over-aggressive errors & 18.2\% & 30.6\% & +12.4 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The paradox.} Coaches increased their go-for-it rate by 22 percentage points, but the model's recommended rate increased by only 2 percentage points. The result: coaches \textit{overcorrected}. Under-aggressive errors (failing to go when optimal) dropped from 20.5\% to 12.5\%, but over-aggressive errors (going when suboptimal) increased from 18.2\% to 30.6\%.
+
+\paragraph{Compliance by optimal action.} The asymmetry is stark:
+\begin{itemize}
+    \item When model says \texttt{go}: compliance improved 41\% $\to$ 66\% (+1.73 pp/year, $p < 0.001$)
+    \item When model says \texttt{punt}: compliance \textit{dropped} 85\% $\to$ 66\% ($-1.35$ pp/year, $p < 0.001$)
+    \item When model says \texttt{fg}: compliance dropped 47\% $\to$ 33\% ($-1.10$ pp/year, $p = 0.001$)
+\end{itemize}
+
+Coaches learned the ``go for it'' half of the message while unlearning the ``but not always'' qualifier.
+
+\subsubsection{Learning by Game Situation}
+
+\begin{table}[H]
+\centering
+\caption{Learning Trends by Game Situation}
+\label{tab:situation_trends}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Situation} & \textbf{N Plays} & \textbf{Optimal \%} & \textbf{Trend (pp/yr)} \\
+\midrule
+\multicolumn{4}{l}{\textit{By time remaining}} \\
+\quad End game ($<$5 min) & 8,641 & 60.0\% & $+0.16$ \\
+\quad Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22^{**}$ \\
+\midrule
+\multicolumn{4}{l}{\textit{By yards to go}} \\
+\quad Short (1--2 yds) & 13,641 & 60.1\% & $-0.33^{**}$ \\
+\quad Long (6--10 yds) & 23,867 & 88.2\% & $+0.00$ \\
+\midrule
+\multicolumn{4}{l}{\textit{By field position}} \\
+\quad Red zone (0--20) & 11,943 & 69.3\% & $+0.25$ \\
+\quad Midfield (40--60) & 17,361 & 83.0\% & $-0.37^{**}$ \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item $^{**} p < 0.05$.
+\end{tablenotes}
+\end{table}
+
+\paragraph{High-stakes learning.} End-game decisions ($<5$ minutes remaining) show marginal improvement (+0.16 pp/year), while early-game decisions show decline ($-0.22$ pp/year, $p = 0.03$). When stakes are salient, coaches pay closer attention.
+
+\paragraph{Red zone improvement.} Red zone fourth downs show improvement (+0.25 pp/year), likely because these high-visibility situations receive more attention and are easier to track outcome feedback. Midfield decisions, where the tradeoffs are more complex, show significant decline ($-0.37$ pp/year, $p < 0.001$).
+
+\paragraph{Interpretation.} The pattern suggests coaches learn best in situations with: (i) immediate, clear feedback, (ii) high salience (late game, red zone), and (iii) simple decision structure. They struggle with: (i) delayed or noisy feedback, (ii) routine situations (early game), and (iii) complex tradeoffs (midfield, short yardage where all three options are viable).
+
 \subsection{Why Does This Matter?}
 
 The expanding window analysis addresses a fundamental challenge in retrospective performance evaluation: hindsight bias. Critics of analytics-based coaching evaluation often argue that ``you can't judge decisions based on information that wasn't available at the time.''

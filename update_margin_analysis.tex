@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\definecolor{newcolor}{RGB}{0,100,0}
+\newcommand{\new}{\textcolor{newcolor}{\textbf{NEW}}}
+
+\title{Update: Learning by Decision Margin}
+\author{Andrew Bai}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Overview}
+
+This update addresses your suggestion to decompose learning by decision margin. The key question: \textit{where} did coaches learn (or fail to learn)?
+
+\section*{Main Finding}
+
+\textbf{Coaches got worse on close calls, stayed flat on easy decisions.}
+
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Margin} & \textbf{N Plays} & \textbf{Share} & \textbf{Optimal \%} & \textbf{Trend (pp/yr)} \\
+\midrule
+Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17^{**}$ \\
+Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20^{**}$ \\
+Clear (5--10pp) & 10,964 & 15.3\% & 98.5\% & $-0.01$ \\
+Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textit{Note: $^{**}$ indicates $p < 0.05$.}
+
+\vspace{1em}
+\textbf{Interpretation:} 53\% of fourth downs are close calls ($<$2pp margin). Coaches are getting \textit{worse} on these ($-0.17$ pp/year, $p = 0.01$). On obvious decisions, they were already near-perfect and stayed that way.
+
+\section*{The Short Yardage Paradox}
+
+The most striking pattern is in short yardage (4th \& 1--2):
+
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{2006--2012} & \textbf{2019--2024} & \textbf{Change} \\
+\midrule
+Coach go-for-it rate & 32.5\% & 54.6\% & \textbf{+22.1 pp} \\
+Model go-for-it rate & 34.8\% & 36.6\% & +1.8 pp \\
+Optimal decision rate & 60.9\% & 56.5\% & $-4.4$ pp \\
+\midrule
+Under-aggressive errors & 20.5\% & 12.5\% & $-8.0$ pp \\
+Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.4 pp} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The paradox:} Coaches increased their go-for-it rate by 22pp, but the model only says they should go for it 2pp more often. Result: coaches \textit{overcorrected}. Over-aggressive errors nearly doubled.
+
+\subsection*{Compliance by Optimal Action}
+
+\begin{itemize}[nosep]
+    \item When model says GO: compliance improved 41\% $\to$ 66\% \hfill \textbf{+1.73 pp/yr}
+    \item When model says PUNT: compliance dropped 85\% $\to$ 66\% \hfill $-1.35$ pp/yr
+    \item When model says FG: compliance dropped 47\% $\to$ 33\% \hfill $-1.10$ pp/yr
+\end{itemize}
+
+\textbf{Coaches learned ``go for it more'' but unlearned ``but not always.''}
+
+\section*{Learning by Game Situation}
+
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Situation} & \textbf{N Plays} & \textbf{Optimal \%} & \textbf{Trend} \\
+\midrule
+End game ($<$5 min) & 8,641 & 60.0\% & $+0.16$ \\
+Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22^{**}$ \\
+\midrule
+Red zone & 11,943 & 69.3\% & $+0.25$ \\
+Midfield & 17,361 & 83.0\% & $-0.37^{**}$ \\
+\midrule
+Short yardage (1--2) & 13,641 & 60.1\% & $-0.33^{**}$ \\
+Long yardage (6--10) & 23,867 & 88.2\% & $+0.00$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Pattern:} Coaches improve in high-salience situations (end game, red zone) but decline in routine situations (early game, midfield).
+
+\section*{Theoretical Interpretation}
+
+Coaches appear to learn best when:
+\begin{enumerate}[nosep]
+    \item Feedback is immediate and clear (outcome directly observable)
+    \item Stakes are salient (late game, red zone)
+    \item Decision structure is simple (two options, not three)
+\end{enumerate}
+
+Coaches struggle when:
+\begin{enumerate}[nosep]
+    \item Feedback is delayed or noisy (punt outcomes are diffuse)
+    \item Situations are routine (early game, low scrutiny)
+    \item Tradeoffs are complex (midfield where go/punt/FG all viable)
+\end{enumerate}
+
+This connects to organizational learning literature: simple heuristics (``go for it more'') propagate through organizations, but conditional rules (``go for it when X but not when Y'') do not.
+
+\section*{Contrast with Two-Point Conversions}
+
+Two-point decisions show the \textit{opposite} pattern: +1.0 pp/year improvement ($p = 0.06$).
+
+Why? Two-point decisions have:
+\begin{itemize}[nosep]
+    \item Only 2 options (not 3)
+    \item Immediate, visible outcome
+    \item Clear probability estimates (2pt conversion rate is salient)
+\end{itemize}
+
+The complexity of fourth-down decisions---three options, state-dependent optimal actions, delayed feedback on punt outcomes---appears to impede organizational learning.
+
+\section*{What This Adds to the Paper}
+
+\begin{enumerate}
+    \item \textbf{Explains} why coaches haven't improved despite analytics revolution
+    \item \textbf{Identifies} specific failure modes: overcorrection on short yardage, decline on close calls
+    \item \textbf{Predicts} where intervention would help most: close-call situations
+    \item \textbf{Connects} to organizational learning theory: simple heuristics spread, conditional rules don't
+\end{enumerate}
+
+\section*{Next Steps}
+
+Possible extensions:
+\begin{itemize}[nosep]
+    \item Team-level heterogeneity in learning (do ``analytics teams'' improve more?)
+    \item Coach-level analysis (does experience predict learning?)
+    \item Causal mechanisms (what drives overcorrection?)
+\end{itemize}
+
+\end{document}
