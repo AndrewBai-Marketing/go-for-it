@@ -155,28 +155,30 @@ This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\the
 
 We specify four component models, using hierarchical structure for conversion and field goal probabilities to capture team- and kicker-specific heterogeneity while borrowing strength across units via partial pooling. All models are estimated using Laplace approximation to the posterior with weakly informative priors $\beta \sim \mathcal{N}(0, 100)$.
 
-\paragraph{Hierarchical conversion model with offense and defense effects.} We model conversion probability as logistic in yards to go with \textit{both} offensive team and defensive team random effects:
+\paragraph{Hierarchical conversion model with in-game context.} We model conversion probability as logistic in yards to go with \textit{in-game context features} and team random effects:
 \begin{equation}
-    \Prob(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
+    \Prob(\text{convert} \mid d, g, e, p, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta_d d + \beta_g g + \beta_e e + \beta_p p + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
 \end{equation}
-where $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ captures the offensive team's conversion ability and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ captures the defensive team's ability to stop conversions. Both effects are shrunk toward zero via empirical Bayes, with shrinkage factor $B_k = \text{SE}_k^2 / (\text{SE}_k^2 + \tau^2)$.
+where $d$ is yards to go, $g$ is a goal-to-go indicator, $e$ is standardized in-game EPA (team's cumulative rush + pass EPA in that game), and $p$ is standardized drive play count. The team effects $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ are shrunk toward zero via empirical Bayes.
 
-This specification is crucial for the selection-on-observables argument developed in Section~\ref{sec:selection}: at decision time, the coach knows both their offense's quality and the opponent's defensive quality. By conditioning on both, our model captures the coach's information set.
+The in-game context features are critical. Goal-to-go situations convert at \textit{lower} rates than non-goal-to-go (defenses stack the box near the goal line). Teams performing well in-game (higher EPA) convert more often. Longer drives correlate with higher conversion rates (momentum, fatigue, or selection effects). These features explain apparent ``coach intuition''---coaches who override the model tend to do so in favorable in-game contexts.
 
-The population-level posterior estimates are $\hat{\alpha} = 0.660$ (SE: 0.026) and $\hat{\beta} = -0.160$ (SE: 0.005), estimated from 13,884 go-for-it attempts (1999--2024). The between-team variances are $\hat{\tau}_{\text{off}}^2 = 0.001$ and $\hat{\tau}_{\text{def}}^2 = 0.001$, implying modest but meaningful heterogeneity after shrinkage. This yields league-average conversion probabilities:
+The population-level posterior estimates are $\hat{\alpha} = 0.722$, $\hat{\beta}_d = -0.133$, $\hat{\beta}_g = -1.129$ (goal-to-go \textit{hurts}), $\hat{\beta}_e = 0.490$, and $\hat{\beta}_p = 1.201$, estimated from 13,884 go-for-it attempts (1999--2024). The posterior probability that $\beta_g < 0$ is 100\%, confirming that goal-to-go reduces conversion probability. This yields league-average conversion probabilities (at average in-game context, non-goal-to-go):
 \begin{center}
 \begin{tabular}{lcc}
 \toprule
 \textbf{Yards to Go} & \textbf{Conversion \%} & \textbf{95\% CI} \\
 \midrule
-1 & 64.8\% & [62.9\%, 66.4\%] \\
-2 & 60.7\% & [58.9\%, 62.2\%] \\
-3 & 56.4\% & [54.8\%, 57.9\%] \\
-5 & 47.6\% & [46.0\%, 49.3\%] \\
-10 & 27.4\% & [24.9\%, 30.4\%] \\
+1 & 64.3\% & [63.0\%, 65.6\%] \\
+2 & 61.2\% & [60.0\%, 62.4\%] \\
+3 & 58.0\% & [56.9\%, 59.1\%] \\
+5 & 51.4\% & [50.3\%, 52.4\%] \\
+10 & 35.2\% & [33.4\%, 36.8\%] \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\paragraph{Goal-to-go effect.} At 4th \& 1, conversion probability drops from 64.3\% (non-goal-to-go) to 36.8\% (goal-to-go)---a 27.5 percentage point penalty. This reflects defensive adjustments near the goal line. The odds ratio is 0.32, meaning goal-to-go situations are roughly one-third as likely to convert.
 
 \paragraph{Hierarchical field goal model.} We model make probability as logistic in kick distance (centered at 35 yards) with kicker-specific effects:
 \begin{equation}
@@ -279,32 +281,32 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 \toprule
 \textbf{Season} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
 \midrule
-2006 & 3,829 & 12.1\% & 82.0\% & 78.5\% & 93.5\% \\
-2007 & 3,758 & 14.1\% & 77.5\% & 77.3\% & 95.5\% \\
-2008 & 3,674 & 13.2\% & 80.3\% & 78.7\% & 95.5\% \\
-2009 & 3,849 & 14.4\% & 78.8\% & 78.1\% & 96.3\% \\
-2010 & 3,840 & 12.5\% & 82.4\% & 79.2\% & 94.6\% \\
-2011 & 3,845 & 11.1\% & 82.2\% & 81.1\% & 95.1\% \\
-2012 & 3,820 & 11.6\% & 82.6\% & 80.3\% & 96.4\% \\
-2013 & 3,904 & 11.9\% & 83.1\% & 81.2\% & 96.9\% \\
-2014 & 3,740 & 12.0\% & 80.1\% & 80.2\% & 96.1\% \\
-2015 & 3,824 & 12.4\% & 79.5\% & 80.7\% & 96.8\% \\
-2016 & 3,703 & 12.8\% & 82.1\% & 80.9\% & 97.7\% \\
-2017 & 3,869 & 12.4\% & 82.6\% & 81.2\% & 98.3\% \\
-2018 & 3,574 & 14.9\% & 81.4\% & 81.5\% & 97.0\% \\
-2019 & 3,634 & 16.3\% & 79.9\% & 80.0\% & 98.8\% \\
-2020 & 3,402 & 19.3\% & 80.5\% & 79.9\% & 97.3\% \\
-2021 & 3,777 & 20.9\% & 79.0\% & 78.8\% & 95.7\% \\
-2022 & 3,870 & 18.9\% & 78.9\% & 78.4\% & 96.9\% \\
-2023 & 4,047 & 19.6\% & 77.9\% & 78.7\% & 96.5\% \\
-2024 & 3,827 & 20.0\% & 78.9\% & 79.0\% & 97.9\% \\
+2006 & 3,733 & 12.1\% & 82.3\% & 80.6\% & 94.5\% \\
+2007 & 3,671 & 14.1\% & 79.4\% & 80.0\% & 93.9\% \\
+2008 & 3,585 & 13.2\% & 81.6\% & 80.4\% & 94.5\% \\
+2009 & 3,752 & 14.4\% & 79.8\% & 80.0\% & 94.7\% \\
+2010 & 3,735 & 12.5\% & 83.4\% & 80.8\% & 95.4\% \\
+2011 & 3,768 & 11.1\% & 83.4\% & 82.6\% & 94.7\% \\
+2012 & 3,713 & 11.6\% & 84.0\% & 82.7\% & 97.4\% \\
+2013 & 3,819 & 11.9\% & 84.9\% & 83.4\% & 96.9\% \\
+2014 & 3,647 & 12.0\% & 82.8\% & 82.7\% & 95.7\% \\
+2015 & 3,739 & 12.4\% & 81.8\% & 83.4\% & 95.6\% \\
+2016 & 3,611 & 12.8\% & 84.0\% & 83.2\% & 97.6\% \\
+2017 & 3,767 & 12.4\% & 85.0\% & 84.1\% & 97.6\% \\
+2018 & 3,484 & 14.9\% & 83.5\% & 83.1\% & 96.3\% \\
+2019 & 3,552 & 16.3\% & 81.7\% & 81.5\% & 97.9\% \\
+2020 & 3,320 & 19.3\% & 81.8\% & 81.0\% & 97.0\% \\
+2021 & 3,680 & 20.9\% & 80.2\% & 80.3\% & 94.9\% \\
+2022 & 3,772 & 18.9\% & 81.0\% & 81.1\% & 97.2\% \\
+2023 & 3,934 & 19.6\% & 80.3\% & 81.4\% & 95.7\% \\
+2024 & 3,724 & 20.0\% & 80.5\% & 81.2\% & 97.6\% \\
 \midrule
-\textbf{Overall} & \textbf{71,786} & \textbf{15.3\%} & \textbf{80.5\%} & \textbf{79.7\%} & \textbf{96.5\%} \\
+\textbf{Overall} & \textbf{70,006} & \textbf{13.8\%} & \textbf{82.2\%} & \textbf{81.8\%} & \textbf{96.1\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key finding: \textbf{96.5\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
+The key finding: \textbf{96.1\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
 
 Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained flat at approximately 80\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}.
 
@@ -321,7 +323,7 @@ We categorize coach decisions that deviate from the model recommendation based o
 \end{enumerate}
 \end{definition}
 
-Applying this framework to the 13,990 plays where coaches deviated from model recommendations:
+Applying this framework to the 12,474 plays where coaches deviated from model recommendations:
 
 \begin{table}[H]
 \centering
@@ -330,17 +332,17 @@ Applying this framework to the 13,990 plays where coaches deviated from model re
 \toprule
 \textbf{Category} & \textbf{Count} & \textbf{Percent} & \textbf{Definition} \\
 \midrule
-Correct & 57,796 & 80.5\% & Coach agreed with model \\
-Difference of opinion & 11,558 & 16.1\% & Margin $<$ 2\% WP \\
-Questionable & 1,758 & 2.4\% & Margin 2--5\% WP \\
-Clear mistake & 674 & 0.9\% & Margin $>$ 5\% WP \\
+Correct & 57,532 & 82.2\% & Coach agreed with model \\
+Difference of opinion & 10,178 & 14.5\% & Margin $<$ 2\% WP \\
+Questionable & 2,058 & 2.9\% & Margin 2--5\% WP \\
+Clear mistake & 238 & 0.3\% & Margin $>$ 5\% WP \\
 \midrule
-\textbf{Total} & \textbf{71,786} & \textbf{100\%} & \\
+\textbf{Total} & \textbf{70,006} & \textbf{100\%} & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-This decomposition reveals a striking fact: \textbf{83\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.9\% of all fourth-down plays---and just 4.8\% of deviations---represent clear errors where the coach should unambiguously have known better
+This decomposition reveals a striking fact: \textbf{82\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.3\% of all fourth-down plays---and just 1.9\% of deviations---represent clear errors where the coach should unambiguously have known better
 
 \subsection{The Worst Decisions of All Time}
 
@@ -355,10 +357,10 @@ Among late-game, high-stakes situations, which decisions cost the most win proba
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
 2021 SEA @ PIT & 4th \& 14, opp 39, tied, 9:53 Q4 & PUNT & FG & 9.5\% \\
-2024 MIA @ NE & 4th \& 15, opp 17, down 5, 1:00 Q4 & GO & FG & 8.9\% \\
-2021 NE @ BUF & 4th \& 14, opp 18, down 4, 2:00 Q4 & GO & FG & 8.6\% \\
-2014 NYJ @ TEN & 4th \& 17, opp 29, down 5, 1:40 Q4 & GO & FG & 8.6\% \\
-2010 GB @ NYJ & 4th \& 18, own 20, tied, 51:36 Q1 & GO & PUNT & 8.5\% \\
+2024 NE @ MIA & 4th \& 15, opp 17, down 5, 1:00 Q4 & GO & FG & 8.9\% \\
+2021 BUF @ NE & 4th \& 14, opp 18, down 4, 2:00 Q4 & GO & FG & 8.6\% \\
+2022 SEA @ ATL & 4th \& 18, opp 38, down 4, 1:00 Q4 & GO & FG & 8.4\% \\
+2020 CLE @ PIT & 4th \& 16, own 29, up 4, 30:00 Q2 & GO & PUNT & 8.2\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -446,34 +448,34 @@ How much do suboptimal fourth-down decisions cost each team per season? We sum t
 \textbf{Team} & \textbf{2020} & \textbf{2021} & \textbf{2022} & \textbf{2023} & \textbf{2024} & \textbf{Avg} \\
 \midrule
 \multicolumn{7}{l}{\textit{Most costly decision-making:}} \\
-CHI & 0.38 & 0.36 & 0.52 & 0.51 & 0.47 & \textbf{0.47} \\
-DET & 0.08 & 0.43 & 0.51 & 0.43 & 0.60 & 0.42 \\
-CLE & 0.37 & 0.44 & 0.50 & 0.28 & 0.43 & 0.41 \\
-CAR & 0.66 & 0.41 & 0.42 & 0.48 & 0.20 & 0.41 \\
-PHI & 0.42 & 0.29 & 0.53 & 0.31 & 0.33 & 0.40 \\
+DET & 0.06 & 0.50 & 0.63 & 0.43 & 0.46 & \textbf{0.39} \\
+CHI & 0.33 & 0.32 & 0.43 & 0.36 & 0.27 & 0.34 \\
+PHI & 0.52 & 0.24 & 0.34 & 0.26 & 0.32 & 0.33 \\
+JAX & 0.34 & 0.35 & 0.50 & 0.29 & 0.26 & 0.33 \\
+CLE & 0.40 & 0.32 & 0.28 & 0.18 & 0.45 & 0.31 \\
 \midrule
 \multicolumn{7}{l}{\textit{Most efficient decision-making:}} \\
-SEA & 0.27 & 0.27 & 0.40 & 0.27 & 0.27 & 0.29 \\
-BAL & 0.23 & 0.25 & 0.36 & 0.27 & 0.24 & 0.29 \\
-TB & 0.13 & 0.18 & 0.52 & 0.28 & 0.28 & 0.28 \\
-SF & 0.34 & 0.30 & 0.29 & 0.14 & 0.28 & 0.27 \\
-CIN & 0.18 & 0.20 & 0.16 & 0.36 & 0.33 & \textbf{0.26} \\
+PIT & 0.19 & 0.28 & 0.20 & 0.19 & 0.23 & 0.23 \\
+GB & 0.15 & 0.29 & 0.31 & 0.17 & 0.22 & 0.22 \\
+CIN & 0.21 & 0.18 & 0.15 & 0.20 & 0.29 & 0.21 \\
+NYJ & 0.07 & 0.15 & 0.16 & 0.33 & 0.37 & 0.21 \\
+TB & 0.10 & 0.13 & 0.41 & 0.18 & 0.19 & \textbf{0.20} \\
 \midrule
-League Avg & 0.29 & 0.33 & 0.38 & 0.36 & 0.36 & 0.34 \\
+League Avg & 0.25 & 0.28 & 0.32 & 0.29 & 0.30 & 0.28 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The average team loses approximately \textbf{0.34 expected wins per season} from suboptimal fourth-down decisions. The spread between best (Cincinnati, 0.26) and worst (Chicago, 0.47) is 0.21 wins per season.
+The average team loses approximately \textbf{0.28 expected wins per season} from suboptimal fourth-down decisions. The spread between best (Tampa Bay, 0.20) and worst (Detroit, 0.39) is 0.19 wins per season.
 
-\paragraph{Putting the magnitude in perspective.} Is 0.34 wins per season meaningful? Consider:
+\paragraph{Putting the magnitude in perspective.} Is 0.28 wins per season meaningful? Consider:
 
 \begin{itemize}
-    \item \textbf{Playoff implications}: In the NFL's competitive balance environment, playoff berths are often decided by tiebreakers among teams with identical records. From 2020--2024, 23 teams missed the playoffs by one game. An additional 0.34 wins per season translates to roughly one extra playoff appearance per decade from fourth-down optimization alone.
+    \item \textbf{Playoff implications}: In the NFL's competitive balance environment, playoff berths are often decided by tiebreakers among teams with identical records. From 2020--2024, 23 teams missed the playoffs by one game. An additional 0.28 wins per season translates to roughly one extra playoff appearance per decade from fourth-down optimization alone.
 
     \item \textbf{Relative to other decisions}: Fourth-down decisions occur roughly 15--20 times per game. Coaching decisions on other plays (run-pass mix, timeout usage, clock management) likely contribute comparable expected value. Fourth down is ``one edge among many,'' but it is the most analytically tractable.
 
-    \item \textbf{Cumulative effect}: Over a 17-game season, the worst teams (Chicago: 0.47 wins lost) squander nearly half a win from fourth-down mistakes alone. Over a 5-year coaching tenure, that's 2.4 expected wins---enough to flip multiple close games.
+    \item \textbf{Cumulative effect}: Over a 17-game season, the worst teams (Detroit: 0.39 wins lost) squander nearly half a win from fourth-down mistakes alone. Over a 5-year coaching tenure, that's 2.0 expected wins---enough to flip multiple close games.
 
     \item \textbf{Marginal cost of improvement}: Unlike salary cap optimization or draft capital allocation, fourth-down improvement is essentially free. Teams can capture this edge simply by adjusting decision rules.
 \end{itemize}
@@ -576,7 +578,7 @@ Johnson was 1-for-3 on optimal decisions, though the second call was essentially
 
 \section{Regular Season vs. Playoff Decision-Making}
 
-The framework allows us to compare decision-making across contexts where incentives and stakes differ. We analyze 22,573 regular season and 847 playoff fourth-down situations.
+The framework allows us to compare decision-making across contexts where incentives and stakes differ. We analyze 69,092 regular season and 914 playoff fourth-down situations.
 
 \subsection{Stylized Facts}
 
@@ -587,9 +589,9 @@ The framework allows us to compare decision-making across contexts where incenti
 \toprule
 \textbf{Metric} & \textbf{Regular Season} & \textbf{Playoffs} & \textbf{Difference} \\
 \midrule
-Go-for-it rate & 19.1\% & 21.6\% & +2.5 pp \\
-Optimal decision rate & 73.6\% & 73.4\% & $\approx 0$ \\
-WP lost per decision & 0.33 pp & 0.33 pp & $\approx 0$ \\
+Go-for-it rate & 13.6\% & 21.7\% & +8.0 pp \\
+Optimal decision rate & 82.2\% & 78.4\% & $-3.8$ pp \\
+WP lost per decision & 1.1 pp & 1.5 pp & +0.4 pp \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -702,12 +704,12 @@ Candidates include:
 
 If coaches had decision-relevant private information, we would expect:
 \begin{enumerate}
-    \item Coach decisions to be better than model recommendations (they're not---18.5\% suboptimal)
+    \item Coach decisions to be better than model recommendations (they're not---17.8\% suboptimal)
     \item Conversion rates to differ for ``go for it'' decisions vs.\ model-recommended ``punt'' decisions (controlling for game state)
-    \item Playoff decisions to be better than regular season (they're not---both $\sim$73\% optimal)
+    \item Playoff decisions to be better than regular season (they're not---both $\sim$80\% optimal)
 \end{enumerate}
 
-The fact that our model achieves 96.5\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
+The fact that our model achieves 96.1\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
 
 \paragraph{Direct test: Do overrides succeed more often?} The most direct test of private information is: when coaches override the model's recommendation to go for it, do they convert at higher rates than when they agree with the model's ``go for it'' recommendation? If coaches have private information, their overrides should be better-informed.
 
@@ -719,26 +721,26 @@ The fact that our model achieves 96.5\% agreement between ex-ante and ex-post re
 \toprule
 \textbf{Situation} & \textbf{Coach Agreed} & \textbf{Coach Overrode} & \textbf{Difference} \\
 \midrule
-All GO decisions & 57.8\% ($n = 1,345$) & 50.2\% ($n = 3,000$) & $-7.6$ pp \\
+All GO decisions & 56.7\% ($n = 3,026$) & 50.9\% ($n = 6,603$) & $-5.8$ pp \\
 \midrule
-4th \& short (1--2 yds) & 62.5\% ($n = 1,194$) & 65.5\% ($n = 1,670$) & $+3.0$ pp \\
-4th \& medium (3--5 yds) & 48.5\% ($n = 327$) & 48.9\% ($n = 842$) & $+0.4$ pp \\
-4th \& long (6+ yds) & 37.6\% ($n = 118$) & 28.4\% ($n = 1,213$) & $-9.3$ pp \\
+4th \& short (1--2 yds) & 60.2\% ($n = 2,244$) & 66.8\% ($n = 2,969$) & $+6.5$ pp \\
+4th \& medium (3--5 yds) & 47.6\% ($n = 638$) & 48.7\% ($n = 1,440$) & $+1.0$ pp \\
+4th \& long (6+ yds) & 41.7\% ($n = 144$) & 31.0\% ($n = 2,194$) & $-10.7$ pp \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The results are striking: \textbf{overall, coach overrides convert at lower rates than model-aligned decisions} ($-7.6$ pp, $p < 0.0001$). However, the stratified analysis reveals important heterogeneity:
+The results are striking: \textbf{overall, coach overrides convert at lower rates than model-aligned decisions} ($-5.8$ pp). However, this raw difference is \textit{misleading}---it reflects selection effects, not coach skill. Our in-game context model reveals that coaches who override to go for it tend to do so in situations with favorable observable characteristics (higher EPA, longer drives, non-goal-to-go). When we control for these features:
 
 \begin{itemize}
-    \item \textbf{Short yardage}: Coaches do appear to have some private information---when they override the model to go for it on 4th \& 1--2, they convert at slightly higher rates ($+3.0$ pp). This may reflect real-time knowledge of line-of-scrimmage dynamics, fatigue, or personnel advantages.
+    \item \textbf{Short yardage}: The raw $+6.5$ pp advantage for overrides disappears. Model-predicted conversion probabilities fully explain the difference---coaches override in easier situations (low goal-to-go rate, high EPA). After controls, no residual coach advantage remains.
 
-    \item \textbf{Medium distance}: No meaningful difference ($+0.4$ pp).
+    \item \textbf{Medium distance}: The $+1.0$ pp raw difference is explained by in-game context. No evidence of private information.
 
-    \item \textbf{Long yardage}: Coaches who override the model to go for it on 4th \& 6+ are \textit{overconfident}---they convert at 28.4\% versus 37.6\% when the model also recommended going for it. This suggests coaches sometimes ``go for it'' on desperation or hubris rather than genuine private information.
+    \item \textbf{Long yardage}: Coaches who override the model to go for it on 4th \& 6+ are \textit{overconfident}---they convert at 31.0\% versus 41.7\% when the model also recommended going for it, and this gap \textit{widens} after controls to $-14.7$ pp.
 \end{itemize}
 
-The pattern supports our selection-on-observables argument with nuance: coaches may have modest private information in short-yardage situations (where physical matchups at the line are most important), but in longer-yardage situations, their overrides reflect overconfidence rather than superior knowledge.
+The pattern strongly supports our selection-on-observables argument: the in-game context model captures the information coaches use when deciding to override. There is no residual ``coach edge'' at any distance once we account for goal-to-go status, in-game EPA, and drive momentum.
 
 \subsection{Implications}
 
