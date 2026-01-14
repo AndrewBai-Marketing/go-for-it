@@ -79,3 +79,6 @@ outputs/tables/*.csv
 # Unrelated project directories
 stolen_base_analysis/
 salary_efficiency/
+
+# Claude Code settings (local only, never commit)
+.claude/
