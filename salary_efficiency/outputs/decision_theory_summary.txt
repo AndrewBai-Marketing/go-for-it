@@ -1,8 +1,0 @@
-DECISION THEORY ANALYSIS: ARE 'INEFFICIENT' TEAMS OPTIMAL?
-======================================================================
-
-Correlation(implied, rational win values): r = 0.502
-p-value: 0.0047
-R-squared: 0.252
-
-Conclusion: Spending patterns partially explained by rational factors

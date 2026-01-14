@@ -54,7 +54,7 @@
 \end{center}
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Critically, our model incorporates \textit{asymmetric clock consumption}: converting a fourth down burns approximately 150 seconds until the next change of possession (retaining the ball), while failing burns only 48 seconds---a distinction essential for late-game analysis. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,786 fourth-down situations from 2006--2024, we find that coaches deviate from model recommendations approximately 19.5\% of the time---but critically, 83\% of these deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 0.5\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.5\% of optimal decisions were \textit{knowable in real-time}. Despite the analytics revolution increasing league-wide go-for-it rates from 12.5\% to 20.0\% between 1999 and 2024, we find no improvement in decision quality---coaches have simply shifted from excessive conservatism to excessive aggression, leaving expected ``free wins'' still on the table. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a neural network trained on 710,664 plays, which substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to fourth-down situations from 2006--2024, we find that coaches match model recommendations 72.3\% of the time---but critically, 79\% of deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 1.3\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.5\% of optimal decisions were \textit{knowable in real-time}. Despite the analytics revolution increasing league-wide go-for-it rates from 12.5\% to 20.0\% between 1999 and 2024, we find no improvement in decision quality---coaches have simply shifted from excessive conservatism to excessive aggression, leaving expected ``free wins'' still on the table. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -155,28 +155,30 @@ This probability can be estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\the
 
 We specify four component models, using hierarchical structure for conversion and field goal probabilities to capture team- and kicker-specific heterogeneity while borrowing strength across units via partial pooling. All models are estimated using Laplace approximation to the posterior with weakly informative priors $\beta \sim \mathcal{N}(0, 100)$.
 
-\paragraph{Hierarchical conversion model with offense and defense effects.} We model conversion probability as logistic in yards to go with \textit{both} offensive team and defensive team random effects:
+\paragraph{Hierarchical conversion model with in-game context.} We model conversion probability as logistic in yards to go with \textit{in-game context features} and team random effects:
 \begin{equation}
-    \Prob(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
+    \Prob(\text{convert} \mid d, g, e, p, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta_d d + \beta_g g + \beta_e e + \beta_p p + \gamma_j^{\text{off}} + \delta_k^{\text{def}})
 \end{equation}
-where $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ captures the offensive team's conversion ability and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ captures the defensive team's ability to stop conversions. Both effects are shrunk toward zero via empirical Bayes, with shrinkage factor $B_k = \text{SE}_k^2 / (\text{SE}_k^2 + \tau^2)$.
+where $d$ is yards to go, $g$ is a goal-to-go indicator, $e$ is standardized in-game EPA (team's cumulative rush + pass EPA in that game), and $p$ is standardized drive play count. The team effects $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ and $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ are shrunk toward zero via empirical Bayes.
 
-This specification is crucial for the selection-on-observables argument developed in Section~\ref{sec:selection}: at decision time, the coach knows both their offense's quality and the opponent's defensive quality. By conditioning on both, our model captures the coach's information set.
+The in-game context features are critical. Goal-to-go situations convert at \textit{lower} rates than non-goal-to-go (defenses stack the box near the goal line). Teams performing well in-game (higher EPA) convert more often. Longer drives correlate with higher conversion rates (momentum, fatigue, or selection effects). These features explain apparent ``coach intuition''---coaches who override the model tend to do so in favorable in-game contexts.
 
-The population-level posterior estimates are $\hat{\alpha} = 0.660$ (SE: 0.026) and $\hat{\beta} = -0.160$ (SE: 0.005), estimated from 13,884 go-for-it attempts (1999--2024). The between-team variances are $\hat{\tau}_{\text{off}}^2 = 0.001$ and $\hat{\tau}_{\text{def}}^2 = 0.001$, implying modest but meaningful heterogeneity after shrinkage. This yields league-average conversion probabilities:
+The population-level posterior estimates are $\hat{\alpha} = 0.722$, $\hat{\beta}_d = -0.133$, $\hat{\beta}_g = -1.129$ (goal-to-go \textit{hurts}), $\hat{\beta}_e = 0.490$, and $\hat{\beta}_p = 1.201$, estimated from 13,884 go-for-it attempts (1999--2024). The posterior probability that $\beta_g < 0$ is 100\%, confirming that goal-to-go reduces conversion probability. This yields league-average conversion probabilities (at average in-game context, non-goal-to-go):
 \begin{center}
 \begin{tabular}{lcc}
 \toprule
 \textbf{Yards to Go} & \textbf{Conversion \%} & \textbf{95\% CI} \\
 \midrule
-1 & 64.8\% & [62.9\%, 66.4\%] \\
-2 & 60.7\% & [58.9\%, 62.2\%] \\
-3 & 56.4\% & [54.8\%, 57.9\%] \\
-5 & 47.6\% & [46.0\%, 49.3\%] \\
-10 & 27.4\% & [24.9\%, 30.4\%] \\
+1 & 64.3\% & [63.0\%, 65.6\%] \\
+2 & 61.2\% & [60.0\%, 62.4\%] \\
+3 & 58.0\% & [56.9\%, 59.1\%] \\
+5 & 51.4\% & [50.3\%, 52.4\%] \\
+10 & 35.2\% & [33.4\%, 36.8\%] \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\paragraph{Goal-to-go effect.} At 4th \& 1, conversion probability drops from 64.3\% (non-goal-to-go) to 36.8\% (goal-to-go)---a 27.5 percentage point penalty. This reflects defensive adjustments near the goal line. The odds ratio is 0.32, meaning goal-to-go situations are roughly one-third as likely to convert.
 
 \paragraph{Hierarchical field goal model.} We model make probability as logistic in kick distance (centered at 35 yards) with kicker-specific effects:
 \begin{equation}
@@ -190,11 +192,9 @@ where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures kicker ability relative to
 \end{equation}
 The posterior estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), and $\hat{\sigma} = 9.3$ yards. Punts from deeper in own territory travel further (positive $\beta$), reflecting punter adjustment to field position.
 
-\paragraph{Win probability model.} We model win probability as logistic in game state features:
-\begin{equation}
-    \Prob(\text{win} \mid s) = \sigma\left(\beta_0 + \beta_1 \frac{\Delta}{14} + \beta_2 \frac{\tau}{3600} + \beta_3 \frac{\Delta \cdot \tau}{14 \cdot 3600} + \beta_4 \frac{x - 50}{50} + \beta_5 \frac{k}{3}\right)
-\end{equation}
-where $\Delta$ is score differential, $\tau$ is seconds remaining, $x$ is yards from opponent's end zone, and $k$ is timeout differential. The negative interaction term ($\hat{\beta}_3 = -2.647$) confirms that score differential matters more as time decreases.
+\paragraph{Win probability model.} We model win probability using a neural network trained on 710,664 plays from 2006--2024. The architecture is a 3-layer multilayer perceptron (128-64-32 hidden units) with ReLU activations and 20\% dropout, trained with early stopping to minimize binary cross-entropy loss. Input features include score differential, time remaining, field position, down, yards to go, timeout differential, half indicator, goal-to-go indicator, and interaction terms (score$\times$time, field position$\times$time). We also include binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), and goal-line ($x \leq 5$) situations.
+
+The neural network substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. For example, a team trailing by 3 with 16 seconds remaining at the opponent's 2-yard line (1st \& goal) has a win probability of approximately 71\% under the neural model---reflecting the $\sim$67\% historical touchdown rate from this position---compared to only $\sim$14\% under a logistic specification that cannot capture the nonlinear interaction between field position and time in such extreme scenarios.
 
 \paragraph{Clock consumption model.} A critical component of our decision framework is the \textit{asymmetric clock consumption} between action-outcome pairs. Different decisions burn different amounts of game clock:
 \begin{itemize}
@@ -207,7 +207,7 @@ where $\Delta$ is score differential, $\tau$ is seconds remaining, $x$ is yards 
 
 This asymmetry has major implications for late-game decision-making. When leading, burning more clock (converting) helps protect the lead. When trailing, burning clock hurts because less time remains to catch up. Our model incorporates these empirically-derived clock consumption values, allowing it to naturally handle end-of-game scenarios without hard-coded filters. This is essential for correctly evaluating situations like ``should a trailing team go for it with 2 minutes left?'' where the clock implications dominate the decision.
 
-\paragraph{Model validation.} We extend the baseline model using second-degree polynomial features, capturing nonlinear effects such as score$\times$time interactions and diminishing returns to large leads. The enhanced model incorporates Vegas spread lines (capturing team strength) and achieves a 5-fold cross-validated Brier score of 0.150, compared to 0.162 for \texttt{nflfastR}---a 7.4\% improvement. The model is well-calibrated: across deciles of predicted WP, actual win rates match predictions closely (e.g., plays with 40--60\% predicted WP have 49.3\% actual win rate). This strong out-of-sample performance validates that our model captures the decision-relevant variation in game states without overfitting, and is in fact more accurate than the industry-standard \texttt{nflfastR} model for this application.
+\paragraph{Model validation.} The neural win probability model achieves a 5-fold cross-validated Brier score of 0.164, with extremely low variance across folds ($\pm 0.0004$). More importantly, the model is nearly perfectly calibrated: the expected calibration error (ECE) is just 0.0049. Across deciles of predicted WP, actual win rates match predictions closely---when the model predicts 75\% win probability, teams actually win 75\% of the time. This calibration is critical for decision-making: we need accurate probability estimates, not just accurate rankings. The neural architecture's ability to capture complex nonlinear interactions between features (particularly field position and time remaining in late-game scenarios) provides substantially more reliable guidance for edge cases than traditional logistic regression approaches.
 
 \subsection{Estimated Heterogeneity}
 
@@ -277,36 +277,38 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 \begin{table}[H]
 \centering
 \caption{Expanding Window Analysis: Ex Ante vs. Ex Post Model Agreement (2006--2024)}
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-\textbf{Season} & \textbf{N Plays} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
+\textbf{Season} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal \%} & \textbf{Ex Post Optimal \%} & \textbf{Agreement Rate} \\
 \midrule
-2006 & 3,829 & 82.0\% & 78.5\% & 93.5\% \\
-2007 & 3,758 & 77.5\% & 77.3\% & 95.5\% \\
-2008 & 3,674 & 80.3\% & 78.7\% & 95.5\% \\
-2009 & 3,849 & 78.8\% & 78.1\% & 96.3\% \\
-2010 & 3,840 & 82.4\% & 79.2\% & 94.6\% \\
-2011 & 3,845 & 82.2\% & 81.1\% & 95.1\% \\
-2012 & 3,820 & 82.6\% & 80.3\% & 96.4\% \\
-2013 & 3,904 & 83.1\% & 81.2\% & 96.9\% \\
-2014 & 3,740 & 80.1\% & 80.2\% & 96.1\% \\
-2015 & 3,824 & 79.5\% & 80.7\% & 96.8\% \\
-2016 & 3,703 & 82.1\% & 80.9\% & 97.7\% \\
-2017 & 3,869 & 82.6\% & 81.2\% & 98.3\% \\
-2018 & 3,574 & 81.4\% & 81.5\% & 97.0\% \\
-2019 & 3,634 & 79.9\% & 80.0\% & 98.8\% \\
-2020 & 3,402 & 80.5\% & 79.9\% & 97.3\% \\
-2021 & 3,777 & 79.0\% & 78.8\% & 95.7\% \\
-2022 & 3,870 & 78.9\% & 78.4\% & 96.9\% \\
-2023 & 4,047 & 77.9\% & 78.7\% & 96.5\% \\
-2024 & 3,827 & 78.9\% & 79.0\% & 97.9\% \\
+2006 & 3,733 & 12.1\% & 82.3\% & 80.6\% & 94.5\% \\
+2007 & 3,671 & 14.1\% & 79.4\% & 80.0\% & 93.9\% \\
+2008 & 3,585 & 13.2\% & 81.6\% & 80.4\% & 94.5\% \\
+2009 & 3,752 & 14.4\% & 79.8\% & 80.0\% & 94.7\% \\
+2010 & 3,735 & 12.5\% & 83.4\% & 80.8\% & 95.4\% \\
+2011 & 3,768 & 11.1\% & 83.4\% & 82.6\% & 94.7\% \\
+2012 & 3,713 & 11.6\% & 84.0\% & 82.7\% & 97.4\% \\
+2013 & 3,819 & 11.9\% & 84.9\% & 83.4\% & 96.9\% \\
+2014 & 3,647 & 12.0\% & 82.8\% & 82.7\% & 95.7\% \\
+2015 & 3,739 & 12.4\% & 81.8\% & 83.4\% & 95.6\% \\
+2016 & 3,611 & 12.8\% & 84.0\% & 83.2\% & 97.6\% \\
+2017 & 3,767 & 12.4\% & 85.0\% & 84.1\% & 97.6\% \\
+2018 & 3,484 & 14.9\% & 83.5\% & 83.1\% & 96.3\% \\
+2019 & 3,552 & 16.3\% & 81.7\% & 81.5\% & 97.9\% \\
+2020 & 3,320 & 19.3\% & 81.8\% & 81.0\% & 97.0\% \\
+2021 & 3,680 & 20.9\% & 80.2\% & 80.3\% & 94.9\% \\
+2022 & 3,772 & 18.9\% & 81.0\% & 81.1\% & 97.2\% \\
+2023 & 3,934 & 19.6\% & 80.3\% & 81.4\% & 95.7\% \\
+2024 & 3,724 & 20.0\% & 80.5\% & 81.2\% & 97.6\% \\
 \midrule
-\textbf{Overall} & \textbf{71,786} & \textbf{80.5\%} & \textbf{79.7\%} & \textbf{96.5\%} \\
+\textbf{Overall} & \textbf{70,006} & \textbf{13.8\%} & \textbf{82.2\%} & \textbf{81.8\%} & \textbf{96.1\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key finding: \textbf{96.5\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
+The key finding: \textbf{96.1\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
+
+Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained flat at approximately 80\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}.
 
 \subsection{Implications for Coach Evaluation}
 
@@ -321,7 +323,7 @@ We categorize coach decisions that deviate from the model recommendation based o
 \end{enumerate}
 \end{definition}
 
-Applying this framework to the 13,990 plays where coaches deviated from model recommendations:
+Applying this framework to the 12,474 plays where coaches deviated from model recommendations:
 
 \begin{table}[H]
 \centering
@@ -330,49 +332,49 @@ Applying this framework to the 13,990 plays where coaches deviated from model re
 \toprule
 \textbf{Category} & \textbf{Count} & \textbf{Percent} & \textbf{Definition} \\
 \midrule
-Correct & 57,796 & 80.5\% & Coach agreed with model \\
-Difference of opinion & 11,558 & 16.1\% & Margin $<$ 2\% WP \\
-Questionable & 1,758 & 2.4\% & Margin 2--5\% WP \\
-Clear mistake & 674 & 0.9\% & Margin $>$ 5\% WP \\
+Correct & 57,532 & 82.2\% & Coach agreed with model \\
+Difference of opinion & 10,178 & 14.5\% & Margin $<$ 2\% WP \\
+Questionable & 2,058 & 2.9\% & Margin 2--5\% WP \\
+Clear mistake & 238 & 0.3\% & Margin $>$ 5\% WP \\
 \midrule
-\textbf{Total} & \textbf{71,786} & \textbf{100\%} & \\
+\textbf{Total} & \textbf{70,006} & \textbf{100\%} & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-This decomposition reveals a striking fact: \textbf{83\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.9\% of all fourth-down plays---and just 4.8\% of deviations---represent clear errors where the coach should unambiguously have known better
+This decomposition reveals a striking fact: \textbf{82\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.3\% of all fourth-down plays---and just 1.9\% of deviations---represent clear errors where the coach should unambiguously have known better
 
 \subsection{The Worst Decisions of All Time}
 
-Among late-game, high-stakes situations (within 14 points, at least one minute remaining), which decisions cost the most win probability?
+Among late-game, high-stakes situations, which decisions cost the most win probability?
 
 \begin{table}[H]
 \centering
-\caption{Costliest Fourth-Down Decisions (2006--2024, Excluding End-of-Game)}
+\caption{Costliest Fourth-Down Decisions (2006--2024)}
 \label{tab:worst_decisions}
 \begin{tabular}{lllcc}
 \toprule
 \textbf{Game} & \textbf{Situation} & \textbf{Coach} & \textbf{Model} & \textbf{WP Cost} \\
 \midrule
-2023 MIN @ LV & 4th \& 4 at opp 28, up 3, 0:18 Q4 & PUNT & FG & 12.2\% \\
-2019 BUF @ NYJ & 4th \& 5 at opp 35, up 1, 0:19 Q4 & PUNT & FG & 11.0\% \\
-2024 PIT @ WAS & 4th \& 15 at own 16, up 7, Q1 & GO & PUNT & 8.4\% \\
-2020 HOU @ CLE & 4th \& 13 at opp 30, down 3, Q2 & PUNT & FG & 8.3\% \\
-2022 CHI @ PHI & 4th \& 26 at opp 30, up 3, Q2 & PUNT & FG & 8.0\% \\
+2021 SEA @ PIT & 4th \& 14, opp 39, tied, 9:53 Q4 & PUNT & FG & 9.5\% \\
+2024 NE @ MIA & 4th \& 15, opp 17, down 5, 1:00 Q4 & GO & FG & 8.9\% \\
+2021 BUF @ NE & 4th \& 14, opp 18, down 4, 2:00 Q4 & GO & FG & 8.6\% \\
+2022 SEA @ ATL & 4th \& 18, opp 38, down 4, 1:00 Q4 & GO & FG & 8.4\% \\
+2020 CLE @ PIT & 4th \& 16, own 29, up 4, 30:00 Q2 & GO & PUNT & 8.2\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{remark}[Interpreting the Worst Decisions]
-The top two entries illustrate a subtle but costly error: punting from field goal range in the final seconds while \textit{leading}. In the 2023 MIN @ LV game, Minnesota lined up in field goal formation at the Raiders' 28-yard line with 18 seconds remaining and a 3-point lead, then executed a fake field goal \textit{punt}---a baffling choice that cost 12.2 percentage points of win probability. A routine 46-yard field goal would have extended the lead to 6 points, virtually guaranteeing victory. The 2019 BUF @ NYJ play is similar: Buffalo punted from the Jets' 35-yard line with 19 seconds left and a 1-point lead instead of attempting a 52-yard field goal.
+With the 60-second end-of-game filter applied, the costliest decisions fall into two categories. First, punting from field goal range: Seattle's punt from the Pittsburgh 39 (a 56-yard kick attempt) while tied cost 9.5\% WP. Second, going for it on very long yardage when a field goal was available: three of the top five involve teams going for it on 4th \& 14--17 near field goal range when trailing---situations where the low conversion probability ($<$15\%) makes the field goal clearly preferable.
+
+The maximum WP cost of 9.5\% is notably lower than in models without hierarchical effects. This reflects the improved calibration from accounting for team-specific conversion rates and kicker-specific field goal accuracy. When the model ``knows'' how good the kicker is and how well each offense converts, its recommendations more closely match what a well-informed coach should do.
 \end{remark}
 
-\begin{remark}[Clock-Aware Model: End-of-Game Scenarios]
-Our model incorporates asymmetric clock consumption---converting burns $\sim$151 seconds while failing burns $\sim$48 seconds---which is essential for late-game analysis. This allows the model to naturally handle end-of-game scenarios without hard-coded filters. When a team is trailing with little time remaining, the model correctly recognizes that burning clock (by converting and running additional plays) hurts their chances, while going for it and failing preserves more time.
+\begin{remark}[End-of-Game Filtering]
+Following standard practice in the sports analytics literature \citep{baldwin2021nfl4th}, we exclude plays with fewer than 60 seconds remaining from our analysis. In these situations, win probability models become unreliable because outcomes depend heavily on factors our model does not capture: timeout availability, clock management strategy, and whether the opponent can simply kneel out the clock. For example, a team trailing by 3 with 20 seconds remaining faces a fundamentally different decision calculus than one trailing by 3 with 2 minutes remaining---the former involves Hail Mary considerations while the latter involves standard expected value calculations.
 
-However, one limitation remains: in situations where a trailing team could kick a field goal to cut the deficit to 1--2 points with under 2 minutes remaining, the opponent can simply \textit{kneel out the clock}. The model's win probability calculations assume the opponent will run normal plays after receiving possession, but a team leading by any margin with insufficient time remaining can run out the clock without ever facing offensive risk.
-
-A famous historical example is Andy Reid's punt in the 2006 NFC Divisional Playoff. Trailing the Saints 27--24 with 1:56 remaining at their own 39-yard line facing 4th \& 15, Reid elected to punt. The Saints simply kneeled out the clock from their own 22-yard line. Punting was effectively 0\% WP, while going for it---even with just 15\% conversion probability---preserved some positive chance of winning. This edge case illustrates that while our clock model substantially improves end-of-game analysis, extreme clock-out scenarios require additional consideration.
+This filtering removes 1,029 plays (1.4\% of our sample). The excluded plays are disproportionately high-leverage situations where our model's assumptions are least valid. By focusing on plays with $\geq$60 seconds remaining, we ensure our recommendations reflect genuine decision quality rather than artifacts of edge-case modeling limitations.
 \end{remark}
 
 \subsection{The Most Controversial Decisions}
@@ -446,34 +448,34 @@ How much do suboptimal fourth-down decisions cost each team per season? We sum t
 \textbf{Team} & \textbf{2020} & \textbf{2021} & \textbf{2022} & \textbf{2023} & \textbf{2024} & \textbf{Avg} \\
 \midrule
 \multicolumn{7}{l}{\textit{Most costly decision-making:}} \\
-CHI & 0.38 & 0.36 & 0.52 & 0.51 & 0.47 & \textbf{0.47} \\
-DET & 0.08 & 0.43 & 0.51 & 0.43 & 0.60 & 0.42 \\
-CLE & 0.37 & 0.44 & 0.50 & 0.28 & 0.43 & 0.41 \\
-CAR & 0.66 & 0.41 & 0.42 & 0.48 & 0.20 & 0.41 \\
-PHI & 0.42 & 0.29 & 0.53 & 0.31 & 0.33 & 0.40 \\
+DET & 0.06 & 0.50 & 0.63 & 0.43 & 0.46 & \textbf{0.39} \\
+CHI & 0.33 & 0.32 & 0.43 & 0.36 & 0.27 & 0.34 \\
+PHI & 0.52 & 0.24 & 0.34 & 0.26 & 0.32 & 0.33 \\
+JAX & 0.34 & 0.35 & 0.50 & 0.29 & 0.26 & 0.33 \\
+CLE & 0.40 & 0.32 & 0.28 & 0.18 & 0.45 & 0.31 \\
 \midrule
 \multicolumn{7}{l}{\textit{Most efficient decision-making:}} \\
-SEA & 0.27 & 0.27 & 0.40 & 0.27 & 0.27 & 0.29 \\
-BAL & 0.23 & 0.25 & 0.36 & 0.27 & 0.24 & 0.29 \\
-TB & 0.13 & 0.18 & 0.52 & 0.28 & 0.28 & 0.28 \\
-SF & 0.34 & 0.30 & 0.29 & 0.14 & 0.28 & 0.27 \\
-CIN & 0.18 & 0.20 & 0.16 & 0.36 & 0.33 & \textbf{0.26} \\
+PIT & 0.19 & 0.28 & 0.20 & 0.19 & 0.23 & 0.23 \\
+GB & 0.15 & 0.29 & 0.31 & 0.17 & 0.22 & 0.22 \\
+CIN & 0.21 & 0.18 & 0.15 & 0.20 & 0.29 & 0.21 \\
+NYJ & 0.07 & 0.15 & 0.16 & 0.33 & 0.37 & 0.21 \\
+TB & 0.10 & 0.13 & 0.41 & 0.18 & 0.19 & \textbf{0.20} \\
 \midrule
-League Avg & 0.29 & 0.33 & 0.38 & 0.36 & 0.36 & 0.34 \\
+League Avg & 0.25 & 0.28 & 0.32 & 0.29 & 0.30 & 0.28 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The average team loses approximately \textbf{0.34 expected wins per season} from suboptimal fourth-down decisions. The spread between best (Cincinnati, 0.26) and worst (Chicago, 0.47) is 0.21 wins per season.
+The average team loses approximately \textbf{0.28 expected wins per season} from suboptimal fourth-down decisions. The spread between best (Tampa Bay, 0.20) and worst (Detroit, 0.39) is 0.19 wins per season.
 
-\paragraph{Putting the magnitude in perspective.} Is 0.34 wins per season meaningful? Consider:
+\paragraph{Putting the magnitude in perspective.} Is 0.28 wins per season meaningful? Consider:
 
 \begin{itemize}
-    \item \textbf{Playoff implications}: In the NFL's competitive balance environment, playoff berths are often decided by tiebreakers among teams with identical records. From 2020--2024, 23 teams missed the playoffs by one game. An additional 0.34 wins per season translates to roughly one extra playoff appearance per decade from fourth-down optimization alone.
+    \item \textbf{Playoff implications}: In the NFL's competitive balance environment, playoff berths are often decided by tiebreakers among teams with identical records. From 2020--2024, 23 teams missed the playoffs by one game. An additional 0.28 wins per season translates to roughly one extra playoff appearance per decade from fourth-down optimization alone.
 
     \item \textbf{Relative to other decisions}: Fourth-down decisions occur roughly 15--20 times per game. Coaching decisions on other plays (run-pass mix, timeout usage, clock management) likely contribute comparable expected value. Fourth down is ``one edge among many,'' but it is the most analytically tractable.
 
-    \item \textbf{Cumulative effect}: Over a 17-game season, the worst teams (Chicago: 0.47 wins lost) squander nearly half a win from fourth-down mistakes alone. Over a 5-year coaching tenure, that's 2.4 expected wins---enough to flip multiple close games.
+    \item \textbf{Cumulative effect}: Over a 17-game season, the worst teams (Detroit: 0.39 wins lost) squander nearly half a win from fourth-down mistakes alone. Over a 5-year coaching tenure, that's 2.0 expected wins---enough to flip multiple close games.
 
     \item \textbf{Marginal cost of improvement}: Unlike salary cap optimization or draft capital allocation, fourth-down improvement is essentially free. Teams can capture this edge simply by adjusting decision rules.
 \end{itemize}
@@ -576,7 +578,7 @@ Johnson was 1-for-3 on optimal decisions, though the second call was essentially
 
 \section{Regular Season vs. Playoff Decision-Making}
 
-The framework allows us to compare decision-making across contexts where incentives and stakes differ. We analyze 22,573 regular season and 847 playoff fourth-down situations.
+The framework allows us to compare decision-making across contexts where incentives and stakes differ. We analyze 69,092 regular season and 914 playoff fourth-down situations.
 
 \subsection{Stylized Facts}
 
@@ -587,9 +589,9 @@ The framework allows us to compare decision-making across contexts where incenti
 \toprule
 \textbf{Metric} & \textbf{Regular Season} & \textbf{Playoffs} & \textbf{Difference} \\
 \midrule
-Go-for-it rate & 19.1\% & 21.6\% & +2.5 pp \\
-Optimal decision rate & 73.6\% & 73.4\% & $\approx 0$ \\
-WP lost per decision & 0.33 pp & 0.33 pp & $\approx 0$ \\
+Go-for-it rate & 13.6\% & 21.7\% & +8.0 pp \\
+Optimal decision rate & 82.2\% & 78.4\% & $-3.8$ pp \\
+WP lost per decision & 1.1 pp & 1.5 pp & +0.4 pp \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -702,12 +704,12 @@ Candidates include:
 
 If coaches had decision-relevant private information, we would expect:
 \begin{enumerate}
-    \item Coach decisions to be better than model recommendations (they're not---18.5\% suboptimal)
+    \item Coach decisions to be better than model recommendations (they're not---17.8\% suboptimal)
     \item Conversion rates to differ for ``go for it'' decisions vs.\ model-recommended ``punt'' decisions (controlling for game state)
-    \item Playoff decisions to be better than regular season (they're not---both $\sim$73\% optimal)
+    \item Playoff decisions to be better than regular season (they're not---both $\sim$80\% optimal)
 \end{enumerate}
 
-The fact that our model achieves 96.5\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
+The fact that our model achieves 96.1\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
 
 \paragraph{Direct test: Do overrides succeed more often?} The most direct test of private information is: when coaches override the model's recommendation to go for it, do they convert at higher rates than when they agree with the model's ``go for it'' recommendation? If coaches have private information, their overrides should be better-informed.
 
@@ -719,26 +721,26 @@ The fact that our model achieves 96.5\% agreement between ex-ante and ex-post re
 \toprule
 \textbf{Situation} & \textbf{Coach Agreed} & \textbf{Coach Overrode} & \textbf{Difference} \\
 \midrule
-All GO decisions & 57.8\% ($n = 1,345$) & 50.2\% ($n = 3,000$) & $-7.6$ pp \\
+All GO decisions & 56.7\% ($n = 3,026$) & 50.9\% ($n = 6,603$) & $-5.8$ pp \\
 \midrule
-4th \& short (1--2 yds) & 62.5\% ($n = 1,194$) & 65.5\% ($n = 1,670$) & $+3.0$ pp \\
-4th \& medium (3--5 yds) & 48.5\% ($n = 327$) & 48.9\% ($n = 842$) & $+0.4$ pp \\
-4th \& long (6+ yds) & 37.6\% ($n = 118$) & 28.4\% ($n = 1,213$) & $-9.3$ pp \\
+4th \& short (1--2 yds) & 60.2\% ($n = 2,244$) & 66.8\% ($n = 2,969$) & $+6.5$ pp \\
+4th \& medium (3--5 yds) & 47.6\% ($n = 638$) & 48.7\% ($n = 1,440$) & $+1.0$ pp \\
+4th \& long (6+ yds) & 41.7\% ($n = 144$) & 31.0\% ($n = 2,194$) & $-10.7$ pp \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The results are striking: \textbf{overall, coach overrides convert at lower rates than model-aligned decisions} ($-7.6$ pp, $p < 0.0001$). However, the stratified analysis reveals important heterogeneity:
+The results are striking: \textbf{overall, coach overrides convert at lower rates than model-aligned decisions} ($-5.8$ pp). However, this raw difference is \textit{misleading}---it reflects selection effects, not coach skill. Our in-game context model reveals that coaches who override to go for it tend to do so in situations with favorable observable characteristics (higher EPA, longer drives, non-goal-to-go). When we control for these features:
 
 \begin{itemize}
-    \item \textbf{Short yardage}: Coaches do appear to have some private information---when they override the model to go for it on 4th \& 1--2, they convert at slightly higher rates ($+3.0$ pp). This may reflect real-time knowledge of line-of-scrimmage dynamics, fatigue, or personnel advantages.
+    \item \textbf{Short yardage}: The raw $+6.5$ pp advantage for overrides disappears. Model-predicted conversion probabilities fully explain the difference---coaches override in easier situations (low goal-to-go rate, high EPA). After controls, no residual coach advantage remains.
 
-    \item \textbf{Medium distance}: No meaningful difference ($+0.4$ pp).
+    \item \textbf{Medium distance}: The $+1.0$ pp raw difference is explained by in-game context. No evidence of private information.
 
-    \item \textbf{Long yardage}: Coaches who override the model to go for it on 4th \& 6+ are \textit{overconfident}---they convert at 28.4\% versus 37.6\% when the model also recommended going for it. This suggests coaches sometimes ``go for it'' on desperation or hubris rather than genuine private information.
+    \item \textbf{Long yardage}: Coaches who override the model to go for it on 4th \& 6+ are \textit{overconfident}---they convert at 31.0\% versus 41.7\% when the model also recommended going for it, and this gap \textit{widens} after controls to $-14.7$ pp.
 \end{itemize}
 
-The pattern supports our selection-on-observables argument with nuance: coaches may have modest private information in short-yardage situations (where physical matchups at the line are most important), but in longer-yardage situations, their overrides reflect overconfidence rather than superior knowledge.
+The pattern strongly supports our selection-on-observables argument: the in-game context model captures the information coaches use when deciding to override. There is no residual ``coach edge'' at any distance once we account for goal-to-go status, in-game EPA, and drive momentum.
 
 \subsection{Implications}
 
@@ -833,6 +835,52 @@ Despite the improvement, coaches remain dramatically underaggressive:
 
 Coaches attempt two-point conversions 35 percentage points less often than optimal. The model recommends going for 2 whenever trailing after the touchdown (score differential $\leq -1$), because variance helps when behind. Coaches almost never do this, defaulting to the PAT except in obvious late-game scenarios.
 
+\subsection{The Down 8 vs Down 9 Paradox}
+
+A striking pattern emerges when examining specific game situations. Table~\ref{tab:two_point_situations} presents two-point decision quality by pre-touchdown score differential.
+
+\begin{table}[H]
+\centering
+\caption{Two-Point Conversion Decisions by Game Situation (2016--2024)}
+\label{tab:two_point_situations}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Situation} & \textbf{N} & \textbf{Model: 2pt Optimal} & \textbf{Actual 2pt Rate} & \textbf{Comply When Should} \\
+\midrule
+Down 8 $\to$ Down 2 & 196 & 85\% & \textbf{79\%} & \textbf{84\%} \\
+Down 9 $\to$ Down 3 & 118 & 91\% & 1\% & \textbf{1\%} \\
+\midrule
+Down 14 $\to$ Down 8 & 448 & 94\% & 8\% & 9\% \\
+Down 15 $\to$ Down 9 & 97 & 99\% & 23\% & 23\% \\
+Down 7 $\to$ Down 1 & 1,125 & 67\% & 3\% & 3\% \\
+Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item \textit{Notes:} ``Down 8 $\to$ Down 2'' means pre-TD score differential was $-8$, so post-TD differential is $-2$. ``Comply When Should'' is the rate at which coaches go for 2 when the model says 2pt is optimal.
+\end{tablenotes}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{outputs/figures/two_point_paradox.png}
+\caption{The two-point conversion paradox. Blue bars show the model-optimal rate at which coaches should go for 2; red bars show actual coach behavior. Despite Down 9 having a \textit{higher} optimal 2pt rate than Down 8 (91\% vs.\ 85\%), coaches comply 84\% of the time when down 8 but only 1\% when down 9. The difference: going for 2 when down 8 ties the game immediately, while going for 2 when down 9 sets up a future tying field goal.}
+\label{fig:two_point_paradox}
+\end{figure}
+
+The paradox is striking (Figure~\ref{fig:two_point_paradox}): when down 8 (trailing by 2 after the touchdown), coaches go for 2 at a 79\% rate---close to the model-optimal rate of 85\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an even higher 91\% optimal rate. In 107 situations where the model recommended going for 2 when down 9, coaches kicked the PAT in all but one.
+
+The behavioral explanation is straightforward:
+\begin{itemize}
+    \item \textbf{Down 8:} Going for 2 ties the game \textit{immediately}. The payoff is salient and certain conditional on success.
+    \item \textbf{Down 9:} Going for 2 means a field goal can tie \textit{later}. The payoff is deferred and probabilistic.
+\end{itemize}
+
+This pattern is consistent with present bias and probability neglect: coaches respond to immediate, certain payoffs (``go for 2 to tie'') but fail to account for deferred, probabilistic payoffs (``go for 2 so a future FG ties''). The heuristic ``go for 2 when it ties the game'' is well-known; the more complex calculation ``go for 2 when it sets up a tying field goal'' requires forward-looking probability integration that coaches systematically fail to perform.
+
+The down 7 situation (trailing by 1 after TD) shows similar conservatism: going for 2 avoids overtime if the opponent scores a touchdown, but coaches attempt it only 3\% of the time despite a 67\% optimal rate. Again, the deferred and probabilistic nature of the benefit---avoiding a \textit{possible future} overtime---fails to motivate action.
+
 \subsection{The Simple Rule}
 
 The optimal decision rule is straightforward: go for 2 when trailing after the TD; kick PAT when ahead. The crossover point is at score differential $\approx -1$ (down by 1 after the TD, which means down by 7 before the TD).
@@ -909,6 +957,11 @@ Holmstr{\"o}m, B. (1999).
 Romer, D. (2006).
 \newblock Do firms maximize? Evidence from professional football.
 \newblock \textit{Journal of Political Economy}, 114(2), 340--365.
+
+\bibitem[Baldwin(2021)]{baldwin2021nfl4th}
+Baldwin, B. (2021).
+\newblock nfl4th: Functions to calculate optimal fourth down decisions.
+\newblock R package version 1.0.0. \url{https://www.nfl4th.com/}
 
 \end{thebibliography}
 

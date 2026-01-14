@@ -1,0 +1,516 @@
+\documentclass[11pt]{article}
+
+% ----------- Packages -----------
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+
+% ----------- Formatting -----------
+\titlespacing*{\section}{0pt}{1.5ex}{1ex}
+\titlespacing*{\subsection}{0pt}{1ex}{0.5ex}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+% ----------- Colors -----------
+\definecolor{maroon}{RGB}{128,0,0}
+\definecolor{newcolor}{RGB}{0,100,0}
+\definecolor{knowncolor}{RGB}{100,100,100}
+
+% ----------- Theorem Styles -----------
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+% ----------- Custom boxes -----------
+\newtcolorbox{keyresult}{
+  colback=maroon!5,
+  colframe=maroon,
+  fonttitle=\bfseries,
+  title=Key Result
+}
+
+\newtcolorbox{contributionbox}{
+  colback=newcolor!5,
+  colframe=newcolor!70,
+  fonttitle=\bfseries,
+  title=New Contribution
+}
+
+% ----------- Commands -----------
+\newcommand{\known}{\textcolor{knowncolor}{\textsc{[Known]}}}
+\newcommand{\new}{\textcolor{newcolor}{\textsc{[New]}}}
+
+% ----------- Document -----------
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{Is Management Learning?}}\\[0.5em]
+{\large Bayesian Decision Analysis of NFL Fourth Down and Two-Point Decisions}\\[1em]
+{\textsc{Andrew Bai} \quad University of Chicago Booth}\\[0.3em]
+{\today}
+\end{center}
+
+\vspace{-0.5em}
+\rule{\textwidth}{0.4pt}
+
+%===========================================================
+\section{The Question}
+%===========================================================
+
+Two decades after Romer (2006) showed NFL teams are systematically too conservative on fourth down, \textbf{are coaches learning?}
+
+\textbf{Three key sub-questions:}
+\begin{itemize}[nosep]
+  \item Are coaches making better decisions over time?
+  \item Were optimal decisions \textit{knowable in real-time} (ex ante), or only with hindsight?
+  \item How many games are teams losing from suboptimal decisions?
+\end{itemize}
+
+%===========================================================
+\section{The Answer}
+%===========================================================
+
+\begin{keyresult}
+\textbf{Coaches are not improving on fourth down.} Despite 20 years of analytics research:
+\begin{itemize}[nosep]
+  \item Ex ante optimal rate: \textbf{82.2\%} (flat trend, $-0.05$ pp/year, $p = 0.54$)
+  \item \textbf{96.1\%} of optimal decisions were knowable in real-time
+  \item Teams lose \textbf{0.28 expected wins/season} from fourth down errors
+  \item League-wide WP loss \textbf{increasing}: 6.4 wins (2006) $\to$ 9.6 wins (2024)
+\end{itemize}
+\textbf{Contrast with two-point conversions:} Coaches \textit{are} improving (+1.0 pp/year, $p = 0.06$).
+
+\textbf{Implication:} The analytics revolution changed \textit{behavior} (more aggression) but not \textit{accuracy}. Complexity matters for organizational learning.
+\end{keyresult}
+
+%===========================================================
+\section{The Approach}
+%===========================================================
+
+\textbf{Bayesian decision-theoretic framework} that addresses limitations of prior work:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Win probability optimization} (not expected points)---because variance matters
+  \item \textbf{Full posterior uncertainty} propagated through to decision recommendations
+  \item \textbf{Neural network WP model} capturing nonlinear interactions (goal-line, endgame)
+  \item \textbf{Expanding window analysis} to test real-time knowability
+  \item \textbf{Hierarchical team effects} conditioning on offense/defense quality
+\end{enumerate}
+
+\textbf{Key insight:} The same framework applies to both fourth down and two-point decisions, but fourth down is \textit{harder}---more actions, more heterogeneity, higher stakes.
+
+%===========================================================
+\section{Fourth Down: The Math}
+%===========================================================
+
+\subsection*{The State Space}
+
+The state of the game at any moment is represented by the tuple:
+$$s = (\Delta, \tau, x, d)$$
+where:
+\begin{itemize}[nosep]
+  \item $\Delta \in \mathbb{Z}$ is the \textbf{score differential} (positive if the possession team is winning)
+  \item $\tau \in [0, T]$ is the \textbf{time remaining} in seconds
+  \item $x \in \{1, \ldots, 99\}$ is the \textbf{field position} measured in yards from the opponent's end zone
+  \item $d \in \{1, \ldots, 99\}$ is the \textbf{yards to go} for a first down
+\end{itemize}
+
+\subsection*{The Action Space}
+
+On fourth down, the coach chooses an action $a$ from:
+$$\mathcal{A} = \{\texttt{go}, \texttt{punt}, \texttt{fg}\}$$
+where \texttt{go} denotes attempting to convert, \texttt{punt} denotes punting, and \texttt{fg} denotes attempting a field goal. The field goal action is infeasible when $x > 60$ (requiring a kick longer than 77 yards).
+
+\subsection*{Transition Dynamics}
+
+Each action induces a probability distribution over successor states. Let $P(s' \mid s, a; \theta)$ denote the transition probability parameterized by $\theta$.
+
+\textbf{Going for it.} Let $\pi(d; \theta)$ denote the probability of converting with $d$ yards to go:
+$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot \mathbb{1}\{s' = s_{\text{convert}}\} + (1 - \pi(d; \theta)) \cdot \mathbb{1}\{s' = s_{\text{fail}}\}$$
+
+\textbf{Punting.} Let $Y(x; \theta)$ denote net punt yards from field position $x$. The opponent receives the ball at $x' = \min(\max(100 - (x - Y), 1), 80)$.
+
+\textbf{Field goal.} Let $\phi(x; \theta)$ denote the probability of making a field goal from $x$ yards:
+$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot \mathbb{1}\{+3, \text{kickoff}\} + (1 - \phi(x; \theta)) \cdot \mathbb{1}\{\text{opp. at } \max(x, 20)\}$$
+
+\subsection*{The Objective: Maximizing Win Probability}
+
+The coach's objective is to maximize the probability of winning. The expected win probability for action $a$ in state $s$ is:
+$$\mathbb{E}[W \mid a, s] = \sum_{s'} W(s') \cdot P(s' \mid s, a)$$
+where $W(s')$ is the probability of winning from successor state $s'$. The optimal action is:
+$$a^* = \arg\max_{a \in \mathcal{A}} \mathbb{E}[W \mid a, s]$$
+
+\subsection*{Fully Bayesian Framework}
+
+The key innovation is treating the transition parameters $\theta$ as \textbf{uncertain} rather than known. We place a prior $p(\theta)$ on the parameters and update to the posterior $p(\theta \mid \mathcal{D})$ given observed data $\mathcal{D}$.
+
+The Bayesian expected win probability integrates over parameter uncertainty:
+$$\mathbb{E}[W \mid a, s] = \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+
+This integral is computed via Monte Carlo. For $M$ posterior draws $\theta^{(1)}, \ldots, \theta^{(M)} \sim p(\theta \mid \mathcal{D})$:
+$$\mathbb{E}[W \mid a, s] \approx \frac{1}{M} \sum_{m=1}^{M} W(s' \mid a, s, \theta^{(m)})$$
+
+\begin{definition}[Bayes-Optimal Decision]
+The Bayes-optimal action is:
+$$a^* = \arg\max_{a \in \mathcal{A}} \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+\end{definition}
+
+This decision criterion accounts for both \textbf{transition uncertainty} (given parameters $\theta$, outcomes are stochastic) and \textbf{parameter uncertainty} (the parameters $\theta$ themselves are uncertain).
+
+\subsection*{Decision Confidence (Posterior Probability of Optimality)}
+
+A key advantage of the Bayesian framework is quantifying \textbf{uncertainty about which action is optimal}.
+
+\begin{definition}[Decision Confidence]
+The posterior probability that action $a$ is optimal is:
+$$\mathbb{P}(a \text{ is optimal} \mid s, \mathcal{D}) = \mathbb{P}_{\theta \mid \mathcal{D}}\left(W_a(s; \theta) > \max_{a' \neq a} W_{a'}(s; \theta)\right)$$
+\end{definition}
+
+This is estimated by Monte Carlo: draw $\theta^{(m)} \sim p(\theta \mid \mathcal{D})$, compute $W_a(s; \theta^{(m)})$ for each action, and calculate the fraction of draws for which action $a$ has the highest WP.
+
+\textbf{Interpretation:}
+\begin{itemize}[nosep]
+  \item $\mathbb{P}(\texttt{go} \text{ is optimal}) \approx 1$ $\to$ \textbf{obvious} go-for-it decision
+  \item $\mathbb{P}(\texttt{go} \text{ is optimal}) \approx 0.5$ $\to$ \textbf{close call} where data does not clearly favor one action
+\end{itemize}
+
+This allows us to distinguish between \textbf{clear mistakes} (coach chose suboptimally when the data strongly favored another action) and \textbf{close calls} (coach's choice was reasonable given decision uncertainty).
+
+\subsection*{Model Components}
+
+\begin{itemize}[nosep]
+  \item $\pi(d; \theta)$: Hierarchical logistic regression on yards to go \known
+  \item $Y(x; \theta)$: Normal model for net punt yards (mean $\approx$ 40 yds) \known
+  \item $\phi(x; \theta)$: Logistic regression on kick distance \known
+  \item $W(s)$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
+\end{itemize}
+
+\textbf{End-of-game filtering:} Following Baldwin (2021, nfl4th), we exclude plays with $<$60 seconds remaining where WP models become unreliable due to clock management and kneel-out scenarios. This removes 1.4\% of plays.
+
+%===========================================================
+\section{Fourth Down: Learning Over Time}
+%===========================================================
+
+\subsection*{Ex Ante vs Ex Post Optimal Decisions}
+
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Year} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal} & \textbf{Ex Post Optimal} & \textbf{Agreement} \\
+\midrule
+2006 & 3,733 & 11.0\% & 82.3\% & 80.6\% & 94.5\% \\
+2010 & 3,735 & 11.3\% & 83.4\% & 80.8\% & 95.4\% \\
+2015 & 3,739 & 11.4\% & 81.8\% & 83.4\% & 95.6\% \\
+2020 & 3,320 & 18.4\% & 81.8\% & 81.0\% & 97.0\% \\
+2024 & 3,724 & 19.0\% & 80.5\% & 81.2\% & 97.6\% \\
+\midrule
+\textit{Overall} & 70,006 & 13.8\% & \textbf{82.2\%} & 81.8\% & \textbf{96.1\%} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Key finding:} 96.1\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
+
+\subsection*{Trend Analysis}
+
+\textbf{No improvement over time:}
+\begin{itemize}[nosep]
+  \item Linear trend: $-0.05$ pp/year ($p = 0.54$)---not statistically significant
+  \item Early period (2006--2012): 82.0\% optimal
+  \item Late period (2019--2024): 80.9\% optimal
+\end{itemize}
+
+\textbf{Coaches changed behavior but not accuracy:}
+\begin{itemize}[nosep]
+  \item Go-for-it rate increased dramatically (especially 2018+)
+  \item But ``aggressive when should be conservative'' errors offset ``conservative when should be aggressive'' errors
+  \item Net effect: no improvement in decision quality
+\end{itemize}
+
+%===========================================================
+\section{Robustness: What About Fourth and Inches?}
+%===========================================================
+
+\textbf{Concern:} Are results driven by close calls where reasonable people disagree?
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Decision Clarity} & \textbf{N Plays} & \textbf{\% of Total} & \textbf{\% of Mistakes} \\
+\midrule
+Close call ($<$2\% margin) & 10,178 & 14.5\% & 81.6\% \\
+Moderate (2--5\% margin) & 2,058 & 2.9\% & 16.5\% \\
+Clear ($>$5\% margin) & 238 & 0.3\% & 1.9\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Finding:} 82\% of ``mistakes'' are close calls where margin $<$ 2\%. Only 1.9\% of mistakes are clear errors. Most disagreements are \textit{defensible}.
+
+\textbf{Fourth and one specifically:}
+\begin{itemize}[nosep]
+  \item 4th \& 1 from opponent's 35--45: Model says go, coaches often punt/kick
+  \item These are the highest-leverage close calls
+  \item Even here, margins are typically 1--3\% WP
+\end{itemize}
+
+%===========================================================
+\section{Games Lost: Connecting to Romer (2006)}
+%===========================================================
+
+\begin{contributionbox}
+\textbf{Expected wins lost by team and season} :
+\begin{center}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Team} & \textbf{'20} & \textbf{'21} & \textbf{'22} & \textbf{'23} & \textbf{'24} & \textbf{Avg} \\
+\midrule
+DET (worst) & 0.06 & 0.50 & 0.63 & 0.43 & 0.46 & \textbf{0.39} \\
+CHI & 0.33 & 0.32 & 0.43 & 0.36 & 0.27 & 0.34 \\
+PHI & 0.52 & 0.24 & 0.34 & 0.26 & 0.32 & 0.33 \\
+\midrule
+TB (best) & 0.10 & 0.13 & 0.41 & 0.18 & 0.19 & \textbf{0.20} \\
+CIN & 0.21 & 0.18 & 0.15 & 0.20 & 0.29 & 0.21 \\
+GB & 0.15 & 0.29 & 0.31 & 0.17 & 0.22 & 0.22 \\
+\midrule
+\textit{League Avg} & 0.25 & 0.28 & 0.32 & 0.29 & 0.30 & 0.28 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{contributionbox}
+
+\textbf{Comparison to Romer (2006):} Romer estimated teams left $\sim$0.4 expected wins/season on the table. Our estimate of 0.28 wins/season is \textit{slightly lower} but in the same ballpark. The difference:
+\begin{itemize}[nosep]
+  \item Romer: Expected points framework
+  \item This paper: Win probability framework with uncertainty
+  \item WP framework is more conservative (close calls have smaller margins)
+\end{itemize}
+
+\textbf{Troubling trend:} League-wide WP loss is \textit{increasing}:
+\begin{itemize}[nosep]
+  \item 2006--2015 average: 0.25 wins/team/season
+  \item 2022--2024 average: 0.35 wins/team/season
+  \item 2024: 11.9 total league wins lost (vs 7.9 in 2006)
+\end{itemize}
+
+The ``free wins'' Romer identified are \textit{still on the table}---and growing.
+
+%===========================================================
+\section{The Worst Decisions of All Time}
+%===========================================================
+
+\begin{center}
+\small
+\begin{tabular}{llllrl}
+\toprule
+\textbf{Year} & \textbf{Game} & \textbf{Situation} & \textbf{Did} & \textbf{Should} & \textbf{WP Cost} \\
+\midrule
+2021 & SEA @ PIT & 4th \& 14, opp 39, tied, 9:53 Q4 & Punt & FG & 9.5\% \\
+2024 & NE @ MIA & 4th \& 15, opp 17, $-5$, 1:00 Q4 & Go & FG & 8.9\% \\
+2021 & BUF @ NE & 4th \& 14, opp 18, $-4$, 2:00 Q4 & Go & FG & 8.6\% \\
+2022 & SEA @ ATL & 4th \& 18, opp 38, $-4$, 1:00 Q4 & Go & FG & 8.4\% \\
+2020 & CLE @ PIT & 4th \& 16, own 29, $+4$, 30:00 Q2 & Go & Punt & 8.2\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+\normalsize
+
+\textbf{Pattern:} The costliest mistakes fall into two categories:
+\begin{itemize}[nosep]
+  \item Punting from field goal range (SEA punt from PIT 39)
+  \item Going for it on very long yardage (4th \& 14--18) when FG or punt was clearly better
+  \item Maximum WP cost of 9.5\% reflects improved calibration from hierarchical models
+\end{itemize}
+
+
+%===========================================================
+\section{Two-Point Conversions: A Simpler Decision}
+%===========================================================
+
+\textbf{The math} (same framework, simpler case):
+
+After a touchdown, choose $a \in \{\text{PAT}, \text{2pt}\}$:
+\begin{align}
+\text{WP}_{\text{PAT}} &= p_{\text{PAT}} \cdot \text{WP}(+7) + (1 - p_{\text{PAT}}) \cdot \text{WP}(+6) \\
+\text{WP}_{\text{2pt}} &= p_{\text{2pt}} \cdot \text{WP}(+8) + (1 - p_{\text{2pt}}) \cdot \text{WP}(+6)
+\end{align}
+
+where $p_{\text{PAT}} \approx 94\%$ and $p_{\text{2pt}} \approx 48\%$.
+
+\textbf{Why this is simpler than fourth down:}
+\begin{itemize}[nosep]
+  \item Only 2 actions (not 3)
+  \item No field position dependence
+  \item No clock dynamics (kickoff follows either way)
+  \item Minimal team heterogeneity ($\tau \approx 0.03$ vs $\tau \approx 0.15$ for 4th down)
+  \item Maximum WP margins $\sim$5\% (vs $>$30\% for fourth down)
+\end{itemize}
+
+\subsection*{Two-Point Results: Coaches ARE Learning}
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Year} & \textbf{N} & \textbf{Ex Ante Optimal} & \textbf{Agreement} & \textbf{Actual 2pt\%} & \textbf{Optimal 2pt\%} \\
+\midrule
+2016 & 1,361 & 43.6\% & 61.6\% & 8.3\% & 59.4\% \\
+2018 & 1,418 & 57.1\% & 60.9\% & 9.7\% & 42.3\% \\
+2020 & 1,538 & 55.5\% & 71.6\% & 9.3\% & 47.7\% \\
+2022 & 1,381 & 56.0\% & 74.2\% & 9.3\% & 46.7\% \\
+2024 & 1,450 & 54.7\% & 87.0\% & 10.2\% & 50.1\% \\
+\midrule
+\textit{Average} & 1,407 & \textbf{54.2\%} & 70.4\% & 9.2\% & 47.8\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Key findings:}
+\begin{itemize}[nosep]
+  \item Trend: $+1.0$ pp/year improvement ($p = 0.06$)---marginally significant
+  \item Teams go for 2 only 9\% of the time, but optimal rate is $\sim$48\%
+  \item Still \textit{way too conservative}, but improving
+  \item Ex ante/ex post agreement improving as models stabilize
+\end{itemize}
+
+\textbf{Why are coaches learning here but not on fourth down?}
+\begin{itemize}[nosep]
+  \item Simpler decision space (binary, no field position)
+  \item Lower stakes per decision (max 5\% WP swing)
+  \item Clearer feedback signal (immediate outcome)
+  \item Less room for ``coach knows best'' justification
+\end{itemize}
+
+%===========================================================
+\section{Contributions Summary}
+%===========================================================
+
+\renewcommand{\arraystretch}{1.3}
+\begin{center}
+\begin{tabular}{p{7cm}c}
+\toprule
+\textbf{Contribution} & \textbf{Status} \\
+\midrule
+Fourth down is suboptimal (Romer 2006) & \known \\
+Win probability $>$ expected points for decisions & \known \\
+\midrule
+Bayesian framework with full posterior uncertainty & \new \\
+Neural network WP model (Brier: 0.164, ECE: 0.005) & \new \\
+Expanding window (ex ante vs ex post) design & \new \\
+96.1\% of optimal decisions knowable in real-time & \new \\
+No improvement in fourth down decision quality & \new \\
+Team-level wins lost analysis & \new \\
+Two-point comparison (learning \textit{does} occur) & \new \\
+Complexity $\to$ organizational learning relationship & \new \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%===========================================================
+\section{Implications}
+%===========================================================
+
+\textbf{For management research:}
+\begin{itemize}[nosep]
+  \item Information availability $\neq$ information use
+  \item Complexity inhibits organizational learning, even with clear feedback
+  \item ``Analytics revolution'' changed behavior but not accuracy
+\end{itemize}
+
+\textbf{For NFL teams:}
+\begin{itemize}[nosep]
+  \item 0.28 wins/season still on the table---essentially free
+  \item Aggressive teams (DET, CHI, PHI) lose more from decision errors
+  \item The gap is \textit{growing}, not shrinking (6.4 wins 2006 $\to$ 9.6 wins 2024)
+\end{itemize}
+
+\textbf{For empirical strategy:}
+\begin{itemize}[nosep]
+  \item High-frequency, observable decisions are ideal for studying organizational learning
+  \item Bayesian framework enables principled uncertainty quantification
+  \item Expanding window design separates ``knowable'' from ``hindsight''
+\end{itemize}
+
+%===========================================================
+\section{The Down 8 vs Down 9 Paradox}
+%===========================================================
+
+\begin{contributionbox}
+\textbf{A natural experiment in behavioral economics:} When should coaches go for 2?
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Situation} & \textbf{N} & \textbf{Model: 2pt} & \textbf{Actual 2pt} & \textbf{Go When Should} \\
+\midrule
+Down 8 $\to$ Down 2 & 196 & 85\% & \textbf{79\%} & \textbf{84\%} \\
+Down 9 $\to$ Down 3 & 118 & 91\% & 1\% & \textbf{1\%} \\
+\midrule
+Down 14 $\to$ Down 8 & 448 & 94\% & 8\% & 9\% \\
+Down 15 $\to$ Down 9 & 97 & 99\% & 23\% & 23\% \\
+Down 7 $\to$ Down 1 & 1,125 & 67\% & 3\% & 3\% \\
+Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{contributionbox}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{outputs/figures/two_point_paradox.png}
+\caption{The two-point conversion paradox. Blue bars show the model-optimal rate; red bars show actual coach behavior. Down 9 has a \textit{higher} optimal 2pt rate than Down 8 (91\% vs.\ 85\%), yet coaches comply 84\% of the time when down 8 and only 1\% when down 9.}
+\label{fig:two_point_paradox_summary}
+\end{figure}
+
+\textbf{The paradox:}
+\begin{itemize}[nosep]
+  \item \textbf{Down 8:} Going for 2 \textit{ties the game immediately}. Coaches do this 79\% of the time.
+  \item \textbf{Down 9:} Going for 2 means a \textit{field goal can tie later}. Coaches do this 1\% of the time.
+  \item Down 9 has an even \textit{higher} optimal 2pt rate (91\% vs 85\%)!
+\end{itemize}
+
+\textbf{Behavioral explanation:}
+\begin{itemize}[nosep]
+  \item \textbf{Present bias:} Immediate payoff (tie NOW) vs deferred payoff (FG ties LATER)
+  \item \textbf{Probability neglect:} Coaches underweight the probability of needing the FG
+  \item \textbf{Salience:} ``Go for 2 to tie'' is a known heuristic; ``go for 2 so FG ties'' requires calculation
+\end{itemize}
+
+\textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in all but one. This is not a close call---it's a systematic blind spot.
+
+%===========================================================
+\section{Suggestions for Additional Checks}
+%===========================================================
+
+\textbf{Things to potentially verify or extend:}
+
+\begin{enumerate}[nosep]
+  \item \textbf{Coach-level analysis:} Do some coaches learn faster than others? Do ``analytics-friendly'' coaches (e.g., Pederson, Staley) actually make better decisions?
+
+  \item \textbf{Playoff vs regular season:} Are coaches more conservative in high-stakes games? Does decision quality change?
+
+  \item \textbf{Score differential interactions:} Are coaches worse when trailing (``desperate'' decisions) or leading (``playing it safe'')?
+
+  \item \textbf{Weather/dome effects:} Does field goal accuracy uncertainty affect optimal decisions? (Current model uses league-average FG rates)
+
+  \item \textbf{Fourth and short specifically:} Deep dive on 4th \& 1--2 decisions, which are the most controversial.
+
+  \item \textbf{Pre/post analytics era:} Compare decision quality before vs after the ``Moneyball'' era ($\sim$2015).
+
+  \item \textbf{Two-point game situations:} When down 2, 9, or 15 points, the math strongly favors going for 2. How often do coaches get these right?
+\end{enumerate}
+
+\vspace{1em}
+\rule{\textwidth}{0.4pt}
+\begin{center}
+\textit{Feedback welcome.}
+\end{center}
+
+\end{document}
