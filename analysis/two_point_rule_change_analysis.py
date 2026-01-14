@@ -163,7 +163,7 @@ def get_decisions_for_year(pbp, year):
     return all_decisions
 
 
-def run_analysis():
+def run_analysis(min_pre_training_years=3):
     """
     Run the full pre/post rule change analysis with EXPANDING WINDOW.
 
@@ -173,8 +173,11 @@ def run_analysis():
     Pre-2015 era: 2006-2014 (PAT from 2-yard line, ~99% success)
     Post-2015 era: 2015-2024 (PAT from 15-yard line, ~94% success)
 
-    For 2015 specifically, we use 2015 data only (first post-rule year).
-    For 2016+, we use expanding window from 2015.
+    Args:
+        min_pre_training_years: Minimum years of training data for PRE-rule era.
+                                With 3 years, we start evaluating 2009 (trained on 2006-2008).
+                                Post-rule always evaluates ALL years (2016+ uses expanding window,
+                                2015-2016 noted as ex post analysis due to limited prior data).
     """
     print("=" * 70)
     print("TWO-POINT RULE CHANGE ANALYSIS (EXPANDING WINDOW)")
@@ -186,25 +189,21 @@ def run_analysis():
     results = []
 
     # =========================================================================
-    # PRE-RULE ERA (2006-2014): Expanding window within pre-rule data
+    # PRE-RULE ERA: Start from 2006 + min_pre_training_years for stable estimates
     # =========================================================================
+    pre_start_year = 2006 + min_pre_training_years  # e.g., 2009 with 3-year minimum
     print("\n" + "="*50)
-    print("PRE-RULE ERA (2006-2014)")
+    print(f"PRE-RULE ERA ({pre_start_year}-2014)")
     print("="*50)
 
-    for year in range(2006, 2015):
+    for year in range(pre_start_year, 2015):
         decisions = get_decisions_for_year(pbp, year)
         if decisions is None or len(decisions) == 0:
             continue
 
         # Train on all PRE-RULE data up to (but not including) this year
-        # For 2006, we have no prior data, so use 2006 itself (first year)
-        if year == 2006:
-            train_start, train_end = 2006, 2006
-            print(f"\n{year}: Training on {train_start}-{train_end} (first year, same-year data)")
-        else:
-            train_start, train_end = 2006, year - 1
-            print(f"\n{year}: Training on {train_start}-{train_end} (expanding window)")
+        train_start, train_end = 2006, year - 1
+        print(f"\n{year}: Training on {train_start}-{train_end} ({train_end - train_start + 1} years)")
 
         two_pt_model, pat_model = train_era_models(pbp, train_start, train_end)
         analyzer = TwoPointDecisionAnalyzer(two_pt_model, pat_model, wp_model)
@@ -228,29 +227,30 @@ def run_analysis():
                 'actual_2pt_rate': (decisions['actual_decision'] == 'two_point').mean(),
                 'pat_success_rate': pat_model.overall_rate,
                 'training_years': f"{train_start}-{train_end}",
+                'ex_post': False,
             })
             print(f"    Result: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
 
     # =========================================================================
-    # POST-RULE ERA (2015-2024): Expanding window within post-rule data
+    # POST-RULE ERA: Evaluate ALL years (2016+), note early years as ex post
     # =========================================================================
     print("\n" + "="*50)
-    print("POST-RULE ERA (2015-2024)")
+    print("POST-RULE ERA (2016-2024)")
     print("="*50)
 
-    for year in range(2015, 2025):
+    for year in range(2016, 2025):
         decisions = get_decisions_for_year(pbp, year)
         if decisions is None or len(decisions) == 0:
             continue
 
         # Train on all POST-RULE data up to (but not including) this year
-        # For 2015, we have no prior post-rule data, so use 2015 itself
-        if year == 2015:
-            train_start, train_end = 2015, 2015
-            print(f"\n{year}: Training on {train_start}-{train_end} (first post-rule year, same-year data)")
-        else:
-            train_start, train_end = 2015, year - 1
-            print(f"\n{year}: Training on {train_start}-{train_end} (expanding window)")
+        # For 2016: train on 2015 only (limited but necessary)
+        train_start, train_end = 2015, year - 1
+        training_years_count = train_end - train_start + 1
+        is_ex_post = training_years_count < 2  # Flag early years with limited training
+
+        ex_post_note = " [ex post - limited training data]" if is_ex_post else ""
+        print(f"\n{year}: Training on {train_start}-{train_end} ({training_years_count} year{'s' if training_years_count > 1 else ''}){ex_post_note}")
 
         two_pt_model, pat_model = train_era_models(pbp, train_start, train_end)
         analyzer = TwoPointDecisionAnalyzer(two_pt_model, pat_model, wp_model)
@@ -274,6 +274,7 @@ def run_analysis():
                 'actual_2pt_rate': (decisions['actual_decision'] == 'two_point').mean(),
                 'pat_success_rate': pat_model.overall_rate,
                 'training_years': f"{train_start}-{train_end}",
+                'ex_post': is_ex_post,
             })
             print(f"    Result: {n_optimal/n_total:.1%} optimal ({n_total} decisions)")
 

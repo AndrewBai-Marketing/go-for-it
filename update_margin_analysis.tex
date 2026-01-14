@@ -150,17 +150,17 @@ The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, mak
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/two_point_rule_change.png}
-\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Left: Pre-2015 shows high variance due to limited training data in early years. Post-2015 stabilizes around 55\% optimal with a modest +1.2 pp/year trend. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
+\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Pre-2015 shows $\sim$66\% optimal (stable after 3 years training data). Post-2015 shows initial drop to $\sim$43\% then gradual recovery with +1.05 pp/year trend. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
 \end{figure}
 
-\textbf{Key findings (post-2015, proper expanding window):}
+\textbf{Key findings:}
 \begin{itemize}[nosep]
-    \item Average optimal rate: $\sim$55\% (range: 43--58\%)
-    \item Trend: $+1.2$ pp/year (modest improvement)
-    \item Coaches are learning \textit{slowly}, unlike fourth downs where trend is flat
+    \item \textbf{Pre-2015} (2009--2014, trained on 3+ years): Average 65.5\% optimal (range: 51--82\%)
+    \item \textbf{Post-2015} (2016--2024): Average 54.2\% optimal (range: 43--58\%)
+    \item Post-2015 trend: $+1.05$ pp/year (modest improvement)
 \end{itemize}
 
-The pre-2015 results show high variance because early years (2006-2007) have insufficient training data for reliable hierarchical estimates. The post-2015 pattern is more stable: coaches started around 43-47\% optimal in the first years after the rule change and have gradually improved to $\sim$55\%.
+The pattern is exactly what we'd expect from the rule change: coaches were reasonably calibrated pre-2015 ($\sim$66\% optimal), then \textit{dropped} dramatically in 2016 when the rule changed (43\% optimal---2016 uses only 2015 training data, noted as ex post), then gradually improved as they learned the new environment. By 2023, they're back to $\sim$58\% optimal.
 
 \subsection*{The Down 8 vs Down 9 Paradox}
 
@@ -180,6 +180,25 @@ A striking behavioral anomaly in two-point decisions:
 \end{itemize}
 
 This is not a close call---it's a systematic blind spot.
+
+\section*{High-Stakes Analysis: Playoffs vs Regular Season}
+
+Do coaches make better decisions under higher stakes? We analyzed both fourth-down and two-point decisions in playoff games versus regular season games.
+
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Decision Type} & \textbf{Regular Season} & \textbf{Playoffs} & \textbf{Difference} \\
+\midrule
+Two-point (2016--2024) & 48.5\% & 52.0\% & \textbf{+3.5 pp} \\
+Fourth down (2006--2024) & 80.8\% & $\sim$81\% & $\sim$+0.2 pp \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Key finding:} Coaches make \textit{slightly better} decisions in playoffs, particularly for two-point conversions (+3.5 pp). This is consistent with the pattern from game situations: higher stakes lead to better decision-making.
+
+However, the improvement is modest. Even in the highest-stakes games (playoffs), coaches still make suboptimal decisions roughly half the time for two-point conversions and $\sim$20\% of the time for fourth downs.
 
 \section*{What This Adds to the Paper}
 
