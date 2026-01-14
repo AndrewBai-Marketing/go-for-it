@@ -212,6 +212,37 @@ However, the improvement is modest. Even in the highest-stakes games (playoffs),
     \item \textbf{Connects} to organizational learning theory: simple heuristics spread, conditional rules don't
 \end{enumerate}
 
+\section*{Robustness: Team-Deficit Correlation}
+
+A potential concern with the Down 8 vs Down 9 paradox: are certain teams systematically more likely to end up in particular deficit situations? If so, team quality could confound the analysis.
+
+\textbf{Test:} Chi-square test for independence between team identity and score deficit (Down 1, 2, or 3 after TD).
+
+\begin{center}
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Statistic} & \textbf{Value} \\
+\midrule
+Sample size & 1,439 plays \\
+Chi-square & 45.61 \\
+Degrees of freedom & 62 \\
+P-value & \textbf{0.94} \\
+Cramer's V & 0.13 (small) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Result:} Team is \textit{not} correlated with deficit type ($p = 0.94$, Cramer's V = 0.13). Being down 2 vs down 3 after a touchdown is essentially random with respect to team identity.
+
+\textbf{Distribution of deficits:}
+\begin{itemize}[nosep]
+    \item Down 1 (was down 7): 78.2\% of situations
+    \item Down 2 (was down 8): 13.6\% of situations
+    \item Down 3 (was down 9): 8.2\% of situations
+\end{itemize}
+
+This rules out selection effects as an explanation for the Down 8 vs Down 9 paradox. The behavioral anomaly is not driven by particular teams systematically facing one situation more than another.
+
 \section*{Next Steps}
 
 Possible extensions:
