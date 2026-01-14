@@ -23,7 +23,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/fourth_down_trends.png}
-\caption{The central puzzle: Fourth-down aggression increased dramatically (+8pp over the period), but decision \textit{quality} stayed flat ($-0.05$ pp/year, $p = 0.54$). Coaches changed behavior but not accuracy.}
+\caption{The central puzzle: Fourth-down aggression increased dramatically (+8pp over the period), but decision \textit{quality} stayed flat ($-0.05$ pp/year). Coaches changed behavior but not accuracy.}
 \end{figure}
 
 \section*{Overview}
@@ -39,23 +39,20 @@ This update addresses your suggestion to decompose learning by decision margin. 
 \toprule
 \textbf{Margin} & \textbf{N Plays} & \textbf{Share} & \textbf{Optimal \%} & \textbf{Trend (pp/yr)} \\
 \midrule
-Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17^{**}$ \\
-Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20^{**}$ \\
+Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17$ \\
+Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20$ \\
 Clear (5--10pp) & 10,964 & 15.3\% & 98.5\% & $-0.01$ \\
 Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textit{Note: $^{**}$ indicates $p < 0.05$.}
-
-\vspace{1em}
-\textbf{Interpretation:} 53\% of fourth downs are close calls ($<$2pp margin). Coaches are getting \textit{worse} on these ($-0.17$ pp/year, $p = 0.01$). On obvious decisions, they were already near-perfect and stayed that way.
+\textbf{Interpretation:} 53\% of fourth downs are close calls ($<$2pp margin). Coaches are getting \textit{worse} on these ($-0.17$ pp/year). On obvious decisions, they were already near-perfect and stayed that way.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/learning_by_margin.png}
-\caption{Left: Decision quality by margin size. Most decisions (53\%) are close calls with only 69\% optimality. Right: Learning trends show coaches getting \textit{worse} on close calls and moderate decisions (red = statistically significant).}
+\caption{Left: Decision quality by margin size. Most decisions (53\%) are close calls with only 69\% optimality. Right: Learning trends show coaches getting \textit{worse} on close calls and moderate decisions.}
 \end{figure}
 
 \section*{The Short Yardage Paradox}
@@ -103,12 +100,12 @@ Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.4 pp} \\
 \textbf{Situation} & \textbf{N Plays} & \textbf{Optimal \%} & \textbf{Trend} \\
 \midrule
 End game ($<$5 min) & 8,641 & 60.0\% & $+0.16$ \\
-Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22^{**}$ \\
+Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22$ \\
 \midrule
 Red zone & 11,943 & 69.3\% & $+0.25$ \\
-Midfield & 17,361 & 83.0\% & $-0.37^{**}$ \\
+Midfield & 17,361 & 83.0\% & $-0.37$ \\
 \midrule
-Short yardage (1--2) & 13,641 & 60.1\% & $-0.33^{**}$ \\
+Short yardage (1--2) & 13,641 & 60.1\% & $-0.33$ \\
 Long yardage (6--10) & 23,867 & 88.2\% & $+0.00$ \\
 \bottomrule
 \end{tabular}
@@ -136,7 +133,7 @@ This connects to organizational learning literature: simple heuristics (``go for
 
 \section*{Contrast with Two-Point Conversions}
 
-Two-point decisions show the \textit{opposite} pattern: +1.0 pp/year improvement ($p = 0.06$).
+Two-point decisions show the \textit{opposite} pattern: +1.0 pp/year improvement.
 
 Why? Two-point decisions have:
 \begin{itemize}[nosep]
