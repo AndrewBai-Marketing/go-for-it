@@ -55,24 +55,8 @@ class GameState:
         self.off_team = value
 
 
-# Clock consumption constants (empirically derived from NFL data)
-# These represent mean time until next change of possession for each action-outcome
-CLOCK_CONSUMPTION = {
-    'go_convert': 151,    # Go for it + convert: retain possession, run more plays
-    'go_fail': 48,        # Go for it + fail: opponent gets ball, runs their drive
-    'punt': 69,           # Punt: opponent gets ball at worse field position
-    'fg_make': 99,        # FG make: kickoff + opponent drive
-    'fg_miss': 48,        # FG miss: opponent gets ball at LOS, similar to failed conversion
-}
-
-# Threshold for "end of game" - when time remaining is below this,
-# we use immediate play time rather than full drive time.
-# This is because with <2 min left, teams are in hurry-up mode and
-# the drive time estimates don't apply.
-END_OF_GAME_THRESHOLD = 120  # 2 minutes
-
-# Immediate play time (used for end-of-game scenarios)
-IMMEDIATE_PLAY_TIME = {
+# Play time constants (seconds consumed by each play type)
+PLAY_TIME = {
     'go': 6,        # Conversion attempt takes ~6 seconds
     'punt': 5,      # Punt play takes ~5 seconds
     'fg': 5,        # Field goal attempt takes ~5 seconds
@@ -113,51 +97,20 @@ class BayesianDecisionAnalyzer:
 
     Supports hierarchical models with team/kicker effects when available.
     Now also supports offense/defense fixed effects for conversion model.
-
-    Clock Model:
-    ------------
-    When use_clock_model=True (default), the analyzer uses a hybrid approach:
-
-    **Mid-game (>2 minutes remaining):**
-    Accounts for asymmetric clock consumption between action-outcome pairs:
-    - Go + Convert: ~151s until next change of possession (retain ball, run plays)
-    - Go + Fail: ~48s (opponent gets ball, runs their drive)
-    - Punt: ~69s (opponent gets ball at worse position)
-    - FG Make: ~99s (kickoff + opponent drive)
-    - FG Miss: ~48s (opponent gets ball at LOS)
-
-    This is critical for situations where clock management matters.
-    When winning, burning more clock (converting) helps protect the lead.
-    When losing, burning clock hurts because less time remains to catch up.
-
-    **End-of-game (<2 minutes remaining):**
-    Uses immediate play time (~5-6 seconds per play) rather than full drive time.
-    This is because in end-of-game scenarios:
-    1. Teams are in hurry-up mode, not running full drives
-    2. Scoring happens immediately (TD/FG) or game ends
-    3. Full drive time estimates don't apply
-
-    This hybrid approach allows proper handling of both mid-game clock
-    dynamics AND end-of-game desperation scenarios.
     """
 
-    def __init__(self, models: Dict, use_clock_model: bool = True):
+    def __init__(self, models: Dict):
         """
         Initialize the decision analyzer.
 
         Args:
             models: Dict with 'conversion', 'punt', 'fg', 'wp' model objects
-            use_clock_model: If True, use empirically-derived clock consumption
-                            values for each action-outcome pair. This properly
-                            accounts for time burned by subsequent drives and
-                            is essential for late-game decision accuracy.
         """
         self.conversion = models['conversion']
         self.punt = models['punt']
         self.fg = models['fg']
         self.wp = models['wp']
         self.n_samples = self.wp.n_samples
-        self.use_clock_model = use_clock_model
 
         # Check if we have hierarchical models
         self.has_team_effects = isinstance(self.conversion, HierarchicalConversionModel)
@@ -167,66 +120,31 @@ class BayesianDecisionAnalyzer:
         self.has_off_def_effects = (HAS_OFF_DEF_MODEL and
                                      isinstance(self.conversion, HierarchicalOffDefConversionModel))
 
-    def _state_after_conversion(self, state: GameState, yards_gained: int = None,
-                                  use_clock_model: bool = True) -> Tuple[int, int]:
+    def _state_after_conversion(self, state: GameState, yards_gained: int = None) -> Tuple[int, int]:
         """
         Return (new_field_pos, time_remaining) after successful conversion.
         Assumes average gain of yards_to_go + 2 if not specified.
-
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        model which accounts for the full time until next change of possession.
-
-        For end-of-game scenarios (under 2 minutes), uses immediate play time
-        instead of full drive time, as teams are in hurry-up mode.
         """
         if yards_gained is None:
             yards_gained = state.yards_to_go + 2  # Assume slightly more than needed
 
         new_field_pos = max(state.field_pos - yards_gained, 1)  # Don't go past goal line
-
-        if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
-            # Mid-game: account for full drive time after conversion
-            time_consumed = CLOCK_CONSUMPTION['go_convert']
-        else:
-            # End-of-game or legacy mode: just the immediate play time
-            time_consumed = IMMEDIATE_PLAY_TIME['go']
-
-        new_time = max(0, state.time_remaining - time_consumed)
+        new_time = max(0, state.time_remaining - PLAY_TIME['go'])
         return new_field_pos, new_time
 
-    def _state_after_failed_conversion(self, state: GameState,
-                                        use_clock_model: bool = True) -> Tuple[int, int]:
+    def _state_after_failed_conversion(self, state: GameState) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after failed conversion.
         Opponent gets ball at spot of failed attempt.
-
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        which accounts for the opponent's subsequent drive time.
-
-        For end-of-game scenarios (under 2 minutes), uses immediate play time.
         """
         # Opponent's yardline_100 is 100 - current field_pos
         opp_field_pos = 100 - state.field_pos
-
-        if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
-            # Mid-game: account for opponent's drive time
-            time_consumed = CLOCK_CONSUMPTION['go_fail']
-        else:
-            # End-of-game or legacy mode: just the immediate play time
-            time_consumed = IMMEDIATE_PLAY_TIME['go']
-
-        new_time = max(0, state.time_remaining - time_consumed)
+        new_time = max(0, state.time_remaining - PLAY_TIME['go'])
         return opp_field_pos, new_time
 
-    def _state_after_punt(self, state: GameState, net_yards: float,
-                          use_clock_model: bool = True) -> Tuple[int, int]:
+    def _state_after_punt(self, state: GameState, net_yards: float) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after punt.
-
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        which accounts for the opponent's subsequent drive time.
-
-        For end-of-game scenarios (under 2 minutes), uses immediate play time.
         """
         punt_landing = state.field_pos - net_yards
 
@@ -237,63 +155,27 @@ class BayesianDecisionAnalyzer:
             opp_field_pos = 100 - punt_landing
 
         opp_field_pos = max(min(opp_field_pos, 99), 1)
-
-        if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
-            # Mid-game: account for opponent's drive time
-            time_consumed = CLOCK_CONSUMPTION['punt']
-        else:
-            # End-of-game or legacy mode: just the punt play time
-            time_consumed = IMMEDIATE_PLAY_TIME['punt']
-
-        new_time = max(0, state.time_remaining - time_consumed)
+        new_time = max(0, state.time_remaining - PLAY_TIME['punt'])
         return opp_field_pos, new_time
 
-    def _state_after_fg_make(self, state: GameState,
-                              use_clock_model: bool = True) -> Tuple[int, int, int]:
+    def _state_after_fg_make(self, state: GameState) -> Tuple[int, int, int]:
         """
         Return (opponent's field_pos, time_remaining, new_score_diff) after made FG.
         Opponent gets ball at ~25 after kickoff.
-
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        which accounts for the kickoff + opponent's subsequent drive time.
-
-        For end-of-game scenarios (under 2 minutes), uses immediate play time.
         """
         opp_field_pos = 75  # Opponent at their own 25
         new_score_diff = state.score_diff + 3
-
-        if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
-            # Mid-game: FG attempt + kickoff + opponent drive
-            time_consumed = CLOCK_CONSUMPTION['fg_make']
-        else:
-            # End-of-game or legacy mode: just the FG play time
-            time_consumed = IMMEDIATE_PLAY_TIME['fg']
-
-        new_time = max(0, state.time_remaining - time_consumed)
+        new_time = max(0, state.time_remaining - PLAY_TIME['fg'])
         return opp_field_pos, new_time, new_score_diff
 
-    def _state_after_fg_miss(self, state: GameState,
-                              use_clock_model: bool = True) -> Tuple[int, int]:
+    def _state_after_fg_miss(self, state: GameState) -> Tuple[int, int]:
         """
         Return (opponent's field_pos, time_remaining) after missed FG.
         Opponent gets ball at LOS or their 20, whichever is better for them.
-
-        If use_clock_model=True, uses the empirically-derived clock consumption
-        which accounts for the opponent's subsequent drive time.
-
-        For end-of-game scenarios (under 2 minutes), uses immediate play time.
         """
         opp_field_pos_at_los = 100 - state.field_pos
         opp_field_pos = max(opp_field_pos_at_los, 80)  # At least at their 20
-
-        if use_clock_model and state.time_remaining > END_OF_GAME_THRESHOLD:
-            # Mid-game: opponent drive time (similar to failed conversion)
-            time_consumed = CLOCK_CONSUMPTION['fg_miss']
-        else:
-            # End-of-game or legacy mode: just the FG play time
-            time_consumed = IMMEDIATE_PLAY_TIME['fg']
-
-        new_time = max(0, state.time_remaining - time_consumed)
+        new_time = max(0, state.time_remaining - PLAY_TIME['fg'])
         return opp_field_pos, new_time
 
     def compute_wp_go_for_it(self, state: GameState) -> np.ndarray:
@@ -301,10 +183,6 @@ class BayesianDecisionAnalyzer:
         Compute posterior distribution of WP if going for it.
 
         WP_go = P(convert) * WP(state_if_convert) + P(fail) * WP(state_if_fail)
-
-        With clock model enabled, this properly accounts for the asymmetric
-        clock consumption: converting burns ~151s (retain possession),
-        while failing burns only ~48s (opponent gets ball).
         """
         # Get conversion probabilities (all posterior samples)
         # Use offense/defense effects if available, else team-only effects
@@ -317,15 +195,15 @@ class BayesianDecisionAnalyzer:
         else:
             p_convert = self.conversion.get_posterior_samples(state.yards_to_go)
 
-        # State after conversion (uses clock model if enabled)
-        new_pos, new_time = self._state_after_conversion(state, use_clock_model=self.use_clock_model)
+        # State after conversion
+        new_pos, new_time = self._state_after_conversion(state)
         wp_if_convert = self.wp.get_posterior_samples(
             state.score_diff, new_time, new_pos, state.timeout_diff
         )
 
         # State after failed conversion (opponent has ball)
         # WP for us = 1 - WP for opponent
-        opp_pos, opp_time = self._state_after_failed_conversion(state, use_clock_model=self.use_clock_model)
+        opp_pos, opp_time = self._state_after_failed_conversion(state)
         wp_opponent = self.wp.get_posterior_samples(
             -state.score_diff, opp_time, opp_pos, -state.timeout_diff
         )
@@ -340,16 +218,13 @@ class BayesianDecisionAnalyzer:
         Compute posterior distribution of WP if punting.
 
         WP_punt = 1 - WP_opponent(state_after_punt)
-
-        With clock model enabled, accounts for the ~69s typically burned
-        by the punt play + opponent's subsequent drive.
         """
         # Get expected punt distance
         punt_yards = self.punt.get_posterior_samples(state.field_pos)
 
         # Use mean punt distance for state transition
         mean_punt = punt_yards.mean()
-        opp_pos, new_time = self._state_after_punt(state, mean_punt, use_clock_model=self.use_clock_model)
+        opp_pos, new_time = self._state_after_punt(state, mean_punt)
 
         # Opponent's WP
         wp_opponent = self.wp.get_posterior_samples(
@@ -363,10 +238,6 @@ class BayesianDecisionAnalyzer:
         Compute posterior distribution of WP if attempting field goal.
 
         WP_fg = P(make) * WP(state_if_make) + P(miss) * WP(state_if_miss)
-
-        With clock model enabled, accounts for:
-        - FG make: ~99s (kick + kickoff + opponent drive)
-        - FG miss: ~48s (opponent gets ball, runs their drive)
         """
         fg_distance = state.field_pos + 17  # Add 17 for snap/hold
 
@@ -389,15 +260,15 @@ class BayesianDecisionAnalyzer:
         else:
             p_make = self.fg.get_posterior_samples(fg_distance)
 
-        # State after make (uses clock model if enabled)
-        opp_pos, new_time, new_score = self._state_after_fg_make(state, use_clock_model=self.use_clock_model)
+        # State after make
+        opp_pos, new_time, new_score = self._state_after_fg_make(state)
         wp_opponent_if_make = self.wp.get_posterior_samples(
             -new_score, new_time, opp_pos, -state.timeout_diff
         )
         wp_if_make = 1 - wp_opponent_if_make
 
-        # State after miss (uses clock model if enabled)
-        opp_pos, new_time = self._state_after_fg_miss(state, use_clock_model=self.use_clock_model)
+        # State after miss
+        opp_pos, new_time = self._state_after_fg_miss(state)
         wp_opponent_if_miss = self.wp.get_posterior_samples(
             -state.score_diff, new_time, opp_pos, -state.timeout_diff
         )

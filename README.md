@@ -42,6 +42,44 @@ When coaches override the model to go for it, do they convert at higher rates? *
 
 ---
 
+## Mathematical Framework
+
+### State Space
+
+The game state is represented as:
+
+$$s = (\Delta, \tau, x, d, h, k_1, k_2)$$
+
+where $\Delta$ is score differential, $\tau$ is time remaining, $x$ is field position (yards from opponent's end zone), $d$ is yards to go, $h$ is the half, and $k_1, k_2$ are timeouts remaining.
+
+### Action Space
+
+On fourth down, the coach chooses from:
+
+$$\mathcal{A} = \lbrace\texttt{go}, \texttt{punt}, \texttt{fg}\rbrace$$
+
+### Transition Dynamics
+
+Each action induces transitions to successor states:
+
+**Going for it:**
+$$P(s' \mid s, \texttt{go}; \theta) = \pi(d; \theta) \cdot P(s_{\text{convert}}) + (1 - \pi(d; \theta)) \cdot P(s_{\text{fail}})$$
+
+**Field goal:**
+$$P(s' \mid s, \texttt{fg}; \theta) = \phi(x; \theta) \cdot P(s_{\text{make}}) + (1 - \phi(x; \theta)) \cdot P(s_{\text{miss}})$$
+
+### Bayesian Expected Win Probability
+
+For action $a$ in state $s$, expected win probability integrating over parameter uncertainty:
+
+$$\mathbb{E}[W \mid a, s] = \int W(s' \mid a, s, \theta) \cdot p(\theta \mid \mathcal{D}) \, d\theta$$
+
+The Bayes-optimal decision is:
+
+$$a^* = \arg\max_{a \in \mathcal{A}} \mathbb{E}[W \mid a, s]$$
+
+---
+
 ## Component Models
 
 ### Hierarchical Conversion Model with In-Game Context

@@ -196,17 +196,6 @@ The posterior estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.1
 
 The neural network substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. For example, a team trailing by 3 with 16 seconds remaining at the opponent's 2-yard line (1st \& goal) has a win probability of approximately 71\% under the neural model---reflecting the $\sim$67\% historical touchdown rate from this position---compared to only $\sim$14\% under a logistic specification that cannot capture the nonlinear interaction between field position and time in such extreme scenarios.
 
-\paragraph{Clock consumption model.} A critical component of our decision framework is the \textit{asymmetric clock consumption} between action-outcome pairs. Different decisions burn different amounts of game clock:
-\begin{itemize}
-    \item \textbf{Go + convert}: $\sim$151 seconds (retain possession, run additional plays)
-    \item \textbf{Go + fail}: $\sim$48 seconds (opponent receives ball, runs their drive)
-    \item \textbf{Punt}: $\sim$69 seconds (opponent receives ball at worse field position)
-    \item \textbf{Field goal make}: $\sim$99 seconds (kickoff + opponent drive)
-    \item \textbf{Field goal miss}: $\sim$48 seconds (opponent receives ball at line of scrimmage)
-\end{itemize}
-
-This asymmetry has major implications for late-game decision-making. When leading, burning more clock (converting) helps protect the lead. When trailing, burning clock hurts because less time remains to catch up. Our model incorporates these empirically-derived clock consumption values, allowing it to naturally handle end-of-game scenarios without hard-coded filters. This is essential for correctly evaluating situations like ``should a trailing team go for it with 2 minutes left?'' where the clock implications dominate the decision.
-
 \paragraph{Model validation.} The neural win probability model achieves a 5-fold cross-validated Brier score of 0.164, with extremely low variance across folds ($\pm 0.0004$). More importantly, the model is nearly perfectly calibrated: the expected calibration error (ECE) is just 0.0049. Across deciles of predicted WP, actual win rates match predictions closely---when the model predicts 75\% win probability, teams actually win 75\% of the time. This calibration is critical for decision-making: we need accurate probability estimates, not just accurate rankings. The neural architecture's ability to capture complex nonlinear interactions between features (particularly field position and time remaining in late-game scenarios) provides substantially more reliable guidance for edge cases than traditional logistic regression approaches.
 
 \subsection{Estimated Heterogeneity}
