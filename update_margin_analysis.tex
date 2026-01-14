@@ -4,6 +4,8 @@
 \usepackage{amsmath}
 \usepackage{enumitem}
 \usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
 
 \definecolor{newcolor}{RGB}{0,100,0}
 \newcommand{\new}{\textcolor{newcolor}{\textbf{NEW}}}
@@ -15,6 +17,14 @@
 \begin{document}
 
 \maketitle
+
+\section*{The Core Paradox (Visual Summary)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/fourth_down_trends.png}
+\caption{The central puzzle: Fourth-down aggression increased dramatically (+8pp over the period), but decision \textit{quality} stayed flat ($-0.05$ pp/year, $p = 0.54$). Coaches changed behavior but not accuracy.}
+\end{figure}
 
 \section*{Overview}
 
@@ -42,6 +52,12 @@ Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
 \vspace{1em}
 \textbf{Interpretation:} 53\% of fourth downs are close calls ($<$2pp margin). Coaches are getting \textit{worse} on these ($-0.17$ pp/year, $p = 0.01$). On obvious decisions, they were already near-perfect and stayed that way.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/learning_by_margin.png}
+\caption{Left: Decision quality by margin size. Most decisions (53\%) are close calls with only 69\% optimality. Right: Learning trends show coaches getting \textit{worse} on close calls and moderate decisions (red = statistically significant).}
+\end{figure}
+
 \section*{The Short Yardage Paradox}
 
 The most striking pattern is in short yardage (4th \& 1--2):
@@ -62,6 +78,12 @@ Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.4 pp} \\
 \end{center}
 
 \textbf{The paradox:} Coaches increased their go-for-it rate by 22pp, but the model only says they should go for it 2pp more often. Result: coaches \textit{overcorrected}. Over-aggressive errors nearly doubled.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/short_yardage_paradox.png}
+\caption{The short yardage overcorrection. Left: Coaches increased aggression by 22pp, but the model says only +2pp was warranted. Right: Under-aggressive errors decreased, but over-aggressive errors more than doubled.}
+\end{figure}
 
 \subsection*{Compliance by Optimal Action}
 
@@ -124,6 +146,37 @@ Why? Two-point decisions have:
 \end{itemize}
 
 The complexity of fourth-down decisions---three options, state-dependent optimal actions, delayed feedback on punt outcomes---appears to impede organizational learning.
+
+\subsection*{Two-Point Rule Change Analysis (2015)}
+
+The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, changing the math entirely. This creates a natural experiment: did coaches learn the new environment?
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/two_point_rule_change.png}
+\caption{Two-point conversion analysis around the 2015 rule change. Left: Optimality dropped initially as coaches were calibrated to old math, then recovered as they learned. Right: Coaches remain far too conservative (actual 2pt rate ~10\% vs optimal ~45\%).}
+\end{figure}
+
+\textbf{Key insight:} The improving trend in two-point decisions (+1.0 pp/year) represents coaches slowly adapting to the post-2015 environment. The contrast with fourth down (flat trend) supports the complexity hypothesis: simpler decisions allow for faster learning.
+
+\subsection*{The Down 8 vs Down 9 Paradox}
+
+A striking behavioral anomaly in two-point decisions:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{outputs/figures/down_8_vs_9_paradox.png}
+\caption{The Down 8 vs Down 9 paradox. When down 8, going for 2 ties immediately---coaches do this 79\% of the time. When down 9, going for 2 means a field goal can tie later---coaches do this 1\% of the time. But Down 9 has a \textit{higher} optimal 2pt rate (91\% vs 85\%)!}
+\end{figure}
+
+\textbf{Behavioral interpretation:}
+\begin{itemize}[nosep]
+    \item \textbf{Present bias:} Immediate payoff (``tie NOW'') dominates deferred payoff (``FG ties LATER'')
+    \item \textbf{Salience:} ``Go for 2 to tie'' is a known heuristic; ``go for 2 so FG ties'' requires calculation
+    \item \textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in all but one
+\end{itemize}
+
+This is not a close call---it's a systematic blind spot.
 
 \section*{What This Adds to the Paper}
 
