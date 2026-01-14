@@ -150,17 +150,17 @@ The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, mak
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/two_point_rule_change.png}
-\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Pre-2015 shows $\sim$66\% optimal (stable after 3 years training data). Post-2015 shows initial drop to $\sim$43\% then gradual recovery with +1.05 pp/year trend. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
+\caption{Two-point conversion analysis around the 2015 rule change (expanding window, full hierarchical model). Post-2015 shows initial drop to $\sim$43\% then gradual recovery with +1.05 pp/year trend. Pre-2015 data shown for completeness but should be interpreted with caution---see note below. Right: PAT success rate dropped from $\sim$99\% to $\sim$94\%.}
 \end{figure}
 
-\textbf{Key findings:}
+\textbf{Key findings (post-2015 only):}
 \begin{itemize}[nosep]
-    \item \textbf{Pre-2015} (2009--2014, trained on 3+ years): Average 65.5\% optimal (range: 51--82\%)
-    \item \textbf{Post-2015} (2016--2024): Average 54.2\% optimal (range: 43--58\%)
-    \item Post-2015 trend: $+1.05$ pp/year (modest improvement)
+    \item Average optimal rate: 54.2\% (range: 43--58\%)
+    \item Trend: $+1.05$ pp/year (modest improvement)
+    \item Coaches started at $\sim$43\% optimal in 2016 (limited training data) and have improved to $\sim$58\% by 2023
 \end{itemize}
 
-The pattern is exactly what we'd expect from the rule change: coaches were reasonably calibrated pre-2015 ($\sim$66\% optimal), then \textit{dropped} dramatically in 2016 when the rule changed (43\% optimal---2016 uses only 2015 training data, noted as ex post), then gradually improved as they learned the new environment. By 2023, they're back to $\sim$58\% optimal.
+\textbf{Note on pre-2015 analysis:} We exclude the pre-2015 era from the main comparison because virtually all two-point decisions had WP margins below 0.5\% when PAT success was $\sim$99\%. The model's recommendations are essentially noise at these margins---even a 0.1\% margin threshold pushes optimal rates above 90\%. The post-2015 era, with PAT at $\sim$94\%, creates meaningful WP differences that allow for genuine evaluation of coach decision quality.
 
 \subsection*{The Down 8 vs Down 9 Paradox}
 
