@@ -847,13 +847,13 @@ A striking pattern emerges when examining specific game situations. Table~\ref{t
 \toprule
 \textbf{Situation} & \textbf{N} & \textbf{Model: 2pt Optimal} & \textbf{Actual 2pt Rate} & \textbf{Comply When Should} \\
 \midrule
-Down 8 $\to$ Down 2 & 175 & 72\% & \textbf{81\%} & \textbf{84\%} \\
-Down 9 $\to$ Down 3 & 105 & 72\% & 1\% & \textbf{0\%} \\
+Down 8 $\to$ Down 2 & 196 & 85\% & \textbf{79\%} & \textbf{84\%} \\
+Down 9 $\to$ Down 3 & 118 & 91\% & 1\% & \textbf{1\%} \\
 \midrule
-Down 14 $\to$ Down 8 & 404 & 73\% & 9\% & 13\% \\
-Down 15 $\to$ Down 9 & 87 & 77\% & 25\% & 25\% \\
-Down 7 $\to$ Down 1 & 1,022 & 59\% & 4\% & 3\% \\
-Tied $\to$ Up 6 & 2,330 & 46\% & 1\% & 1\% \\
+Down 14 $\to$ Down 8 & 448 & 94\% & 8\% & 9\% \\
+Down 15 $\to$ Down 9 & 97 & 99\% & 23\% & 23\% \\
+Down 7 $\to$ Down 1 & 1,125 & 67\% & 3\% & 3\% \\
+Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}
@@ -862,7 +862,7 @@ Tied $\to$ Up 6 & 2,330 & 46\% & 1\% & 1\% \\
 \end{tablenotes}
 \end{table}
 
-The paradox: when down 8 (trailing by 2 after the touchdown), coaches go for 2 at an 81\% rate---\textit{higher} than the model-optimal rate of 72\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an identical 72\% optimal rate. In 76 situations where the model recommended going for 2 when down 9, coaches kicked the PAT \textit{every single time}.
+The paradox: when down 8 (trailing by 2 after the touchdown), coaches go for 2 at a 79\% rate---close to the model-optimal rate of 85\%. But when down 9 (trailing by 3 after the touchdown), coaches go for 2 only 1\% of the time, despite an even higher 91\% optimal rate. In 107 situations where the model recommended going for 2 when down 9, coaches kicked the PAT in all but one.
 
 The behavioral explanation is straightforward:
 \begin{itemize}
@@ -872,7 +872,7 @@ The behavioral explanation is straightforward:
 
 This pattern is consistent with present bias and probability neglect: coaches respond to immediate, certain payoffs (``go for 2 to tie'') but fail to account for deferred, probabilistic payoffs (``go for 2 so a future FG ties''). The heuristic ``go for 2 when it ties the game'' is well-known; the more complex calculation ``go for 2 when it sets up a tying field goal'' requires forward-looking probability integration that coaches systematically fail to perform.
 
-The down 7 situation (trailing by 1 after TD) shows similar conservatism: going for 2 avoids overtime if the opponent scores a touchdown, but coaches attempt it only 4\% of the time despite a 59\% optimal rate. Again, the deferred and probabilistic nature of the benefit---avoiding a \textit{possible future} overtime---fails to motivate action.
+The down 7 situation (trailing by 1 after TD) shows similar conservatism: going for 2 avoids overtime if the opponent scores a touchdown, but coaches attempt it only 3\% of the time despite a 67\% optimal rate. Again, the deferred and probabilistic nature of the benefit---avoiding a \textit{possible future} overtime---fails to motivate action.
 
 \subsection{The Simple Rule}
 
