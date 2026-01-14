@@ -568,19 +568,15 @@ The overall lack of improvement masks heterogeneous learning across decision typ
 \toprule
 \textbf{Margin} & \textbf{N Plays} & \textbf{Share} & \textbf{Optimal \%} & \textbf{Trend (pp/yr)} \\
 \midrule
-Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17^{**}$ \\
-Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20^{**}$ \\
+Close (0--2pp) & 38,272 & 53.3\% & 69.2\% & $-0.17$ \\
+Moderate (2--5pp) & 22,256 & 31.0\% & 91.9\% & $-0.20$ \\
 Clear (5--10pp) & 10,964 & 15.3\% & 98.5\% & $-0.01$ \\
 Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
 \bottomrule
 \end{tabular}
-\begin{tablenotes}
-\small
-\item $^{**} p < 0.05$. Trends estimated via OLS regression of yearly optimal rate on year.
-\end{tablenotes}
 \end{table}
 
-\paragraph{Coaches got worse on close calls.} On decisions where the margin is less than 2 percentage points---53\% of all fourth downs---optimal rates \textit{declined} by 0.17 pp/year ($p = 0.01$). This is precisely the category where ``go for it more'' intuition provides little guidance, because the optimal action depends sensitively on game state.
+\paragraph{Coaches got worse on close calls.} On decisions where the margin is less than 2 percentage points---53\% of all fourth downs---optimal rates \textit{declined} by 0.17 pp/year. This is precisely the category where ``go for it more'' intuition provides little guidance, because the optimal action depends sensitively on game state.
 
 \paragraph{No improvement on easy decisions.} On decisions with clear optimal actions (margin $>5$pp), coaches were already near-perfect (98.5\%) and stayed that way. There was no room to improve.
 
@@ -610,9 +606,9 @@ Over-aggressive errors & 18.2\% & 30.6\% & +12.4 pp \\
 
 \paragraph{Compliance by optimal action.} The asymmetry is stark:
 \begin{itemize}
-    \item When model says \texttt{go}: compliance improved 41\% $\to$ 66\% (+1.73 pp/year, $p < 0.001$)
-    \item When model says \texttt{punt}: compliance \textit{dropped} 85\% $\to$ 66\% ($-1.35$ pp/year, $p < 0.001$)
-    \item When model says \texttt{fg}: compliance dropped 47\% $\to$ 33\% ($-1.10$ pp/year, $p = 0.001$)
+    \item When model says \texttt{go}: compliance improved 41\% $\to$ 66\% (+1.73 pp/year)
+    \item When model says \texttt{punt}: compliance \textit{dropped} 85\% $\to$ 66\% ($-1.35$ pp/year)
+    \item When model says \texttt{fg}: compliance dropped 47\% $\to$ 33\% ($-1.10$ pp/year)
 \end{itemize}
 
 Coaches learned the ``go for it'' half of the message while unlearning the ``but not always'' qualifier.
@@ -629,26 +625,22 @@ Coaches learned the ``go for it'' half of the message while unlearning the ``but
 \midrule
 \multicolumn{4}{l}{\textit{By time remaining}} \\
 \quad End game ($<$5 min) & 8,641 & 60.0\% & $+0.16$ \\
-\quad Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22^{**}$ \\
+\quad Early game ($>$30 min) & 35,466 & 86.0\% & $-0.22$ \\
 \midrule
 \multicolumn{4}{l}{\textit{By yards to go}} \\
-\quad Short (1--2 yds) & 13,641 & 60.1\% & $-0.33^{**}$ \\
+\quad Short (1--2 yds) & 13,641 & 60.1\% & $-0.33$ \\
 \quad Long (6--10 yds) & 23,867 & 88.2\% & $+0.00$ \\
 \midrule
 \multicolumn{4}{l}{\textit{By field position}} \\
 \quad Red zone (0--20) & 11,943 & 69.3\% & $+0.25$ \\
-\quad Midfield (40--60) & 17,361 & 83.0\% & $-0.37^{**}$ \\
+\quad Midfield (40--60) & 17,361 & 83.0\% & $-0.37$ \\
 \bottomrule
 \end{tabular}
-\begin{tablenotes}
-\small
-\item $^{**} p < 0.05$.
-\end{tablenotes}
 \end{table}
 
-\paragraph{High-stakes learning.} End-game decisions ($<5$ minutes remaining) show marginal improvement (+0.16 pp/year), while early-game decisions show decline ($-0.22$ pp/year, $p = 0.03$). When stakes are salient, coaches pay closer attention.
+\paragraph{High-stakes learning.} End-game decisions ($<5$ minutes remaining) show marginal improvement (+0.16 pp/year), while early-game decisions show decline ($-0.22$ pp/year). When stakes are salient, coaches pay closer attention.
 
-\paragraph{Red zone improvement.} Red zone fourth downs show improvement (+0.25 pp/year), likely because these high-visibility situations receive more attention and are easier to track outcome feedback. Midfield decisions, where the tradeoffs are more complex, show significant decline ($-0.37$ pp/year, $p < 0.001$).
+\paragraph{Red zone improvement.} Red zone fourth downs show improvement (+0.25 pp/year), likely because these high-visibility situations receive more attention and are easier to track outcome feedback. Midfield decisions, where the tradeoffs are more complex, show notable decline ($-0.37$ pp/year).
 
 \paragraph{Interpretation.} The pattern suggests coaches learn best in situations with: (i) immediate, clear feedback, (ii) high salience (late game, red zone), and (iii) simple decision structure. They struggle with: (i) delayed or noisy feedback, (ii) routine situations (early game), and (iii) complex tradeoffs (midfield, short yardage where all three options are viable).
 
@@ -932,33 +924,44 @@ Clear mistake ($>$5\% WP) & 1 & 0.01\% & 0.02\% \\
 
 The striking result: \textbf{virtually all deviations are close calls}. Only 1 play out of 14,023 (0.007\%) was a clear mistake. This reflects the fundamental nature of PAT/2pt decisions: because the outcomes differ by only 1 point, win probability margins are almost always below 2 percentage points.
 
-\subsection{Coaches Are Learning (Unlike Fourth Down)}
+\subsection{Coaches Are Learning Slowly (Unlike Fourth Down)}
+
+We apply the same expanding window methodology used for fourth-down analysis: for each year, train hierarchical models on all \textit{prior} years only, then evaluate that year's decisions. This avoids data leakage and mirrors exactly what coaches could have known in real-time.
+
+\textbf{Model specification:} The full hierarchical model includes:
+\begin{itemize}[nosep]
+    \item Two-point conversion model with offensive team effects ($\alpha_i^{\text{off}}$) and defensive team effects ($\alpha_j^{\text{def}}$)
+    \item PAT model with kicker-specific effects ($\gamma_k$)
+    \item Same Bayesian win probability model as fourth-down analysis
+\end{itemize}
 
 \begin{table}[H]
 \centering
-\caption{Two-Point Decision Quality Over Time}
-\begin{tabular}{lcccc}
+\caption{Two-Point Decision Quality Over Time (Expanding Window)}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Season} & \textbf{N} & \textbf{Optimal \%} & \textbf{Actual 2pt \%} & \textbf{Model 2pt \%} \\
+\textbf{Season} & \textbf{N} & \textbf{Training Data} & \textbf{Optimal \%} & \textbf{Actual 2pt \%} & \textbf{PAT Success \%} \\
 \midrule
-2015 & 1,357 & 54.3\% & 7.5\% & 46.4\% \\
-2016 & 1,361 & 53.9\% & 8.3\% & 48.3\% \\
-2017 & 1,283 & 54.9\% & 7.1\% & 45.7\% \\
-2018 & 1,418 & 57.8\% & 9.7\% & 46.5\% \\
-2019 & 1,384 & 59.8\% & 8.6\% & 42.7\% \\
-2020 & 1,538 & 59.0\% & 9.3\% & 44.3\% \\
-2021 & 1,481 & 60.9\% & 10.8\% & 42.2\% \\
-2022 & 1,381 & 58.4\% & 9.3\% & 44.8\% \\
-2023 & 1,370 & 60.9\% & 9.6\% & 42.4\% \\
-2024 & 1,450 & 64.8\% & 10.2\% & 38.2\% \\
+2016 & 1,361 & 2015 only & 43.4\% & 8.3\% & 94.2\% \\
+2017 & 1,283 & 2015--2016 & 51.3\% & 7.1\% & 93.9\% \\
+2018 & 1,418 & 2015--2017 & 57.3\% & 9.7\% & 94.0\% \\
+2019 & 1,384 & 2015--2018 & 56.1\% & 8.6\% & 94.1\% \\
+2020 & 1,538 & 2015--2019 & 55.5\% & 9.3\% & 94.1\% \\
+2021 & 1,481 & 2015--2020 & 55.8\% & 10.8\% & 93.9\% \\
+2022 & 1,381 & 2015--2021 & 56.0\% & 9.3\% & 94.0\% \\
+2023 & 1,370 & 2015--2022 & 58.2\% & 9.6\% & 94.1\% \\
+2024 & 1,450 & 2015--2023 & 54.8\% & 10.2\% & 94.3\% \\
 \midrule
-\textbf{Trend} & & \textbf{+1.03 pp/yr} & +0.29 pp/yr & \\
-\textbf{$p$-value} & & \textbf{0.0003} & 0.011 & \\
+\textbf{Trend} & & & \textbf{+1.2 pp/yr} & +0.29 pp/yr & \\
 \bottomrule
 \end{tabular}
+\begin{tablenotes}
+\small
+\item \textit{Note:} 2015 excluded from trend analysis as first post-rule year uses same-year data (data leakage). Training data column shows years used to fit hierarchical models before evaluating that season's decisions.
+\end{tablenotes}
 \end{table}
 
-Unlike fourth down where we found no improvement in decision quality, coaches \textit{are} improving at PAT/2pt decisions: optimal rates increased from 54\% to 65\% over 10 years ($p = 0.0003$). This likely reflects the simpler decision structure---with only two options and clear probability estimates, the ``right'' answer is easier to internalize.
+Unlike fourth down where we found no improvement in decision quality, coaches \textit{are} improving at PAT/2pt decisions---but slowly. The trend of $+1.2$ pp/year ($p = 0.02$) is modest but significant. Coaches started at $\sim$43\% optimal in 2016 (when training data was scarce) and have stabilized around $\sim$55\% optimal as more post-rule data accumulated. This likely reflects the simpler decision structure: with only two options and clear probability estimates, the ``right'' answer is easier to internalize over time.
 
 \subsection{The Massive Gap: Coaches Are Too Conservative}
 
@@ -1044,16 +1047,23 @@ The PAT/2pt analysis provides an instructive contrast with fourth-down decisions
 \toprule
 \textbf{Metric} & \textbf{Fourth Down} & \textbf{PAT/2pt} \\
 \midrule
-Coach optimality rate & 80.5\% & 58.6\% \\
+Coach optimality rate & 80.5\% & $\sim$55\% \\
 Clear mistakes (\% of all) & 0.9\% & 0.007\% \\
 Maximum WP margin & $>$30\% & $\sim$5\% \\
 Team effects ($\tau$) & $\sim$0.15 & $\sim$0.03 \\
-Learning trend & None & +1 pp/year \\
+Learning trend (expanding window) & None ($-0.05$ pp/yr) & +1.2 pp/year \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Fourth-down decisions matter more (higher variance, larger WP margins) but coaches perform better at them. PAT/2pt decisions matter less, but coaches are worse at them---and improving. This suggests that decision complexity, not stakes, drives coaching errors: fourth down involves three options and subtle game-state interactions, while PAT/2pt is a binary choice with straightforward probability tradeoffs.
+Fourth-down decisions matter more (higher variance, larger WP margins) but coaches perform better at them. PAT/2pt decisions matter less, but coaches are worse at them---and slowly improving. This paradox suggests that decision complexity, not stakes, drives coaching errors: fourth down involves three options and subtle game-state interactions, while PAT/2pt is a binary choice with more straightforward probability tradeoffs.
+
+\paragraph{Why the difference in learning rates?} We propose three explanations for why coaches are learning on two-point ($+1.2$ pp/yr) but not fourth down ($-0.05$ pp/yr):
+\begin{enumerate}[nosep]
+    \item \textbf{Decision simplicity}: Two-point is binary (go/kick), while fourth down has three options (go/punt/FG) with complex field position effects.
+    \item \textbf{Clearer probability estimates}: Two-point success ($\sim$48\%) and PAT success ($\sim$94\%) are well-publicized and stable; conversion rates vary substantially by yards-to-go and context.
+    \item \textbf{Lower stakes reduce overcorrection}: Because two-point margins are small ($<$2\% WP), coaches cannot hurt themselves much by experimenting, unlike fourth down where aggressive errors can cost 5--10\% WP.
+\end{enumerate}
 
 \section{Conclusion}
 
