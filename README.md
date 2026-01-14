@@ -122,57 +122,33 @@ This allows us to distinguish between:
 
 ## Component Models
 
-### Hierarchical Conversion Model with In-Game Context
+### Hierarchical Conversion Model
 
-Conversion probability is modeled as logistic in yards to go with **in-game context features** and team random effects:
+Conversion probability is modeled as logistic in yards to go with **both** offensive and defensive team random effects:
 
-$$\mathbb{P}(\text{convert} \mid d, g, e, p, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta_d d + \beta_g g + \beta_e e + \beta_p p + \gamma_j^{\text{off}} + \delta_k^{\text{def}})$$
+$$\mathbb{P}(\text{convert} \mid d, \text{off} = j, \text{def} = k) = \sigma(\alpha + \beta d + \gamma_j^{\text{off}} + \delta_k^{\text{def}})$$
 
 where $\sigma(\cdot)$ is the logistic function, and:
-- $d$ is yards to go
-- $g$ is a **goal-to-go indicator** (1 if at opponent's goal line)
-- $e$ is **standardized in-game EPA** (team's cumulative rush + pass EPA in that game)
-- $p$ is **standardized drive play count**
 - $\gamma_j^{\text{off}} \sim \mathcal{N}(0, \tau_{\text{off}}^2)$ captures offensive team conversion ability
 - $\delta_k^{\text{def}} \sim \mathcal{N}(0, \tau_{\text{def}}^2)$ captures defensive team stopping ability
 
-Both team effects are shrunk toward zero via **empirical Bayes**, with shrinkage factor:
+Both effects are shrunk toward zero via **empirical Bayes**, with shrinkage factor:
 
 $$B_k = \frac{\text{SE}_k^2}{\text{SE}_k^2 + \tau^2}$$
 
+This ensures stable estimates even for teams with few observations.
+
 **Population-level estimates** (1999-2024, N = 13,884 attempts):
-- $\hat{\alpha} = 0.722$
-- $\hat{\beta}_d = -0.133$ (yards to go)
-- $\hat{\beta}_g = -1.129$ (goal-to-go **hurts** conversion, P(β<0) = 100%)
-- $\hat{\beta}_e = 0.490$ (in-game EPA helps)
-- $\hat{\beta}_p = 1.201$ (longer drives help)
+- $\hat{\alpha} = 0.660$ (SE: 0.026)
+- $\hat{\beta} = -0.160$ (SE: 0.005)
 
-**The goal-to-go effect is critical.** At 4th & 1, conversion probability drops from 64.3% (non-goal-to-go) to 36.8% (goal-to-go)—a **27.5 percentage point penalty**. The odds ratio is 0.32, meaning goal-to-go situations are roughly one-third as likely to convert. This reflects defensive adjustments near the goal line (stacking the box).
-
-| Yards to Go | Conversion % (non-GTG) | 95% CI |
-|-------------|------------------------|--------|
-| 1 | 64.3% | [63.0%, 65.6%] |
-| 2 | 61.2% | [60.0%, 62.4%] |
-| 3 | 58.0% | [56.9%, 59.1%] |
-| 5 | 51.4% | [50.3%, 52.4%] |
-| 10 | 35.2% | [33.4%, 36.8%] |
-
-### Why In-Game Context Matters: Explaining the "Coach Edge"
-
-A natural objection to any fourth-down model is that coaches have **private information** the model doesn't capture. Initial analysis appeared to support this: coaches who "defied" model recommendations (going for it when the model said punt) converted at **higher rates** than when they agreed with the model.
-
-The in-game context model **eliminates this apparent coach edge**. The explanation is **Simpson's Paradox**:
-
-- Coaches who override the model to go for it tend to do so in **favorable observable contexts**: high EPA (performing well in-game), longer drives (momentum), and crucially, **non-goal-to-go situations**
-- Coaches who align with the model's "go for it" recommendation are often in **goal-to-go situations** (4th & goal from the 1), where the model recommends going for it but conversion rates are much lower
-
-**Key statistics:**
-- Coaches who "defied" the model: 2.1% goal-to-go rate
-- Coaches who "aligned" with the model: 26.5% goal-to-go rate
-
-After controlling for goal-to-go, EPA, and drive play count:
-- **Coach edge: -1.6 pp (p = 0.27, NOT significant)**
-- Coaches do **not** have private information that improves upon the model
+| Yards to Go | Conversion % | 95% CI |
+|-------------|--------------|--------|
+| 1 | 64.8% | [62.9%, 66.4%] |
+| 2 | 60.7% | [58.9%, 62.2%] |
+| 3 | 56.4% | [54.8%, 57.9%] |
+| 5 | 47.6% | [46.0%, 49.3%] |
+| 10 | 27.4% | [24.9%, 30.4%] |
 
 ### Hierarchical Field Goal Model
 
