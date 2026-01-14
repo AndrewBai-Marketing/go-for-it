@@ -22,9 +22,9 @@ This project develops a rigorous framework for evaluating NFL coaching decisions
 
 ### Fourth Down Decisions (2006-2024)
 
-- **82.2% optimal** overall
-- **82% of mistakes are close calls** (decision margin < 2 percentage points)
-- Only **0.3% are clear mistakes** where the optimal action was obvious
+- **80.8% optimal** overall
+- **85.7% of mistakes are close calls** (decision margin < 2 percentage points)
+- Only **0.2% are clear mistakes** where the optimal action was obvious
 - Go-for-it rates increased from 12% to 20% (2006-2024)
 - Decision **quality has not improved**—the analytics revolution changed *behavior* but not *accuracy*
 
@@ -233,7 +233,7 @@ We implement an **expanding window analysis** with a 7-year minimum training win
 2. Compute optimal decisions under the ex ante model
 3. Compare to ex post (full sample) recommendations
 
-**Result:** 96.1% agreement between ex ante and ex post recommendations across 70,006 plays.
+**Result:** 96.5% agreement between ex ante and ex post recommendations across 71,786 plays.
 
 ---
 
@@ -262,7 +262,7 @@ We implement an **expanding window analysis** with a 7-year minimum training win
 
 Play-by-play data from 1999-2024 NFL seasons via [nflfastR](https://www.nflfastr.com/).
 
-- **70,006 fourth-down situations** (2006-2024 evaluation sample)
+- **71,786 fourth-down situations** (2006-2024 evaluation sample)
 - 7-year minimum training window for expanding window analysis
 
 ## Requirements

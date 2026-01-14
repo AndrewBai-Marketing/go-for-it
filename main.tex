@@ -340,12 +340,12 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 2023 & 3,934 & 19.6\% & 80.3\% & 81.4\% & 95.7\% \\
 2024 & 3,724 & 20.0\% & 80.5\% & 81.2\% & 97.6\% \\
 \midrule
-\textbf{Overall} & \textbf{70,006} & \textbf{13.8\%} & \textbf{82.2\%} & \textbf{81.8\%} & \textbf{96.1\%} \\
+\textbf{Overall} & \textbf{71,786} & \textbf{19.2\%} & \textbf{80.8\%} & \textbf{80.0\%} & \textbf{96.5\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key finding: \textbf{96.1\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.5\% (2006, with the minimum training data) to 98.8\% (2019).
+The key finding: \textbf{96.5\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.6\% (2006, with the minimum training data) to 99.1\% (2019).
 
 Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained flat at approximately 80\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}.
 
@@ -371,17 +371,17 @@ Applying this framework to the 12,474 plays where coaches deviated from model re
 \toprule
 \textbf{Category} & \textbf{Count} & \textbf{Percent} & \textbf{Definition} \\
 \midrule
-Correct & 57,532 & 82.2\% & Coach agreed with model \\
-Difference of opinion & 10,178 & 14.5\% & Margin $<$ 2\% WP \\
-Questionable & 2,058 & 2.9\% & Margin 2--5\% WP \\
-Clear mistake & 238 & 0.3\% & Margin $>$ 5\% WP \\
+Correct & 58,034 & 80.8\% & Coach agreed with model \\
+Difference of opinion & 11,786 & 16.4\% & Margin $<$ 2\% WP \\
+Questionable & 1,800 & 2.5\% & Margin 2--5\% WP \\
+Clear mistake & 166 & 0.2\% & Margin $>$ 5\% WP \\
 \midrule
-\textbf{Total} & \textbf{70,006} & \textbf{100\%} & \\
+\textbf{Total} & \textbf{71,786} & \textbf{100\%} & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-This decomposition reveals a striking fact: \textbf{82\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.3\% of all fourth-down plays---and just 1.9\% of deviations---represent clear errors where the coach should unambiguously have known better
+This decomposition reveals a striking fact: \textbf{85.7\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.2\% of all fourth-down plays---and just 1.2\% of deviations---represent clear errors where the coach should unambiguously have known better
 
 \subsection{The Worst Decisions of All Time}
 
@@ -629,7 +629,7 @@ The framework allows us to compare decision-making across contexts where incenti
 \textbf{Metric} & \textbf{Regular Season} & \textbf{Playoffs} & \textbf{Difference} \\
 \midrule
 Go-for-it rate & 13.6\% & 21.7\% & +8.0 pp \\
-Optimal decision rate & 82.2\% & 78.4\% & $-3.8$ pp \\
+Optimal decision rate & 80.8\% & 78.4\% & $-2.4$ pp \\
 WP lost per decision & 1.1 pp & 1.5 pp & +0.4 pp \\
 \bottomrule
 \end{tabular}
@@ -748,7 +748,7 @@ If coaches had decision-relevant private information, we would expect:
     \item Playoff decisions to be better than regular season (they're not---both $\sim$80\% optimal)
 \end{enumerate}
 
-The fact that our model achieves 96.1\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
+The fact that our model achieves 96.5\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
 
 \paragraph{Direct test: Do overrides succeed more often?} The most direct test of private information is: when coaches override the model's recommendation to go for it, do they convert at higher rates than when they agree with the model's ``go for it'' recommendation? If coaches have private information, their overrides should be better-informed.
 
