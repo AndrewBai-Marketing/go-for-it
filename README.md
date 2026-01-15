@@ -22,9 +22,9 @@ This project develops a rigorous framework for evaluating NFL coaching decisions
 
 ### Fourth Down Decisions (2006-2024)
 
-- **80.8% optimal** overall
-- **85.7% of mistakes are close calls** (decision margin < 2 percentage points)
-- Only **0.2% are clear mistakes** where the optimal action was obvious
+- **69.9% optimal** overall (2019-2024 evaluation sample)
+- **61.8% of mistakes are close calls** (decision margin < 2 percentage points)
+- **11.9% are clear mistakes** where the optimal action was obvious (margin ≥ 5pp)
 - Go-for-it rates increased from 12% to 20% (2006-2024)
 - Decision **quality has not improved**—the analytics revolution changed *behavior* but not *accuracy*
 
