@@ -109,9 +109,11 @@ def clean_pbp_data(pbp: pd.DataFrame) -> pd.DataFrame:
     df['time_remaining_minutes'] = df['game_seconds_remaining'] / 60
     df['score_diff'] = df['score_differential'].astype(int)
 
-    # Timeouts (fill missing with 3)
-    df['posteam_timeouts'] = df['posteam_timeouts_remaining'].fillna(3).astype(int)
-    df['defteam_timeouts'] = df['defteam_timeouts_remaining'].fillna(3).astype(int)
+    # Timeouts - use forward fill within game, then fill remaining with 3
+    # Missing timeouts are rare (~5%) and mostly on no_play types already filtered out
+    df = df.sort_values(['game_id', 'play_id'])
+    df['posteam_timeouts'] = df.groupby('game_id')['posteam_timeouts_remaining'].ffill().bfill().fillna(3).astype(int)
+    df['defteam_timeouts'] = df.groupby('game_id')['defteam_timeouts_remaining'].ffill().bfill().fillna(3).astype(int)
     df['timeout_diff'] = df['posteam_timeouts'] - df['defteam_timeouts']
 
     return df
@@ -137,8 +139,9 @@ def extract_fourth_downs(df: pd.DataFrame) -> pd.DataFrame:
         )
     )
 
-    # Cap yards to go at 15 for modeling purposes
+    # Cap yards to go at 15 for modeling purposes, with indicator
     fourth_downs['ydstogo_capped'] = fourth_downs['ydstogo'].clip(upper=15)
+    fourth_downs['ydstogo_was_capped'] = (fourth_downs['ydstogo'] > 15).astype(int)
 
     # Add field goal distance (yardline_100 + 17 yards for snap/hold)
     fourth_downs['fg_distance'] = fourth_downs['yardline_100'] + 17
@@ -176,8 +179,9 @@ def extract_field_goals(df: pd.DataFrame) -> pd.DataFrame:
     # FG distance = yardline + 17
     fgs['fg_distance'] = fgs['yardline_100'] + 17
 
-    # Filter reasonable distances
-    fgs = fgs[fgs['fg_distance'].between(18, 70)]
+    # Keep all FG attempts - let the Bayesian model handle distance uncertainty
+    # Only filter out clearly invalid data (negative distances, etc.)
+    fgs = fgs[fgs['fg_distance'] >= 17]  # Minimum possible: at goal line + snap/hold
 
     print(f"Found {len(fgs):,} field goal attempts")
     return fgs
@@ -192,11 +196,17 @@ def extract_fourth_down_attempts(df: pd.DataFrame) -> pd.DataFrame:
         (df['play_type'].isin(['run', 'pass']))
     ].copy()
 
-    # Determine if converted (gained enough yards)
-    attempts['converted'] = (attempts['yards_gained'] >= attempts['ydstogo']).astype(int)
+    # Use nflfastR's fourth_down_converted field (handles penalties, turnovers correctly)
+    # Fall back to yards_gained comparison only if the field is missing
+    if 'fourth_down_converted' in attempts.columns:
+        attempts['converted'] = attempts['fourth_down_converted'].fillna(0).astype(int)
+    else:
+        # Fallback for older data or missing field
+        attempts['converted'] = (attempts['yards_gained'] >= attempts['ydstogo']).astype(int)
 
-    # Cap distance at 15
+    # Cap distance at 15 and add indicator for capped values
     attempts['ydstogo_capped'] = attempts['ydstogo'].clip(upper=15)
+    attempts['ydstogo_was_capped'] = (attempts['ydstogo'] > 15).astype(int)
 
     print(f"Found {len(attempts):,} 4th down go-for-it attempts")
     return attempts

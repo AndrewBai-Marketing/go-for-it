@@ -23,7 +23,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/fourth_down_trends.png}
-\caption{The central puzzle: Fourth-down aggression increased dramatically (+8pp over the period), but decision \textit{quality} stayed flat ($-0.05$ pp/year). Coaches changed behavior but not accuracy.}
+\caption{The central puzzle: Fourth-down aggression increased dramatically (+6pp over the period), but decision \textit{quality} stayed flat ($-0.09$ pp/year). Coaches changed behavior but not accuracy.}
 \end{figure}
 
 \section*{Overview}
@@ -47,6 +47,8 @@ Obvious (10+pp) & 216 & 0.3\% & 98.6\% & $-0.06$ \\
 \end{tabular}
 \end{center}
 
+\textbf{Note:} Numbers from learning\_by\_margin.csv match above. The trend $p$-values: Close ($p=0.01$), Moderate ($p=0.01$), Clear ($p=0.58$), Obvious ($p=0.66$).
+
 \textbf{Interpretation:} 53\% of fourth downs are close calls ($<$2pp margin). Coaches are getting \textit{worse} on these ($-0.17$ pp/year). On obvious decisions, they were already near-perfect and stayed that way.
 
 \begin{figure}[H]
@@ -64,12 +66,12 @@ The most striking pattern is in short yardage (4th \& 1--2):
 \toprule
 \textbf{Metric} & \textbf{2006--2012} & \textbf{2019--2024} & \textbf{Change} \\
 \midrule
-Coach go-for-it rate & 32.5\% & 54.6\% & \textbf{+22.1 pp} \\
-Model go-for-it rate & 34.8\% & 36.6\% & +1.8 pp \\
-Optimal decision rate & 60.9\% & 56.5\% & $-4.4$ pp \\
+Coach go-for-it rate & 32.6\% & 54.8\% & \textbf{+22.2 pp} \\
+Model go-for-it rate & 34.9\% & 36.7\% & +1.8 pp \\
+Optimal decision rate & 60.9\% & 56.6\% & $-4.3$ pp \\
 \midrule
-Under-aggressive errors & 20.5\% & 12.5\% & $-8.0$ pp \\
-Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.4 pp} \\
+Under-aggressive errors & 20.5\% & 12.5\% & $-7.9$ pp \\
+Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.5 pp} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -85,9 +87,9 @@ Over-aggressive errors & 18.2\% & 30.6\% & \textbf{+12.4 pp} \\
 \subsection*{Compliance by Optimal Action}
 
 \begin{itemize}[nosep]
-    \item When model says GO: compliance improved 41\% $\to$ 66\% \hfill \textbf{+1.73 pp/yr}
-    \item When model says PUNT: compliance dropped 85\% $\to$ 66\% \hfill $-1.35$ pp/yr
-    \item When model says FG: compliance dropped 47\% $\to$ 33\% \hfill $-1.10$ pp/yr
+    \item When model says GO: compliance improved 33\% $\to$ 51\% \hfill \textbf{+17.5 pp}
+    \item When model says PUNT: compliance dropped 95\% $\to$ 90\% \hfill $-4.5$ pp
+    \item When model says FG: compliance stayed flat 71\% $\to$ 71\% \hfill $+0.6$ pp
 \end{itemize}
 
 \textbf{Coaches learned ``go for it more'' but unlearned ``but not always.''}
@@ -152,14 +154,14 @@ The 2015 rule change moved the PAT from the 2-yard line to the 15-yard line, mak
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{outputs/figures/two_point_defensible_learning.png}
-\caption{Two-point conversion learning curve around the 2015 rule change. Pre-rule (2013--2014), coaches were $\sim$98\% defensibly optimal. The rule change caused an immediate drop to 85\% in 2015. Coaches then recovered, reaching 99\% by 2024 (+2.0 pp/year, $p < 0.001$).}
+\caption{Two-point conversion learning curve around the 2015 rule change. Pre-rule (2013--2014), coaches were $\sim$98\% defensibly optimal. The rule change caused an immediate drop to 85\% in 2015. Coaches then recovered, reaching 99\% by 2024.}
 \end{figure}
 
 \textbf{Key findings:}
 \begin{itemize}[nosep]
     \item Pre-rule (2013--2014): $\sim$98\% defensibly optimal (when PAT was $\sim$99\%)
     \item 2015 (rule change): Immediate drop to 85\%
-    \item Recovery: 85\% (2015) $\to$ 99\% (2024), trend $+2.0$ pp/year
+    \item Recovery: 83\% (2016) $\to$ 99\% (2024)
     \item By 2024, coaches make defensible decisions in virtually all two-point situations
 \end{itemize}
 
@@ -179,7 +181,7 @@ A striking behavioral anomaly in two-point decisions:
 \begin{itemize}[nosep]
     \item \textbf{Present bias:} Immediate payoff (``tie NOW'') dominates deferred payoff (``FG ties LATER'')
     \item \textbf{Salience:} ``Go for 2 to tie'' is a known heuristic; ``go for 2 so FG ties'' requires calculation
-    \item \textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in all but one
+    \item \textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in 106 of them
 \end{itemize}
 
 This is not a close call---it's a systematic blind spot.

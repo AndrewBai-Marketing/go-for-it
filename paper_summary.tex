@@ -80,10 +80,10 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 \begin{keyresult}
 \textbf{Coaches are not improving on fourth down.} Despite 20 years of analytics research:
 \begin{itemize}[nosep]
-  \item Ex ante optimal rate: \textbf{80.8\%} (flat trend, $-0.05$ pp/year, $p = 0.54$)
-  \item \textbf{96.5\%} of optimal decisions were knowable in real-time
-  \item Teams lose \textbf{0.28 expected wins/season} from fourth down errors
-  \item League-wide WP loss \textbf{increasing}: 6.4 wins (2006) $\to$ 9.6 wins (2024)
+  \item Ex ante optimal rate: \textbf{80.8\%} (flat trend, $-0.09$ pp/year, $p = 0.18$)
+  \item \textbf{96.6\%} of optimal decisions were knowable in real-time
+  \item Teams lose \textbf{0.27 expected wins/season} from fourth down errors
+  \item League-wide WP loss \textbf{increasing}: 7.9 wins (2006) $\to$ 11.9 wins (2024)
 \end{itemize}
 \textbf{Contrast with two-point conversions:} Coaches \textit{are} improving (+1.0 pp/year, $p = 0.06$).
 
@@ -237,26 +237,26 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
 \toprule
 \textbf{Year} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal} & \textbf{Ex Post Optimal} & \textbf{Agreement} \\
 \midrule
-2006 & 3,733 & 11.0\% & 82.3\% & 80.6\% & 94.5\% \\
-2010 & 3,735 & 11.3\% & 83.4\% & 80.8\% & 95.4\% \\
-2015 & 3,739 & 11.4\% & 81.8\% & 83.4\% & 95.6\% \\
-2020 & 3,320 & 18.4\% & 81.8\% & 81.0\% & 97.0\% \\
-2024 & 3,724 & 19.0\% & 80.5\% & 81.2\% & 97.6\% \\
+2006 & 3,829 & 12.7\% & 81.8\% & 78.6\% & 93.6\% \\
+2010 & 3,840 & 12.7\% & 82.5\% & 79.4\% & 94.9\% \\
+2015 & 3,824 & 12.7\% & 79.7\% & 81.2\% & 96.5\% \\
+2020 & 3,402 & 19.2\% & 80.2\% & 79.5\% & 96.8\% \\
+2024 & 3,827 & 19.2\% & 79.1\% & 79.3\% & 98.0\% \\
 \midrule
-\textit{Overall} & 71,786 & 14.8\% & \textbf{80.8\%} & 80.0\% & \textbf{96.5\%} \\
+\textit{Overall} & 71,786 & 14.8\% & \textbf{80.8\%} & 80.0\% & \textbf{96.6\%} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{Key finding:} 96.5\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
+\textbf{Key finding:} 96.6\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
 
 \subsection*{Trend Analysis}
 
 \textbf{No improvement over time:}
 \begin{itemize}[nosep]
-  \item Linear trend: $-0.05$ pp/year ($p = 0.54$)---not statistically significant
-  \item Early period (2006--2012): 82.0\% optimal
-  \item Late period (2019--2024): 80.9\% optimal
+  \item Linear trend: $-0.09$ pp/year ($p = 0.18$)---not statistically significant
+  \item Early period (2006--2012): 81.0\% optimal
+  \item Late period (2019--2024): 79.5\% optimal
 \end{itemize}
 
 \textbf{Coaches changed behavior but not accuracy:}
@@ -277,14 +277,14 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
 \toprule
 \textbf{Decision Clarity} & \textbf{N Plays} & \textbf{\% of Total} & \textbf{\% of Mistakes} \\
 \midrule
-Close call ($<$2\% margin) & 10,178 & 14.5\% & 81.6\% \\
-Moderate (2--5\% margin) & 2,058 & 2.9\% & 16.5\% \\
-Clear ($>$5\% margin) & 238 & 0.3\% & 1.9\% \\
+Close call ($<$2\% margin) & 11,797 & 16.4\% & 85.7\% \\
+Moderate (2--5\% margin) & 1,795 & 2.5\% & 13.0\% \\
+Clear ($>$5\% margin) & 167 & 0.2\% & 1.2\% \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{Finding:} 82\% of ``mistakes'' are close calls where margin $<$ 2\%. Only 1.9\% of mistakes are clear errors. Most disagreements are \textit{defensible}.
+\textbf{Finding:} 86\% of ``mistakes'' are close calls where margin $<$ 2\%. Only 1.2\% of mistakes are clear errors. Most disagreements are \textit{defensible}.
 
 \textbf{Fourth and one specifically:}
 \begin{itemize}[nosep]
@@ -304,21 +304,21 @@ Clear ($>$5\% margin) & 238 & 0.3\% & 1.9\% \\
 \toprule
 \textbf{Team} & \textbf{'20} & \textbf{'21} & \textbf{'22} & \textbf{'23} & \textbf{'24} & \textbf{Avg} \\
 \midrule
-DET (worst) & 0.06 & 0.50 & 0.63 & 0.43 & 0.46 & \textbf{0.39} \\
-CHI & 0.33 & 0.32 & 0.43 & 0.36 & 0.27 & 0.34 \\
-PHI & 0.52 & 0.24 & 0.34 & 0.26 & 0.32 & 0.33 \\
+CLE (worst) & 0.34 & 0.37 & 0.38 & 0.25 & 0.76 & \textbf{0.34} \\
+NYJ & 0.12 & 0.19 & 0.25 & 0.69 & 0.51 & 0.33 \\
+TEN & 0.31 & 0.32 & 0.31 & 0.40 & 0.31 & 0.33 \\
 \midrule
-TB (best) & 0.10 & 0.13 & 0.41 & 0.18 & 0.19 & \textbf{0.20} \\
-CIN & 0.21 & 0.18 & 0.15 & 0.20 & 0.29 & 0.21 \\
-GB & 0.15 & 0.29 & 0.31 & 0.17 & 0.22 & 0.22 \\
+DAL (best) & 0.24 & 0.29 & 0.30 & 0.20 & 0.31 & \textbf{0.23} \\
+NO & 0.17 & 0.25 & 0.15 & 0.31 & 0.27 & 0.22 \\
+SF & 0.28 & 0.25 & 0.28 & 0.13 & 0.37 & 0.22 \\
 \midrule
-\textit{League Avg} & 0.25 & 0.28 & 0.32 & 0.29 & 0.30 & 0.28 \\
+\textit{League Avg} & 0.27 & 0.30 & 0.34 & 0.34 & 0.37 & 0.27 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{contributionbox}
 
-\textbf{Comparison to Romer (2006):} Romer estimated teams left $\sim$0.4 expected wins/season on the table. Our estimate of 0.28 wins/season is \textit{slightly lower} but in the same ballpark. The difference:
+\textbf{Comparison to Romer (2006):} Romer estimated teams left $\sim$0.4 expected wins/season on the table. Our estimate of 0.27 wins/season is \textit{slightly lower} but in the same ballpark. The difference:
 \begin{itemize}[nosep]
   \item Romer: Expected points framework
   \item This paper: Win probability framework with uncertainty
@@ -327,7 +327,7 @@ GB & 0.15 & 0.29 & 0.31 & 0.17 & 0.22 & 0.22 \\
 
 \textbf{Troubling trend:} League-wide WP loss is \textit{increasing}:
 \begin{itemize}[nosep]
-  \item 2006--2015 average: 0.25 wins/team/season
+  \item 2006--2015 average: 0.24 wins/team/season
   \item 2022--2024 average: 0.35 wins/team/season
   \item 2024: 11.9 total league wins lost (vs 7.9 in 2006)
 \end{itemize}
@@ -344,11 +344,11 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
 \toprule
 \textbf{Year} & \textbf{Game} & \textbf{Situation} & \textbf{Did} & \textbf{Should} & \textbf{WP Cost} \\
 \midrule
-2021 & SEA @ PIT & 4th \& 14, opp 39, tied, 9:53 Q4 & Punt & FG & 9.5\% \\
-2024 & NE @ MIA & 4th \& 15, opp 17, $-5$, 1:00 Q4 & Go & FG & 8.9\% \\
-2021 & BUF @ NE & 4th \& 14, opp 18, $-4$, 2:00 Q4 & Go & FG & 8.6\% \\
-2022 & SEA @ ATL & 4th \& 18, opp 38, $-4$, 1:00 Q4 & Go & FG & 8.4\% \\
-2020 & CLE @ PIT & 4th \& 16, own 29, $+4$, 30:00 Q2 & Go & Punt & 8.2\% \\
+2021 & BUF @ TEN & 4th \& 1, opp 3, $-3$, 0:22 Q4 & Go & FG & 34.3\% \\
+2024 & CHI @ SEA & 4th \& 10, opp 40, $-3$, 0:20 Q4 & Go & FG & 19.3\% \\
+2009 & --- & 4th \& 10, opp 40, tied, 0:19 Q4 & Punt & FG & 14.6\% \\
+2024 & ATL @ NO & 4th \& 4, opp 43, $-3$, 0:07 Q4 & Go & FG & 10.0\% \\
+2019 & TEN @ IND & 4th \& 2, opp 45, $-2$, 0:13 Q4 & Go & FG & 9.6\% \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -356,9 +356,9 @@ The ``free wins'' Romer identified are \textit{still on the table}---and growing
 
 \textbf{Pattern:} The costliest mistakes fall into two categories:
 \begin{itemize}[nosep]
-  \item Punting from field goal range (SEA punt from PIT 39)
-  \item Going for it on very long yardage (4th \& 14--18) when FG or punt was clearly better
-  \item Maximum WP cost of 9.5\% reflects improved calibration from hierarchical models
+  \item Going for it when a field goal would have tied/won (BUF at TEN 3-yard line)
+  \item Going for it or punting late in close games instead of attempting a makeable FG
+  \item Maximum WP cost of 34.3\% reflects a game-deciding situation
 \end{itemize}
 
 
@@ -435,7 +435,7 @@ Win probability $>$ expected points for decisions & \known \\
 Bayesian framework with full posterior uncertainty & \new \\
 Neural network WP model (Brier: 0.164, ECE: 0.005) & \new \\
 Expanding window (ex ante vs ex post) design & \new \\
-96.5\% of optimal decisions knowable in real-time & \new \\
+96.6\% of optimal decisions knowable in real-time & \new \\
 No improvement in fourth down decision quality & \new \\
 Team-level wins lost analysis & \new \\
 Two-point comparison (learning \textit{does} occur) & \new \\
@@ -457,9 +457,9 @@ Complexity $\to$ organizational learning relationship & \new \\
 
 \textbf{For NFL teams:}
 \begin{itemize}[nosep]
-  \item 0.28 wins/season still on the table---essentially free
-  \item Aggressive teams (DET, CHI, PHI) lose more from decision errors
-  \item The gap is \textit{growing}, not shrinking (6.4 wins 2006 $\to$ 9.6 wins 2024)
+  \item 0.27 wins/season still on the table---essentially free
+  \item Teams with high variance in decision quality (CLE, NYJ, TEN) lose more from errors
+  \item The gap is \textit{growing}, not shrinking (7.9 wins 2006 $\to$ 11.9 wins 2024)
 \end{itemize}
 
 \textbf{For empirical strategy:}
@@ -479,15 +479,15 @@ Complexity $\to$ organizational learning relationship & \new \\
 \begin{center}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Situation} & \textbf{N} & \textbf{Model: 2pt} & \textbf{Actual 2pt} & \textbf{Go When Should} \\
+\textbf{Situation} & \textbf{N} & \textbf{Model: 2pt} & \textbf{Actual 2pt} & \textbf{Compliance} \\
 \midrule
-Down 8 $\to$ Down 2 & 196 & 85\% & \textbf{79\%} & \textbf{84\%} \\
-Down 9 $\to$ Down 3 & 118 & 91\% & 1\% & \textbf{1\%} \\
+Down 8 $\to$ Down 2 & 196 & 85\% & \textbf{79\%} & \textbf{79\%} \\
+Down 9 $\to$ Down 3 & 118 & 91\% & 1\% & \textbf{10\%} \\
 \midrule
-Down 14 $\to$ Down 8 & 448 & 94\% & 8\% & 9\% \\
-Down 15 $\to$ Down 9 & 97 & 99\% & 23\% & 23\% \\
-Down 7 $\to$ Down 1 & 1,125 & 67\% & 3\% & 3\% \\
-Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
+Down 14 $\to$ Down 8 & 448 & 94\% & 8\% & 15\% \\
+Down 15 $\to$ Down 9 & 97 & 99\% & 23\% & 24\% \\
+Down 7 $\to$ Down 1 & 1,125 & 67\% & 3\% & 33\% \\
+Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 58\% \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -496,7 +496,7 @@ Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{outputs/figures/two_point_paradox.png}
-\caption{The two-point conversion paradox. Blue bars show the model-optimal rate; red bars show actual coach behavior. Down 9 has a \textit{higher} optimal 2pt rate than Down 8 (91\% vs.\ 85\%), yet coaches comply 84\% of the time when down 8 and only 1\% when down 9.}
+\caption{The two-point conversion paradox. Blue bars show the model-optimal rate; red bars show actual coach behavior. Down 9 has a \textit{higher} optimal 2pt rate than Down 8 (91\% vs.\ 85\%), yet coaches comply 79\% of the time when down 8 and only 10\% when down 9.}
 \label{fig:two_point_paradox_summary}
 \end{figure}
 
@@ -514,7 +514,7 @@ Tied $\to$ Up 6 & 2,582 & 42\% & 1\% & 1\% \\
   \item \textbf{Salience:} ``Go for 2 to tie'' is a known heuristic; ``go for 2 so FG ties'' requires calculation
 \end{itemize}
 
-\textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in all but one. This is not a close call---it's a systematic blind spot.
+\textbf{Magnitude:} In 107 situations where the model said ``go for 2'' when down 9, coaches kicked the PAT in 106 of them. This is not a close call---it's a systematic blind spot.
 
 %===========================================================
 \section{Suggestions for Additional Checks}

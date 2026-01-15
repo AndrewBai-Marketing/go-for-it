@@ -218,19 +218,25 @@ class BayesianDecisionAnalyzer:
         Compute posterior distribution of WP if punting.
 
         WP_punt = 1 - WP_opponent(state_after_punt)
+
+        Fully Bayesian: for each posterior sample, use that sample's punt distance
+        to compute the resulting WP, properly propagating parameter uncertainty.
         """
-        # Get expected punt distance
-        punt_yards = self.punt.get_posterior_samples(state.field_pos)
+        # Get punt distance samples (one per posterior draw)
+        punt_yards_samples = self.punt.get_posterior_samples(state.field_pos)
 
-        # Use mean punt distance for state transition
-        mean_punt = punt_yards.mean()
-        opp_pos, new_time = self._state_after_punt(state, mean_punt)
+        # Compute WP for each posterior sample using its own punt distance
+        wp_punt = np.zeros(self.n_samples)
+        for i in range(self.n_samples):
+            opp_pos, new_time = self._state_after_punt(state, punt_yards_samples[i])
 
-        # Opponent's WP
-        wp_opponent = self.wp.get_posterior_samples(
-            -state.score_diff, new_time, opp_pos, -state.timeout_diff
-        )
-        wp_punt = 1 - wp_opponent
+            # Get opponent's WP for this single sample
+            # Need to index into the WP samples at the same position
+            wp_opp_all = self.wp.get_posterior_samples(
+                -state.score_diff, new_time, opp_pos, -state.timeout_diff
+            )
+            wp_punt[i] = 1 - wp_opp_all[i]
+
         return wp_punt
 
     def compute_wp_field_goal(self, state: GameState) -> np.ndarray:
@@ -238,24 +244,19 @@ class BayesianDecisionAnalyzer:
         Compute posterior distribution of WP if attempting field goal.
 
         WP_fg = P(make) * WP(state_if_make) + P(miss) * WP(state_if_miss)
+
+        Uses the fully Bayesian FG model to determine make probability at any distance.
+        The model's uncertainty naturally captures the difficulty of long FGs.
         """
         fg_distance = state.field_pos + 17  # Add 17 for snap/hold
 
-        # FG is not a realistic option beyond ~63 yards (NFL record is 66)
-        # Return -inf WP to make this option dominated
-        if fg_distance > 63:
+        # Beyond 70 yards is physically impossible - return dominated option
+        if fg_distance > 70:
             return np.full(self.n_samples, -np.inf)
 
-        # For long FGs (58-63 yards), cap probability at realistic levels
-        # NFL data shows ~15-20% make rate for 58-60 yards, ~5-10% for 60+
-        if fg_distance > 60:
-            # 60-63 yards: very low probability (~10%)
-            p_make = np.full(self.n_samples, 0.10)
-        elif fg_distance > 58:
-            # 58-60 yards: low probability (~20%)
-            p_make = np.full(self.n_samples, 0.20)
-        elif self.has_kicker_effects and state.kicker_id is not None:
-            # Use kicker-specific probability if available
+        # Use Bayesian FG model for all realistic distances
+        # The model's posterior naturally captures uncertainty at extreme distances
+        if self.has_kicker_effects and state.kicker_id is not None:
             p_make = self.fg.get_posterior_samples(fg_distance, kicker_id=state.kicker_id)
         else:
             p_make = self.fg.get_posterior_samples(fg_distance)
