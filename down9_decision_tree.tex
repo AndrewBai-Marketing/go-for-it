@@ -38,12 +38,12 @@
 \draw[arrow, green!50!black, line width=1.5pt] (root.south east) -- (twopt.north) node[prob, above right, green!50!black] {2pt};
 
 % Terminal nodes - PAT branch
-\node[down2] (pat_make) at (-5, -2.5) {DOWN 2\\[3pt]\textbf{WP = 18\%}};
-\node[down3] (pat_miss) at (-2, -2.5) {DOWN 3\\[3pt]\textbf{WP = 22\%}};
+\node[down2] (pat_make) at (-5, -2.5) {DOWN 2\\[3pt]\textbf{WP = 41\%}};
+\node[down3] (pat_miss) at (-2, -2.5) {DOWN 3\\[3pt]\textbf{WP = 35\%}};
 
 % Terminal nodes - 2pt branch
-\node[down1] (twopt_make) at (2, -2.5) {DOWN 1\\[3pt]\textbf{WP = 35\%}};
-\node[down3] (twopt_miss) at (5, -2.5) {DOWN 3\\[3pt]\textbf{WP = 22\%}};
+\node[down1] (twopt_make) at (2, -2.5) {DOWN 1\\[3pt]\textbf{WP = 48\%}};
+\node[down3] (twopt_miss) at (5, -2.5) {DOWN 3\\[3pt]\textbf{WP = 35\%}};
 
 % Arrows from decisions to terminals
 \draw[arrow] (pat.south) -- ++(-0.8, -0.5) -- (pat_make.north) node[prob, above left] {94\%};
@@ -59,29 +59,29 @@
 
 % Calculation boxes
 \node[calcbox, fill=blue!5, draw=blue!50] (calc_pat) at (-3.5, -5.5) {
-E[WP|PAT] = 0.94 $\times$ 0.18 + 0.06 $\times$ 0.22\\
-\hspace{2.2cm}= \textbf{18.2\%}
+E[WP|PAT] = 0.94 $\times$ 0.41 + 0.06 $\times$ 0.35\\
+\hspace{2.2cm}= \textbf{40.6\%}
 };
 
 \node[calcbox, fill=green!5, draw=green!50!black] (calc_2pt) at (3.5, -5.5) {
-E[WP|2pt] = 0.48 $\times$ 0.35 + 0.52 $\times$ 0.22\\
-\hspace{2.2cm}= \textbf{28.2\%}
+E[WP|2pt] = 0.48 $\times$ 0.48 + 0.52 $\times$ 0.35\\
+\hspace{2.2cm}= \textbf{41.2\%}
 };
 
 % Bottom line result
 \node[rectangle, draw, rounded corners, fill=green!20, line width=2pt, draw=green!50!black, minimum width=8cm, minimum height=0.8cm, font=\normalsize\bfseries] at (0, -7.2) {
-DIFFERENCE: +10.0\% $\to$ GO FOR 2 IS BETTER
+DIFFERENCE: +0.6\% $\to$ GO FOR 2 IS BETTER
 };
 
 % Key insight box
 \node[rectangle, draw, rounded corners, fill=yellow!10, align=left, font=\small, minimum width=4.5cm] at (7.5, 0) {
 \textbf{THE KEY:}\\[3pt]
-WP(Down 1) = 35\%\\
-WP(Down 2) = 18\%\\
-WP(Down 3) = 22\%\\[5pt]
-\textit{Down 1 is MUCH better}\\
-\textit{than Down 2!}\\[3pt]
-(35\% vs 18\% = 17\% gap)
+WP(Down 1) = 48\%\\
+WP(Down 2) = 41\%\\
+WP(Down 3) = 35\%\\[5pt]
+\textit{Down 1 is better}\\
+\textit{than Down 2}\\[3pt]
+(48\% vs 41\% = 7\% gap)
 };
 
 \end{tikzpicture}
