@@ -28,10 +28,39 @@ This project develops a rigorous framework for evaluating NFL coaching decisions
 - Go-for-it rates increased from 12% to 20% (2006-2024)
 - Decision **quality has not improved**—the analytics revolution changed *behavior* but not *accuracy*
 
-### Two-Point Conversions
+### Two-Point Conversions: The Down 8 vs Down 9 Paradox
 
-- **The Down 8 vs Down 9 Paradox**: When down 8, coaches go for 2 at 79% (model says 85%). When down 9, coaches go for 2 at 1% (model says 91%). Down 9 has a *higher* optimal rate, yet coaches almost never do it.
-- **Behavioral explanation**: Present bias—going for 2 when down 8 ties the game *now*; going for 2 when down 9 sets up a future tying field goal
+When down 8, coaches go for 2 at 79% (model says 85%). When down 9, coaches go for 2 at **1%** (model says **91%**). Down 9 has a *higher* optimal rate, yet coaches almost never do it.
+
+![Down 8 vs Down 9 Paradox](outputs/figures/down_8_vs_9_paradox.png)
+
+**Why is Down 9 optimal for going for 2?** The decision tree below shows the math:
+
+- After TD from down 9, you're **down 3**
+- **PAT path**: 94% → Down 2 (need TD to be comfortable); 6% → Down 3 (FG ties)
+- **2pt path**: 48% → Down 1 (FG wins!); 52% → Down 3 (FG ties)
+
+The key insight: **WP(Down 1) > WP(Down 2)** because any score wins when down 1, but you need a TD when down 2.
+
+```
+                    DOWN 3
+                (after TD from down 9)
+                 /            \
+              PAT           GO FOR 2
+               |                 |
+         ┌─────┴─────┐      ┌────┴────┐
+        94%         6%    48%       52%
+         |           |      |         |
+      DOWN 2     DOWN 3  DOWN 1   DOWN 3
+     WP = 41%   WP = 35% WP = 48% WP = 35%
+
+E[WP|PAT] = 0.94 × 0.41 + 0.06 × 0.35 = 40.6%
+E[WP|2pt] = 0.48 × 0.48 + 0.52 × 0.35 = 41.2%
+
+DIFFERENCE: +0.6% → GO FOR 2 IS BETTER
+```
+
+**Behavioral explanation**: Present bias—going for 2 when down 8 ties the game *now*; going for 2 when down 9 sets up a future tying field goal. Coaches respond to the immediate payoff ("tie now") rather than the deferred but superior payoff ("FG ties later")
 
 ### The Coach Override Test
 
