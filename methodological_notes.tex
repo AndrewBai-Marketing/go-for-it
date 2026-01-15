@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\title{Methodological Notes: Bayesian Decision Framework}
+\author{Internal Document}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Concern 1: ``The Uncertainty is in the Parameters, Not the Action''}
+
+\subsection{The Critique}
+
+A concern was raised that the Bayesian framework might conflate parameter uncertainty with decision uncertainty. Specifically:
+\begin{itemize}[nosep]
+    \item The optimal action $a^*$ is deterministic given the posterior---it maximizes expected utility integrating over parameter uncertainty
+    \item The action itself isn't ``uncertain'' in the way parameters are
+    \item Computing ``probability action $a$ is optimal'' by counting how often $a$ wins across posterior draws could be misleading
+\end{itemize}
+
+\subsection{How the Framework Handles This}
+
+The framework correctly implements the Bayesian decision criterion:
+
+\textbf{Step 1: Integrate over the posterior (compute expectations)}
+\begin{align}
+    \mathbb{E}_\theta[WP(\texttt{go})] &= \frac{1}{M} \sum_{m=1}^{M} WP(\texttt{go}; \theta^{(m)}) \\
+    \mathbb{E}_\theta[WP(\texttt{punt})] &= \frac{1}{M} \sum_{m=1}^{M} WP(\texttt{punt}; \theta^{(m)}) \\
+    \mathbb{E}_\theta[WP(\texttt{fg})] &= \frac{1}{M} \sum_{m=1}^{M} WP(\texttt{fg}; \theta^{(m)})
+\end{align}
+
+\textbf{Step 2: Then take argmax}
+\begin{equation}
+    a^* = \arg\max_{a \in \{\texttt{go}, \texttt{punt}, \texttt{fg}\}} \mathbb{E}_\theta[WP(a)]
+\end{equation}
+
+This is the textbook correct approach: integrate first, then decide.
+
+\subsection{What About \texttt{prob\_go\_best}?}
+
+The framework also reports the probability each action is optimal:
+\begin{equation}
+    P(\texttt{go} \text{ is best}) = \frac{1}{M} \sum_{m=1}^{M} \mathbf{1}\left[ WP(\texttt{go}; \theta^{(m)}) > \max_{a' \neq \texttt{go}} WP(a'; \theta^{(m)}) \right]
+\end{equation}
+
+This \textit{is} ``argmax per draw, then count''---but it is \textbf{not} the decision criterion. It is reported as a \textbf{supplementary diagnostic} measuring decision robustness to parameter uncertainty:
+\begin{itemize}[nosep]
+    \item If $P(\texttt{go} \text{ is best}) = 95\%$ and optimal is ``go'' $\to$ strong, robust recommendation
+    \item If $P(\texttt{go} \text{ is best}) = 52\%$ and optimal is ``go'' $\to$ knife-edge decision, close call
+\end{itemize}
+
+\subsection{Summary}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Quantity} & \textbf{Computation} & \textbf{Role} \\
+\midrule
+\texttt{optimal\_action} & Mean first, then argmax & Decision criterion \\
+\texttt{prob\_go\_best} & Argmax per draw, then count & Robustness diagnostic \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The decision is made correctly. The supplementary metric provides useful context about uncertainty.
+
+%===========================================================================
+\section{Concern 2: Sample Splitting and Off-Policy Evaluation}
+
+\subsection{The Critique}
+
+A suggestion was made to:
+\begin{enumerate}[nosep]
+    \item Estimate the model on a training set
+    \item Derive Bayes-optimal decisions for each play in a held-out test set
+    \item Compare hypothetical decisions with actual decisions
+    \item Use off-policy evaluation to assess counterfactual outcomes
+\end{enumerate}
+
+\subsection{How the Framework Addresses This}
+
+The \textbf{expanding window analysis} implements temporal sample splitting:
+
+\begin{itemize}[nosep]
+    \item For each test year $Y$ (2006--2024):
+    \begin{enumerate}[nosep]
+        \item Train models on data from 1999 through $Y-1$ only (``ex ante'' model)
+        \item Compute optimal decisions for year $Y$ plays using \textit{only} pre-$Y$ information
+        \item Compare with ex post recommendations (trained on all data)
+    \end{enumerate}
+    \item Result: \textbf{96.6\% agreement} between ex ante and ex post recommendations
+\end{itemize}
+
+This is sample splitting with temporal structure---more rigorous than random splitting for time-series data because it respects the information structure (you cannot use 2024 data to make 2020 decisions).
+
+\subsection{Why Not Full Off-Policy Evaluation?}
+
+Off-policy evaluation would require estimating counterfactual outcomes: ``What would have happened if the coach had chosen action $B$ instead of action $A$?''
+
+This is challenging in football because:
+\begin{enumerate}[nosep]
+    \item \textbf{No counterfactual observation}: We only see outcomes for the chosen action
+    \item \textbf{Long causal chains}: Win/loss depends on many subsequent plays, not just the fourth-down outcome
+    \item \textbf{Small samples}: Specific game situations (e.g., 4th \& 3 at opponent's 35, down by 4, 8 minutes left) occur rarely
+    \item \textbf{Strong assumptions}: Would require modeling the entire game conditional on each action
+\end{enumerate}
+
+The win probability model already encodes outcome information---it is trained on whether teams ultimately won from each game state. The expanding window analysis confirms that these WP estimates were accurate enough to make correct recommendations in real-time.
+
+\subsection{A Possible Extension}
+
+One could show that when coaches followed the model's recommendation, they won more often than when they deviated (controlling for game state). This would provide direct evidence of decision quality. However:
+\begin{itemize}[nosep]
+    \item Selection effects: Coaches may deviate in systematically different situations
+    \item The margin is small: Most deviations are close calls with $<2\%$ WP difference
+    \item Sample size: Clear mistakes (where we'd expect large effects) are rare (0.5\% of plays)
+\end{itemize}
+
+The expanding window analysis provides strong evidence that recommendations were knowable ex ante. Full off-policy evaluation would add marginal value at significant methodological cost.
+
+%===========================================================================
+\section{Conclusion}
+
+Both concerns raised valid methodological points:
+
+\begin{enumerate}
+    \item \textbf{Decision criterion}: The framework correctly uses $\mathbb{E}_\theta[WP(a)]$ (integrate first, then argmax). The ``probability action is optimal'' is a supplementary diagnostic, not the decision rule.
+
+    \item \textbf{Sample splitting}: The expanding window analysis implements temporal sample splitting, which is the appropriate form for time-series data. Full off-policy evaluation is challenging due to unobserved counterfactuals.
+\end{enumerate}
+
+The methodology is sound.
+
+\end{document}
