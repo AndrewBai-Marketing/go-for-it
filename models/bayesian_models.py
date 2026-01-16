@@ -1113,9 +1113,12 @@ class WinProbabilityModel:
     Features:
     - score_diff (scaled by /14)
     - time_remaining (scaled by /3600)
-    - score_diff * time (interaction)
+    - score_diff * time (interaction - score matters less early)
     - field_position (scaled)
     - timeout_diff (scaled)
+    - late_game indicator (< 5 min)
+    - score_diff * late_game (score matters MORE late)
+    - field_pos * late_game (field position matters more late)
     """
 
     def __init__(self):
@@ -1124,7 +1127,8 @@ class WinProbabilityModel:
         self.samples = None
         self.n_samples = 2000
         self.coef_names = ['intercept', 'score_diff', 'time_remaining',
-                          'score_time_interaction', 'field_pos', 'timeout_diff']
+                          'score_time_interaction', 'field_pos', 'timeout_diff',
+                          'late_game', 'score_late', 'field_late']
 
     def fit(self, df: pd.DataFrame, n_samples: int = 2000, prior_var: float = 100.0,
             subsample: int = 50000):
@@ -1139,9 +1143,17 @@ class WinProbabilityModel:
         """
         self.n_samples = n_samples
 
-        # Prepare features
-        df_clean = df.dropna(subset=['score_diff', 'game_seconds_remaining',
-                                      'yardline_100', 'timeout_diff', 'team_won']).copy()
+        # Prepare features - handle both column naming conventions
+        df_clean = df.copy()
+
+        # Handle column name variations
+        if 'score_diff' not in df_clean.columns and 'score_differential' in df_clean.columns:
+            df_clean['score_diff'] = df_clean['score_differential']
+        if 'timeout_diff' not in df_clean.columns:
+            df_clean['timeout_diff'] = 0
+
+        df_clean = df_clean.dropna(subset=['score_diff', 'game_seconds_remaining',
+                                            'yardline_100', 'team_won']).copy()
 
         # Subsample if needed
         if len(df_clean) > subsample:
@@ -1153,18 +1165,33 @@ class WinProbabilityModel:
         score_diff_scaled = df_clean['score_diff'].values / 14
         time_scaled = df_clean['game_seconds_remaining'].values / 3600
         field_pos_scaled = (df_clean['yardline_100'].values - 50) / 50
-        timeout_scaled = df_clean['timeout_diff'].values / 3
+        timeout_scaled = df_clean['timeout_diff'].fillna(0).values / 3
 
-        # Design matrix
+        # Late game features (< 5 minutes)
+        late_game = (df_clean['game_seconds_remaining'] < 300).astype(float).values
+
+        # Home field advantage
+        is_home = (df_clean['posteam_type'] == 'home').astype(float).values
+
+        # Design matrix with late-game interactions and home field
         X = np.column_stack([
             np.ones(len(df_clean)),
             score_diff_scaled,
             time_scaled,
-            score_diff_scaled * time_scaled,  # interaction
+            score_diff_scaled * time_scaled,  # score matters less early
             field_pos_scaled,
-            timeout_scaled
+            timeout_scaled,
+            late_game,                         # late game baseline
+            score_diff_scaled * late_game,    # score matters MORE late
+            field_pos_scaled * late_game,     # field position matters more late
+            is_home,                           # home field advantage
         ])
         y = df_clean['team_won'].values
+
+        # Update coef names to include is_home
+        self.coef_names = ['intercept', 'score_diff', 'time_remaining',
+                          'score_time_interaction', 'field_pos', 'timeout_diff',
+                          'late_game', 'score_late', 'field_late', 'is_home']
 
         print("Fitting Laplace approximation...")
 
@@ -1183,15 +1210,20 @@ class WinProbabilityModel:
         return self
 
     def get_win_prob(self, score_diff: int, time_remaining: int, field_pos: int,
-                     timeout_diff: int = 0, posterior_idx: int = None) -> float:
+                     timeout_diff: int = 0, is_home: float = 0.5,
+                     posterior_idx: int = None) -> float:
         """
         Get win probability for given game state.
 
-        Includes end-of-game adjustments when time is very low:
-        - If time <= 0 and leading: WP = 1.0
-        - If time <= 0 and trailing: WP = 0.0
-        - If time <= 0 and tied: WP = 0.5
-        - For time < 30 seconds, applies smooth transition toward deterministic outcomes
+        Args:
+            score_diff: Score differential (positive = winning)
+            time_remaining: Seconds remaining in game
+            field_pos: Yards from opponent's end zone (yardline_100)
+            timeout_diff: Timeout differential
+            is_home: 1.0 if home team, 0.0 if away, 0.5 for neutral/unknown
+            posterior_idx: If provided, use specific posterior sample
+
+        Includes end-of-game adjustments when time is very low.
         """
         # End-of-game handling
         if time_remaining <= 0:
@@ -1207,7 +1239,7 @@ class WinProbabilityModel:
         if time_remaining < 30:
             # Get the model's prediction
             model_wp = self._get_model_win_prob(score_diff, time_remaining, field_pos,
-                                                  timeout_diff, posterior_idx)
+                                                  timeout_diff, is_home, posterior_idx)
 
             # Calculate deterministic WP at time=0
             if score_diff > 0:
@@ -1218,26 +1250,35 @@ class WinProbabilityModel:
                 end_wp = 0.5
 
             # Smooth interpolation: as time approaches 0, weight end_wp more
-            # Use quadratic weighting so transition is smooth
-            weight = 1 - (time_remaining / 30) ** 2  # 0 at t=30, 1 at t=0
+            weight = 1 - (time_remaining / 30) ** 2
             return model_wp * (1 - weight) + end_wp * weight
 
         return self._get_model_win_prob(score_diff, time_remaining, field_pos,
-                                         timeout_diff, posterior_idx)
+                                         timeout_diff, is_home, posterior_idx)
 
     def _get_model_win_prob(self, score_diff: int, time_remaining: int, field_pos: int,
-                            timeout_diff: int = 0, posterior_idx: int = None) -> float:
+                            timeout_diff: int = 0, is_home: float = 0.5,
+                            posterior_idx: int = None) -> float:
         """
         Get raw model win probability without end-of-game adjustments.
         """
         # Scale inputs
+        score_scaled = score_diff / 14
+        time_scaled = time_remaining / 3600
+        field_scaled = (field_pos - 50) / 50
+        late_game = 1.0 if time_remaining < 300 else 0.0
+
         features = np.array([
             1.0,
-            score_diff / 14,
-            time_remaining / 3600,
-            (score_diff / 14) * (time_remaining / 3600),
-            (field_pos - 50) / 50,
-            timeout_diff / 3
+            score_scaled,
+            time_scaled,
+            score_scaled * time_scaled,
+            field_scaled,
+            timeout_diff / 3,
+            late_game,
+            score_scaled * late_game,
+            field_scaled * late_game,
+            is_home,
         ])
 
         if posterior_idx is not None:
@@ -1249,7 +1290,8 @@ class WinProbabilityModel:
         return expit(logit_p)
 
     def get_posterior_samples(self, score_diff: int, time_remaining: int,
-                               field_pos: int, timeout_diff: int = 0) -> np.ndarray:
+                               field_pos: int, timeout_diff: int = 0,
+                               is_home: float = 0.5) -> np.ndarray:
         """Get all posterior samples for win probability with end-of-game adjustments."""
         # End-of-game handling
         if time_remaining <= 0:
@@ -1260,13 +1302,23 @@ class WinProbabilityModel:
             else:
                 return np.full(self.n_samples, 0.5)
 
+        # Must match _get_model_win_prob feature construction
+        score_scaled = score_diff / 14
+        time_scaled = time_remaining / 3600
+        field_scaled = (field_pos - 50) / 50
+        late_game = 1.0 if time_remaining < 300 else 0.0
+
         features = np.array([
             1.0,
-            score_diff / 14,
-            time_remaining / 3600,
-            (score_diff / 14) * (time_remaining / 3600),
-            (field_pos - 50) / 50,
-            timeout_diff / 3
+            score_scaled,
+            time_scaled,
+            score_scaled * time_scaled,
+            field_scaled,
+            timeout_diff / 3,
+            late_game,
+            score_scaled * late_game,
+            field_scaled * late_game,
+            is_home,
         ])
 
         logit_p = self.samples @ features
@@ -1286,12 +1338,95 @@ class WinProbabilityModel:
 
         return model_wp
 
+    def fit_to_nflfastR(self, df: pd.DataFrame, n_samples: int = 2000,
+                         prior_var: float = 100.0, subsample: int = 50000):
+        """
+        Fit Bayesian WP model calibrated to nflfastR predictions.
+
+        This gives nflfastR-like point estimates with proper Bayesian posteriors.
+        Uses Bayesian linear regression on logit(nflfastR_wp).
+
+        Args:
+            df: DataFrame with 'wp' column (nflfastR win probability) and game state vars
+            n_samples: Number of posterior samples
+            prior_var: Prior variance on coefficients
+            subsample: Max plays to use
+        """
+        from scipy.special import logit
+        from scipy.linalg import inv
+
+        self.n_samples = n_samples
+        self.coef_names = ['intercept', 'score_diff', 'time_remaining',
+                          'score_time_interaction', 'field_pos', 'timeout_diff',
+                          'late_game', 'score_late', 'field_late', 'is_home']
+
+        # Prepare data
+        df_clean = df.copy()
+        if 'score_diff' not in df_clean.columns and 'score_differential' in df_clean.columns:
+            df_clean['score_diff'] = df_clean['score_differential']
+
+        df_clean = df_clean.dropna(subset=['wp', 'score_diff', 'game_seconds_remaining', 'yardline_100'])
+        df_clean = df_clean[(df_clean['wp'] > 0.001) & (df_clean['wp'] < 0.999)]
+        df_clean['is_home'] = (df_clean['posteam_type'] == 'home').astype(float)
+
+        if len(df_clean) > subsample:
+            df_clean = df_clean.sample(n=subsample, random_state=42)
+
+        print(f"Fitting Bayesian WP model to nflfastR with {len(df_clean)} plays")
+
+        # Build features
+        score_scaled = df_clean['score_diff'].values / 14
+        time_scaled = df_clean['game_seconds_remaining'].values / 3600
+        field_scaled = (df_clean['yardline_100'].values - 50) / 50
+        timeout_scaled = df_clean['timeout_diff'].fillna(0).values / 3 if 'timeout_diff' in df_clean.columns else np.zeros(len(df_clean))
+        late_game = (df_clean['game_seconds_remaining'].values < 300).astype(float)
+        is_home = df_clean['is_home'].values
+
+        X = np.column_stack([
+            np.ones(len(df_clean)),
+            score_scaled,
+            time_scaled,
+            score_scaled * time_scaled,
+            field_scaled,
+            timeout_scaled,
+            late_game,
+            score_scaled * late_game,
+            field_scaled * late_game,
+            is_home,
+        ])
+
+        # Target: logit of nflfastR WP
+        y_logit = logit(df_clean['wp'].values)
+
+        # Bayesian linear regression
+        # First get OLS for sigma estimate
+        beta_ols = np.linalg.lstsq(X, y_logit, rcond=None)[0]
+        residuals = y_logit - X @ beta_ols
+        sigma_sq = np.var(residuals)
+
+        # Posterior
+        prior_precision = np.eye(X.shape[1]) / prior_var
+        posterior_precision = X.T @ X / sigma_sq + prior_precision
+        posterior_cov = inv(posterior_precision)
+        posterior_mean = posterior_cov @ (X.T @ y_logit / sigma_sq)
+
+        self.beta_mean = posterior_mean
+        self.beta_cov = posterior_cov
+        self.samples = np.random.multivariate_normal(posterior_mean, posterior_cov, size=n_samples)
+
+        print("Posterior estimates (calibrated to nflfastR):")
+        for i, name in enumerate(self.coef_names):
+            print(f"  {name}: {self.beta_mean[i]:.4f} (SE: {np.sqrt(self.beta_cov[i,i]):.4f})")
+
+        return self
+
     def save(self, path: Path):
         with open(path, 'wb') as f:
             pickle.dump({
                 'beta_mean': self.beta_mean,
                 'beta_cov': self.beta_cov,
-                'samples': self.samples
+                'samples': self.samples,
+                'coef_names': getattr(self, 'coef_names', None),
             }, f)
 
     def load(self, path: Path):
@@ -1301,6 +1436,8 @@ class WinProbabilityModel:
             self.beta_cov = data['beta_cov']
             self.samples = data['samples']
             self.n_samples = len(self.samples)
+            if 'coef_names' in data:
+                self.coef_names = data['coef_names']
         return self
 
 
@@ -1604,13 +1741,14 @@ def fit_all_models(data_dir: Path, models_dir: Path, n_samples: int = 2000,
     wp_model.fit(all_plays, n_samples=n_samples)
     wp_model.save(models_dir / 'enhanced_wp_model.pkl')
 
-    # Also fit simple model for backward compatibility
+    # Also fit simple model and save as main WP model
     print("\n" + "="*60)
-    print("FITTING SIMPLE BAYESIAN WIN PROBABILITY MODEL (backup)")
+    print("FITTING BAYESIAN WIN PROBABILITY MODEL")
     print("="*60)
     wp_simple = WinProbabilityModel()
-    wp_simple.fit(all_plays, n_samples=n_samples)
+    wp_simple.fit(all_plays, n_samples=n_samples, subsample=100000)
     wp_simple.save(models_dir / 'wp_model.pkl')
+    wp_simple.save(models_dir / 'win_probability_model.pkl')  # Main model file
 
     print("\n" + "="*60)
     print("ALL BAYESIAN MODELS FITTED AND SAVED")

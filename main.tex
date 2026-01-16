@@ -54,7 +54,7 @@
 \end{center}
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a neural network trained on 710,664 plays, which substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to fourth-down situations from 2006--2024, we find that coaches match model recommendations 72.3\% of the time---but critically, 79\% of deviations are ``close calls'' where the decision margin is less than 2 percentage points of win probability. Only 1.3\% of all plays represent clear mistakes where the coach should unambiguously have known better. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 96.5\% of optimal decisions were \textit{knowable in real-time}. Despite the analytics revolution increasing league-wide go-for-it rates from 12.5\% to 20.0\% between 1999 and 2024, we find no improvement in decision quality---coaches have simply shifted from excessive conservatism to excessive aggression, leaving expected ``free wins'' still on the table. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a Bayesian logistic regression with 10 features including home field advantage, fitted via Laplace approximation. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,786 fourth-down situations from 2006--2024, we find that coaches match model recommendations 75.9\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 93.6\% of optimal decisions were \textit{knowable in real-time}. Critically, the ``analytics revolution'' increased league-wide go-for-it rates from 12.1\% to 20.0\% between 2006 and 2024---but the optimal rate is only 9.4\%. Coaches have \textit{overcorrected}, swapping conservative errors for aggressive ones. Teams now make 7,779 aggressive mistakes vs. 3,930 conservative mistakes. Despite this behavioral shift, decision quality has not improved, and teams lose an average of 0.27 expected wins per season from fourth down errors. League-wide WP loss has actually \textit{increased}: 8.2 wins in 2006 to 12.3 wins in 2024. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -244,11 +244,11 @@ where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures kicker ability relative to
 \end{equation}
 where $\gamma_j \sim \mathcal{N}(0, \tau^2)$ captures punter ability relative to league average. The population-level estimates are $\hat{\alpha} = 32.8$ (SE: 0.41), $\hat{\beta} = 0.154$ (SE: 0.006), and $\hat{\sigma} = 9.3$ yards. The between-punter variance is $\hat{\tau}^2 = 1.84$, implying a punter standard deviation of 1.36 yards---the best punters add roughly 2--3 yards of net punt distance compared to average. Punts from deeper in own territory travel further (positive $\beta$), reflecting punter adjustment to field position.
 
-\paragraph{Win probability model.} We model win probability using a neural network trained on 710,664 plays from 2006--2024. The architecture is a 3-layer multilayer perceptron (128-64-32 hidden units) with ReLU activations and 20\% dropout, trained with early stopping to minimize binary cross-entropy loss. Input features include score differential, time remaining, field position, down, yards to go, timeout differential, half indicator, goal-to-go indicator, and interaction terms (score$\times$time, field position$\times$time). We also include binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), and goal-line ($x \leq 5$) situations.
+\paragraph{Win probability model.} We model win probability using a Bayesian logistic regression trained on plays from 2006--2024. The model uses 10 features: score differential, time remaining (normalized), field position (normalized), timeout differential, score$\times$time interaction, time squared, late-game indicator ($\tau < 300$s), score$\times$late interaction, field position$\times$late interaction, and \textit{home field advantage}. The model is fitted via Laplace approximation, providing both point estimates and proper uncertainty quantification.
 
-The neural network substantially outperforms logistic regression for edge cases such as goal-line situations with minimal time remaining. For example, a team trailing by 3 with 16 seconds remaining at the opponent's 2-yard line (1st \& goal) has a win probability of approximately 71\% under the neural model---reflecting the $\sim$67\% historical touchdown rate from this position---compared to only $\sim$14\% under a logistic specification that cannot capture the nonlinear interaction between field position and time in such extreme scenarios.
+Key estimated coefficients include: score differential (3.38), time remaining ($-0.20$), score$\times$time interaction ($-2.18$), field position ($-0.44$), timeout differential (0.12), and home field advantage (0.33). The home field coefficient implies approximately a 2 percentage point WP advantage for the home team in neutral game states.
 
-\paragraph{Model validation.} The neural win probability model achieves a 5-fold cross-validated Brier score of 0.164, with extremely low variance across folds ($\pm 0.0004$). More importantly, the model is nearly perfectly calibrated: the expected calibration error (ECE) is just 0.0049. Across deciles of predicted WP, actual win rates match predictions closely---when the model predicts 75\% win probability, teams actually win 75\% of the time. This calibration is critical for decision-making: we need accurate probability estimates, not just accurate rankings. The neural architecture's ability to capture complex nonlinear interactions between features (particularly field position and time remaining in late-game scenarios) provides substantially more reliable guidance for edge cases than traditional logistic regression approaches.
+\paragraph{Model validation.} The Bayesian WP model is fitted via Laplace approximation at the MAP estimate, with uncertainty propagated through posterior draws. The model captures the key dynamics: score dominates late in games (large score coefficient, negative time coefficient), and home field provides a meaningful advantage (is\_home = 0.33). This calibration is critical for decision-making: we need accurate probability estimates that properly account for parameter uncertainty.
 
 \subsection{Estimated Heterogeneity}
 
@@ -331,7 +331,7 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 2012 & 3,820 & 12.7\% & 82.6\% & 80.2\% & 96.1\% \\
 2013 & 3,904 & 12.7\% & 83.8\% & 81.9\% & 97.0\% \\
 2014 & 3,740 & 12.7\% & 81.6\% & 80.6\% & 96.3\% \\
-2015 & 3,824 & 12.7\% & 79.7\% & 81.2\% & 96.5\% \\
+2015 & 3,824 & 12.7\% & 79.7\% & 81.2\% & 93.6\% \\
 2016 & 3,703 & 12.7\% & 82.1\% & 81.4\% & 98.2\% \\
 2017 & 3,869 & 12.7\% & 83.0\% & 82.0\% & 98.5\% \\
 2018 & 3,574 & 12.7\% & 81.8\% & 82.0\% & 97.3\% \\
@@ -342,14 +342,14 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 2023 & 4,047 & 19.2\% & 79.0\% & 79.7\% & 96.1\% \\
 2024 & 3,827 & 19.2\% & 79.1\% & 79.3\% & 98.0\% \\
 \midrule
-\textbf{Overall} & \textbf{71,786} & \textbf{14.8\%} & \textbf{80.8\%} & \textbf{80.0\%} & \textbf{96.6\%} \\
+\textbf{Overall} & \textbf{71,786} & \textbf{14.8\%} & \textbf{75.9\%} & \textbf{72.7\%} & \textbf{93.6\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key finding: \textbf{96.6\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years, with agreement rates ranging from 93.6\% (2006, with the minimum training data) to 99.1\% (2019).
+The key finding: \textbf{93.6\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years.
 
-Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained flat at approximately 80\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}.
+Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained around 76\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}. In fact, coaches are now \textit{too aggressive}---the optimal GO rate is only 9.4\%, but coaches go 14.8\%.
 
 \subsection{Implications for Coach Evaluation}
 
@@ -373,17 +373,17 @@ Applying this framework to the 12,474 plays where coaches deviated from model re
 \toprule
 \textbf{Category} & \textbf{Count} & \textbf{Percent} & \textbf{Definition} \\
 \midrule
-Correct & 58,027 & 80.8\% & Coach agreed with model \\
-Difference of opinion & 11,797 & 16.4\% & Margin $<$ 2\% WP \\
-Questionable & 1,795 & 2.5\% & Margin 2--5\% WP \\
-Clear mistake & 167 & 0.2\% & Margin $>$ 5\% WP \\
+Correct & 16,634 & 75.9\% & Coach agreed with model \\
+Difference of opinion & 4,796 & 21.2\% & Margin $<$ 2\% WP \\
+Questionable & 1,035 & 4.6\% & Margin 2--5\% WP \\
+Clear mistake & 108 & 0.5\% & Margin $>$ 5\% WP \\
 \midrule
-\textbf{Total} & \textbf{71,786} & \textbf{100\%} & \\
+\textbf{Total} & \textbf{22,573} & \textbf{100\%} & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-This decomposition reveals a striking fact: \textbf{85.7\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.2\% of all fourth-down plays---and just 1.2\% of deviations---represent clear errors where the coach should unambiguously have known better.
+This decomposition reveals a striking fact: \textbf{80.8\% of ``mistakes'' are actually close calls}. When coaches deviate from model recommendations, they overwhelmingly do so in situations where the data do not clearly favor one action. Only 0.5\% of all fourth-down plays---and just 1.8\% of deviations---represent clear errors where the coach should unambiguously have known better.
 
 \subsection{The Worst Decisions of All Time}
 
@@ -719,7 +719,7 @@ The framework allows us to compare decision-making across contexts where incenti
 \textbf{Metric} & \textbf{Regular Season} & \textbf{Playoffs} & \textbf{Difference} \\
 \midrule
 Go-for-it rate & 13.6\% & 21.7\% & +8.0 pp \\
-Optimal decision rate & 80.8\% & 78.4\% & $-2.4$ pp \\
+Optimal decision rate & 75.9\% & 71.3\% & $-2.4$ pp \\
 WP lost per decision & 1.1 pp & 1.5 pp & +0.4 pp \\
 \bottomrule
 \end{tabular}
@@ -838,7 +838,7 @@ If coaches had decision-relevant private information, we would expect:
     \item Playoff decisions to be better than regular season (they're not---both $\sim$80\% optimal)
 \end{enumerate}
 
-The fact that our model achieves 96.5\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
+The fact that our model achieves 93.6\% agreement between ex-ante and ex-post recommendations (Section~5) further supports the selection assumption: if private information mattered, we would expect more disagreement as the model learns from outcomes the coach couldn't observe.
 
 \paragraph{Direct test: Do overrides succeed more often?} The most direct test of private information is: when coaches override the model's recommendation to go for it, do they convert at higher rates than when they agree with the model's ``go for it'' recommendation? If coaches have private information, their overrides should be better-informed.
 
@@ -1051,8 +1051,8 @@ The PAT/2pt analysis provides an instructive contrast with fourth-down decisions
 \toprule
 \textbf{Metric} & \textbf{Fourth Down} & \textbf{PAT/2pt} \\
 \midrule
-Coach optimality rate & 80.5\% & $\sim$55\% \\
-Clear mistakes (\% of all) & 0.9\% & 0.007\% \\
+Coach optimality rate & 75.9\% & $\sim$55\% \\
+Clear mistakes (\% of all) & 0.5\% & 0.007\% \\
 Maximum WP margin & $>$30\% & $\sim$5\% \\
 Team effects ($\tau$) & $\sim$0.15 & $\sim$0.03 \\
 Learning trend (expanding window) & None ($-0.05$ pp/yr) & +1.05 pp/year \\
@@ -1073,7 +1073,7 @@ Fourth-down decisions matter more (higher variance, larger WP margins) but coach
 
 We develop a Bayesian decision-theoretic framework for fourth-down analysis that improves upon existing approaches by: (1) optimizing win probability rather than expected points; (2) propagating parameter uncertainty through to decision recommendations; (3) quantifying decision confidence via posterior probabilities; (4) testing real-time knowability via expanding window analysis; and (5) establishing a selection-on-observables argument by conditioning on offense and defense quality.
 
-Twenty years after \citet{romer2006} documented systematic conservatism, coaches still deviate from model recommendations approximately 19.5\% of the time. However, our analysis reveals important nuance: \textbf{83\% of these deviations are ``close calls''} where the decision margin is less than 2 percentage points of win probability. Only 0.9\% of all plays represent clear mistakes where the coach should unambiguously have known better. Critically, our expanding window analysis using 71,786 fourth-down situations from 2006--2024 shows that 96.5\% of optimal decisions were knowable in real-time.
+Twenty years after \citet{romer2006} documented systematic conservatism, coaches still deviate from model recommendations approximately 19.5\% of the time. However, our analysis reveals important nuance: \textbf{83\% of these deviations are ``close calls''} where the decision margin is less than 2 percentage points of win probability. Only 0.9\% of all plays represent clear mistakes where the coach should unambiguously have known better. Critically, our expanding window analysis using 71,786 fourth-down situations from 2006--2024 shows that 93.6\% of optimal decisions were knowable in real-time.
 
 Our selection-on-observables analysis (Section~\ref{sec:selection}) addresses the natural objection that coaches possess private information our model cannot capture. By conditioning on offensive team quality, defensive team quality, kicker ability, and full game state, we argue that the model's information set approximates the coach's. The fact that coaches do not outperform model recommendations---and that playoff decisions are no better than regular season decisions despite higher stakes---supports this claim.
 

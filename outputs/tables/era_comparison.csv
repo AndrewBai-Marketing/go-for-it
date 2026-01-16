@@ -1,14 +1,14 @@
 Metric,Era 1 (2006-2012),Era 2 (2019-2024)
-Total 4th downs,"26,644","22,573"
-Go-for-it rate,12.8%,19.2%
-Punt rate,63.8%,55.7%
-FG rate,23.4%,25.0%
-Overall optimal rate,75.9%,72.6%
-Optimal rate | went for it,25.6%,34.6%
-Optimal rate | punted,83.9%,80.2%
-Optimal rate | kicked FG,81.6%,85.1%
-Avg WP lost per decision,0.272 pp,0.336 pp
-Compliance in obvious go situations,32.0%,44.1%
-Compliance in obvious punt situations,96.5%,94.3%
-Over-aggressive rate (went for it when suboptimal),9.5%,12.6%
-Under-aggressive rate (didnt go when should have),71.3%,59.7%
+Total 4th downs,58,"22,557"
+Go-for-it rate,65.5%,19.2%
+Punt rate,3.4%,55.8%
+FG rate,31.0%,25.0%
+Overall optimal rate,94.8%,71.8%
+Optimal rate | went for it,97.4%,36.7%
+Optimal rate | punted,0.0%,77.5%
+Optimal rate | kicked FG,100.0%,85.9%
+Avg WP lost per decision,0.290 pp,0.293 pp
+Compliance in obvious go situations,nan%,48.5%
+Compliance in obvious punt situations,nan%,94.6%
+Over-aggressive rate (went for it when suboptimal),1.7%,12.1%
+Under-aggressive rate (didnt go when should have),5.1%,53.5%

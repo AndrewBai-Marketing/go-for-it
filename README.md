@@ -22,11 +22,14 @@ This project develops a rigorous framework for evaluating NFL coaching decisions
 
 ### Fourth Down Decisions (2006-2024)
 
-- **69.9% optimal** overall (2019-2024 evaluation sample)
-- **61.8% of mistakes are close calls** (decision margin < 2 percentage points)
-- **11.9% are clear mistakes** where the optimal action was obvious (margin ≥ 5pp)
-- Go-for-it rates increased from 12% to 20% (2006-2024)
-- Decision **quality has not improved**—the analytics revolution changed *behavior* but not *accuracy*
+- **75.9% optimal** overall across 71,786 plays
+- **93.6% of optimal decisions were knowable in real-time** (ex ante = ex post)
+- Go-for-it rates increased from 12.1% to 20.0% (2006-2024)
+- But **optimal GO rate is only 9.4%**—coaches are now *too aggressive*
+- 7,779 aggressive mistakes vs 3,930 conservative mistakes
+- Decision **quality has not improved**—coaches swapped one type of error for another
+- Teams lose **0.27 expected wins/season** from fourth down errors
+- League-wide WP loss **increasing**: 8.2 wins (2006) → 12.3 wins (2024)
 
 ### Two-Point Conversions: The Down 8 vs Down 9 Paradox
 
@@ -242,14 +245,21 @@ where $Y$ is net punt yards, $x$ is field position, and $\gamma_j$ is the punter
 
 ### Win Probability Model
 
-Win probability is estimated using a neural network (3-layer MLP with 128-64-32 hidden units) trained on 710,664 plays from 2006-2024. Features include:
+Win probability is estimated using a **Bayesian logistic regression** with 10 features:
 - Score differential, time remaining, field position
-- Down, yards to go, timeout differential
-- Half indicator, goal-to-go indicator
+- Timeout differential
 - Interaction terms (score×time, field position×time)
-- Binary indicators for late-game ($\tau < 300$s), red zone ($x \leq 20$), goal-line ($x \leq 5$)
+- Binary indicators for late-game ($\tau < 300$s), winning, losing
+- **Home field advantage** (is_home coefficient: 0.33)
 
-**Validation:** 5-fold cross-validated Brier score of 0.164 ($\pm 0.0004$), expected calibration error (ECE) of 0.0049.
+**Key coefficients:**
+- score_diff: 3.38 (dominates WP)
+- time_remaining: -0.20
+- score_time_interaction: -2.18
+- field_pos: -0.44
+- is_home: 0.33 (home team advantage)
+
+**Validation:** Model fitted via Laplace approximation with proper uncertainty quantification.
 
 ---
 
@@ -262,7 +272,9 @@ We implement an **expanding window analysis** with a 7-year minimum training win
 2. Compute optimal decisions under the ex ante model
 3. Compare to ex post (full sample) recommendations
 
-**Result:** 96.5% agreement between ex ante and ex post recommendations across 71,786 plays.
+**Result:** 93.6% agreement between ex ante and ex post recommendations across 71,786 plays.
+
+This means hindsight explains almost nothing—the information to make optimal decisions was available in real-time.
 
 ---
 

@@ -44,6 +44,7 @@ class GameState:
     off_team: str = None    # offensive team abbreviation (e.g., 'PHI')
     def_team: str = None    # defensive team abbreviation (e.g., 'NYG')
     kicker_id: str = None   # kicker player ID for FG model
+    is_home: float = 0.5    # 1.0 if home team, 0.0 if away, 0.5 for unknown
 
     # Backward compatibility: alias 'team' to 'off_team'
     @property
@@ -198,14 +199,14 @@ class BayesianDecisionAnalyzer:
         # State after conversion
         new_pos, new_time = self._state_after_conversion(state)
         wp_if_convert = self.wp.get_posterior_samples(
-            state.score_diff, new_time, new_pos, state.timeout_diff
+            state.score_diff, new_time, new_pos, state.timeout_diff, state.is_home
         )
 
         # State after failed conversion (opponent has ball)
         # WP for us = 1 - WP for opponent
         opp_pos, opp_time = self._state_after_failed_conversion(state)
         wp_opponent = self.wp.get_posterior_samples(
-            -state.score_diff, opp_time, opp_pos, -state.timeout_diff
+            -state.score_diff, opp_time, opp_pos, -state.timeout_diff, 1 - state.is_home
         )
         wp_if_fail = 1 - wp_opponent
 
@@ -233,7 +234,7 @@ class BayesianDecisionAnalyzer:
             # Get opponent's WP for this single sample
             # Need to index into the WP samples at the same position
             wp_opp_all = self.wp.get_posterior_samples(
-                -state.score_diff, new_time, opp_pos, -state.timeout_diff
+                -state.score_diff, new_time, opp_pos, -state.timeout_diff, 1 - state.is_home
             )
             wp_punt[i] = 1 - wp_opp_all[i]
 
@@ -264,14 +265,14 @@ class BayesianDecisionAnalyzer:
         # State after make
         opp_pos, new_time, new_score = self._state_after_fg_make(state)
         wp_opponent_if_make = self.wp.get_posterior_samples(
-            -new_score, new_time, opp_pos, -state.timeout_diff
+            -new_score, new_time, opp_pos, -state.timeout_diff, 1 - state.is_home
         )
         wp_if_make = 1 - wp_opponent_if_make
 
         # State after miss
         opp_pos, new_time = self._state_after_fg_miss(state)
         wp_opponent_if_miss = self.wp.get_posterior_samples(
-            -state.score_diff, new_time, opp_pos, -state.timeout_diff
+            -state.score_diff, new_time, opp_pos, -state.timeout_diff, 1 - state.is_home
         )
         wp_if_miss = 1 - wp_opponent_if_miss
 

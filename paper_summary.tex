@@ -80,14 +80,16 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 \begin{keyresult}
 \textbf{Coaches are not improving on fourth down.} Despite 20 years of analytics research:
 \begin{itemize}[nosep]
-  \item Ex ante optimal rate: \textbf{80.8\%} (flat trend, $-0.09$ pp/year, $p = 0.18$)
-  \item \textbf{96.6\%} of optimal decisions were knowable in real-time
+  \item Ex ante optimal rate: \textbf{75.9\%} (flat trend, $-0.18$ pp/year)
+  \item \textbf{93.6\%} of optimal decisions were knowable in real-time
   \item Teams lose \textbf{0.27 expected wins/season} from fourth down errors
-  \item League-wide WP loss \textbf{increasing}: 7.9 wins (2006) $\to$ 11.9 wins (2024)
+  \item League-wide WP loss \textbf{increasing}: 8.2 wins (2006) $\to$ 12.3 wins (2024)
 \end{itemize}
-\textbf{Contrast with two-point conversions:} Coaches \textit{are} improving (+1.0 pp/year, $p = 0.06$).
+\textbf{Key finding:} Coaches are now \textit{too aggressive}---optimal GO rate is 9.4\% but coaches go 14.8\%. The analytics revolution overcorrected.
 
-\textbf{Implication:} The analytics revolution changed \textit{behavior} (more aggression) but not \textit{accuracy}. Complexity matters for organizational learning.
+\textbf{Contrast with two-point conversions:} Coaches \textit{are} improving (+1.1 pp/year, REG season trend).
+
+\textbf{Implication:} The analytics revolution changed \textit{behavior} (more aggression) but not \textit{accuracy}. Coaches swapped conservative errors for aggressive ones.
 \end{keyresult}
 
 %===========================================================
@@ -99,7 +101,7 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 \begin{enumerate}[nosep]
   \item \textbf{Win probability optimization} (not expected points)---because variance matters
   \item \textbf{Full posterior uncertainty} propagated through to decision recommendations
-  \item \textbf{Neural network WP model} capturing nonlinear interactions (goal-line, endgame)
+  \item \textbf{Bayesian logistic WP model} with home field advantage (10 features)
   \item \textbf{Expanding window analysis} to test real-time knowability
   \item \textbf{Hierarchical team effects} conditioning on offense/defense quality
 \end{enumerate}
@@ -215,7 +217,7 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
   \item $\pi(d; \theta)$: Hierarchical logistic regression with in-game context features \new
   \item $Y(x; \theta)$: $Y \mid x, \text{punter} = j \sim \mathcal{N}(\alpha + \beta x + \gamma_j, \sigma^2)$ with punter effects \new
   \item $\phi(x; \theta)$: $\text{logit}(p) = \alpha + \beta(d - 35) + \gamma_{\text{kicker}}$ with kicker effects \new
-  \item $W(s)$: \textbf{Neural network} (3-layer MLP: 128-64-32, ReLU, 20\% dropout) trained on 710K plays \new
+  \item $W(s)$: \textbf{Bayesian logistic regression} with 10 features including home field advantage (is\_home coef: 0.33) \new
 \end{itemize}
 
 \textbf{Population-level estimates:}
@@ -237,33 +239,34 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
 \toprule
 \textbf{Year} & \textbf{N Plays} & \textbf{Go Rate} & \textbf{Ex Ante Optimal} & \textbf{Ex Post Optimal} & \textbf{Agreement} \\
 \midrule
-2006 & 3,829 & 12.7\% & 81.8\% & 78.6\% & 93.6\% \\
-2010 & 3,840 & 12.7\% & 82.5\% & 79.4\% & 94.9\% \\
-2015 & 3,824 & 12.7\% & 79.7\% & 81.2\% & 96.5\% \\
-2020 & 3,402 & 19.2\% & 80.2\% & 79.5\% & 96.8\% \\
-2024 & 3,827 & 19.2\% & 79.1\% & 79.3\% & 98.0\% \\
+2006 & 3,829 & 12.1\% & 76.1\% & 70.1\% & 90.7\% \\
+2010 & 3,840 & 12.5\% & 77.8\% & 72.1\% & 91.6\% \\
+2015 & 3,824 & 12.4\% & 73.2\% & 72.9\% & 96.2\% \\
+2020 & 3,402 & 19.3\% & 76.2\% & 72.3\% & 92.4\% \\
+2024 & 3,827 & 20.0\% & 72.6\% & 72.5\% & 95.2\% \\
 \midrule
-\textit{Overall} & 71,786 & 14.8\% & \textbf{80.8\%} & 80.0\% & \textbf{96.6\%} \\
+\textit{Overall} & 71,786 & 14.8\% & \textbf{75.9\%} & 72.7\% & \textbf{93.6\%} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{Key finding:} 96.6\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
+\textbf{Key finding:} 93.6\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
 
 \subsection*{Trend Analysis}
 
 \textbf{No improvement over time:}
 \begin{itemize}[nosep]
-  \item Linear trend: $-0.09$ pp/year ($p = 0.18$)---not statistically significant
-  \item Early period (2006--2012): 81.0\% optimal
-  \item Late period (2019--2024): 79.5\% optimal
+  \item Linear trend: $-0.18$ pp/year (slightly negative but not significant)
+  \item Early period (2006--2012): 76.5\% optimal
+  \item Late period (2019--2024): 74.5\% optimal
 \end{itemize}
 
 \textbf{Coaches changed behavior but not accuracy:}
 \begin{itemize}[nosep]
-  \item Go-for-it rate increased dramatically (especially 2018+)
-  \item But ``aggressive when should be conservative'' errors offset ``conservative when should be aggressive'' errors
-  \item Net effect: no improvement in decision quality
+  \item Go-for-it rate increased dramatically: 12.1\% (2006) $\to$ 20.0\% (2024)
+  \item But optimal GO rate is only \textbf{9.4\%}---coaches now \textit{over-aggressive}
+  \item Conservative mistakes (3,930) $<$ Aggressive mistakes (7,779)
+  \item Net effect: coaches swapped one type of error for another
 \end{itemize}
 
 %===========================================================
@@ -308,11 +311,11 @@ CLE (worst) & 0.34 & 0.37 & 0.38 & 0.25 & 0.76 & \textbf{0.34} \\
 NYJ & 0.12 & 0.19 & 0.25 & 0.69 & 0.51 & 0.33 \\
 TEN & 0.31 & 0.32 & 0.31 & 0.40 & 0.31 & 0.33 \\
 \midrule
-DAL (best) & 0.24 & 0.29 & 0.30 & 0.20 & 0.31 & \textbf{0.23} \\
+SF (best) & 0.28 & 0.25 & 0.28 & 0.13 & 0.37 & \textbf{0.22} \\
 NO & 0.17 & 0.25 & 0.15 & 0.31 & 0.27 & 0.22 \\
-SF & 0.28 & 0.25 & 0.28 & 0.13 & 0.37 & 0.22 \\
+DAL & 0.24 & 0.29 & 0.30 & 0.20 & 0.31 & 0.23 \\
 \midrule
-\textit{League Avg} & 0.27 & 0.30 & 0.34 & 0.34 & 0.37 & 0.27 \\
+\textit{League Avg} & 0.27 & 0.30 & 0.34 & 0.34 & 0.38 & 0.27 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -327,9 +330,9 @@ SF & 0.28 & 0.25 & 0.28 & 0.13 & 0.37 & 0.22 \\
 
 \textbf{Troubling trend:} League-wide WP loss is \textit{increasing}:
 \begin{itemize}[nosep]
-  \item 2006--2015 average: 0.24 wins/team/season
-  \item 2022--2024 average: 0.35 wins/team/season
-  \item 2024: 11.9 total league wins lost (vs 7.9 in 2006)
+  \item 2006--2012 average: 0.25 wins/team/season
+  \item 2020--2024 average: 0.33 wins/team/season
+  \item 2024: 12.3 total league wins lost (vs 8.2 in 2006)
 \end{itemize}
 
 The ``free wins'' Romer identified are \textit{still on the table}---and growing.
@@ -433,10 +436,11 @@ Fourth down is suboptimal (Romer 2006) & \known \\
 Win probability $>$ expected points for decisions & \known \\
 \midrule
 Bayesian framework with full posterior uncertainty & \new \\
-Neural network WP model (Brier: 0.164, ECE: 0.005) & \new \\
+Bayesian logistic WP model with home field advantage & \new \\
 Expanding window (ex ante vs ex post) design & \new \\
-96.6\% of optimal decisions knowable in real-time & \new \\
+93.6\% of optimal decisions knowable in real-time & \new \\
 No improvement in fourth down decision quality & \new \\
+Coaches overcorrected: now TOO aggressive (not conservative) & \new \\
 Team-level wins lost analysis & \new \\
 Two-point comparison (learning \textit{does} occur) & \new \\
 Complexity $\to$ organizational learning relationship & \new \\
@@ -459,7 +463,8 @@ Complexity $\to$ organizational learning relationship & \new \\
 \begin{itemize}[nosep]
   \item 0.27 wins/season still on the table---essentially free
   \item Teams with high variance in decision quality (CLE, NYJ, TEN) lose more from errors
-  \item The gap is \textit{growing}, not shrinking (7.9 wins 2006 $\to$ 11.9 wins 2024)
+  \item The gap is \textit{growing}, not shrinking (8.2 wins 2006 $\to$ 12.3 wins 2024)
+  \item Coaches have overcorrected: optimal GO rate is 9.4\%, actual is 14.8\%
 \end{itemize}
 
 \textbf{For empirical strategy:}
