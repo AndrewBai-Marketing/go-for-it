@@ -257,21 +257,19 @@ where $Y$ is net punt yards, $x$ is field position, and $\gamma_j$ is the punter
 
 ### Win Probability Model
 
-Win probability is estimated using a **Bayesian logistic regression** with 10 features:
-- Score differential, time remaining, field position
-- Timeout differential
-- Interaction terms (score×time, field position×time)
-- Binary indicators for late-game ($\tau < 300$s), winning, losing
-- **Home field advantage** (is_home coefficient: 0.33)
+Win probability is estimated using **nflfastR's vegas_wp model**, which derives win probabilities from:
+- **Pre-game Vegas betting lines** (point spreads and totals)
+- **Real-time game state updates** (score, time, field position, possession)
 
-**Key coefficients:**
-- score_diff: 3.38 (dominates WP)
-- time_remaining: -0.20
-- score_time_interaction: -2.18
-- field_pos: -0.44
-- is_home: 0.33 (home team advantage)
+This approach has several advantages over custom-fitted models:
+- Incorporates all publicly available information about team quality
+- Market-tested and calibrated by billions of dollars in betting activity
+- Accounts for home field advantage implicitly through point spreads
+- Updates continuously based on scoring and game flow
 
-**Validation:** Model fitted via Laplace approximation with proper uncertainty quantification.
+The vegas_wp values represent the market's implied probability that the possessing team will win, given the current game state. These are the same probabilities used by professional bettors and oddsmakers.
+
+**Source:** nflfastR R package (Baldwin & Eager, 2021), which provides vegas_wp derived from ESPN's win probability model calibrated to betting markets.
 
 ---
 
