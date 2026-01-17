@@ -22,7 +22,7 @@ This project develops a rigorous framework for evaluating NFL coaching decisions
 
 ### Fourth Down Decisions (2006-2024)
 
-Using nflfastR's win probability model with proper state-transition calculations:
+Using nflfastR's **vegas_wp** win probability model, which is derived from pre-game Vegas betting lines and updated in real-time based on game state. This gives us market-implied win probabilities that incorporate all publicly available information about team quality, home field advantage, and game situation.
 
 - **Optimal GO rate: 46.6%** — but coaches only go 14.8%
 - **4th & 1 optimal GO: 70.8%** — coaches go only ~25%
@@ -56,13 +56,15 @@ The key insight: **WP(Down 1) > WP(Down 2)** because any score wins when down 1,
         94%         6%    48%       52%
          |           |      |         |
       DOWN 2     DOWN 3  DOWN 1   DOWN 3
-     WP = 41%   WP = 35% WP = 48% WP = 35%
+     WP = 30%   WP = 24% WP = 37% WP = 24%
 
-E[WP|PAT] = 0.94 × 0.41 + 0.06 × 0.35 = 40.6%
-E[WP|2pt] = 0.48 × 0.48 + 0.52 × 0.35 = 41.2%
+E[WP|PAT] = 0.94 × 0.30 + 0.06 × 0.24 = 29.5%
+E[WP|2pt] = 0.48 × 0.37 + 0.52 × 0.24 = 30.0%
 
-DIFFERENCE: +0.6% → GO FOR 2 IS BETTER
+DIFFERENCE: +0.5% → GO FOR 2 IS BETTER
 ```
+
+*Win probabilities derived from nflfastR's vegas_wp model (Vegas betting market implied probabilities)*
 
 **Behavioral explanation**: Present bias—going for 2 when down 8 ties the game *now*; going for 2 when down 9 sets up a future tying field goal. Coaches respond to the immediate payoff ("tie now") rather than the deferred but superior payoff ("FG ties later")
 
