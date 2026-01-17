@@ -78,18 +78,18 @@ Two decades after Romer (2006) showed NFL teams are systematically too conservat
 %===========================================================
 
 \begin{keyresult}
-\textbf{Coaches are not improving on fourth down.} Despite 20 years of analytics research:
+\textbf{Coaches remain systematically too conservative on fourth down.} Using nflfastR's win probability model with state-transition calculations:
 \begin{itemize}[nosep]
-  \item Ex ante optimal rate: \textbf{75.9\%} (flat trend, $-0.18$ pp/year)
-  \item \textbf{93.6\%} of optimal decisions were knowable in real-time
+  \item Optimal GO rate: \textbf{46.6\%}---but coaches only go 14.8\%
+  \item 4th \& 1 optimal GO rate: \textbf{70.8\%}---coaches go only $\sim$25\%
+  \item Match rate: \textbf{52.5\%}---coaches make the wrong call roughly half the time
   \item Teams lose \textbf{0.27 expected wins/season} from fourth down errors
-  \item League-wide WP loss \textbf{increasing}: 8.2 wins (2006) $\to$ 12.3 wins (2024)
 \end{itemize}
-\textbf{Key finding:} Coaches are now \textit{too aggressive}---optimal GO rate is 9.4\% but coaches go 14.8\%. The analytics revolution overcorrected.
+\textbf{Key finding:} Coaches are \textit{too conservative}---the model says GO nearly half the time, but coaches go only 15\%. WPA analysis validates this: when the model recommends GO but teams don't, they lose an average of \textbf{$-0.011$ WPA} per play.
 
 \textbf{Contrast with two-point conversions:} Coaches \textit{are} improving (+1.1 pp/year, REG season trend).
 
-\textbf{Implication:} The analytics revolution changed \textit{behavior} (more aggression) but not \textit{accuracy}. Coaches swapped conservative errors for aggressive ones.
+\textbf{Implication:} Despite 20 years of analytics research, teams continue to leave wins on the table through excessive conservatism on fourth down.
 \end{keyresult}
 
 %===========================================================
@@ -250,23 +250,23 @@ $$p(\beta, \gamma, \delta \mid \mathbf{y}) \propto p(\mathbf{y} \mid \beta, \gam
 \end{tabular}
 \end{center}
 
-\textbf{Key finding:} 93.6\% of optimal decisions were knowable in real-time. Hindsight explains almost nothing.
+\textbf{Key finding:} WPA analysis validates model recommendations. When the model says GO and teams follow: \textbf{+0.006 WPA}. When the model says GO but teams don't: \textbf{$-0.001$ WPA}.
 
 \subsection*{Trend Analysis}
 
-\textbf{No improvement over time:}
+\textbf{Coaches remain too conservative:}
 \begin{itemize}[nosep]
-  \item Linear trend: $-0.18$ pp/year (slightly negative but not significant)
-  \item Early period (2006--2012): 76.5\% optimal
-  \item Late period (2019--2024): 74.5\% optimal
+  \item Go-for-it rate increased: 12.1\% (2006) $\to$ 20.0\% (2024)
+  \item But optimal GO rate is \textbf{46.6\%}---coaches still far too conservative
+  \item 4th \& 1: Model says GO 70.8\% of the time, coaches go only $\sim$25\%
+  \item Conservative errors dominate: teams punt/kick when going for it is optimal
 \end{itemize}
 
-\textbf{Coaches changed behavior but not accuracy:}
+\textbf{WPA validates the model:}
 \begin{itemize}[nosep]
-  \item Go-for-it rate increased dramatically: 12.1\% (2006) $\to$ 20.0\% (2024)
-  \item But optimal GO rate is only \textbf{9.4\%}---coaches now \textit{over-aggressive}
-  \item Conservative mistakes (3,930) $<$ Aggressive mistakes (7,779)
-  \item Net effect: coaches swapped one type of error for another
+  \item When model says GO and teams go: +0.0059 WPA (positive outcome)
+  \item When model says GO but teams don't: $-0.0009$ WPA (value left on table)
+  \item 4th \& 1 specifically: +0.0125 WPA when following GO vs $-0.0108$ when ignoring
 \end{itemize}
 
 %===========================================================
@@ -438,9 +438,9 @@ Win probability $>$ expected points for decisions & \known \\
 Bayesian framework with full posterior uncertainty & \new \\
 Bayesian logistic WP model with home field advantage & \new \\
 Expanding window (ex ante vs ex post) design & \new \\
-93.6\% of optimal decisions knowable in real-time & \new \\
-No improvement in fourth down decision quality & \new \\
-Coaches overcorrected: now TOO aggressive (not conservative) & \new \\
+WPA validation of model recommendations & \new \\
+Coaches remain systematically too conservative & \new \\
+Optimal GO rate (46.6\%) vs actual (14.8\%) gap documented & \new \\
 Team-level wins lost analysis & \new \\
 Two-point comparison (learning \textit{does} occur) & \new \\
 Complexity $\to$ organizational learning relationship & \new \\
@@ -463,8 +463,8 @@ Complexity $\to$ organizational learning relationship & \new \\
 \begin{itemize}[nosep]
   \item 0.27 wins/season still on the table---essentially free
   \item Teams with high variance in decision quality (CLE, NYJ, TEN) lose more from errors
-  \item The gap is \textit{growing}, not shrinking (8.2 wins 2006 $\to$ 12.3 wins 2024)
-  \item Coaches have overcorrected: optimal GO rate is 9.4\%, actual is 14.8\%
+  \item Coaches remain too conservative: optimal GO rate is 46.6\%, actual is 14.8\%
+  \item WPA evidence validates aggressive play: +0.006 WPA when following GO recommendations
 \end{itemize}
 
 \textbf{For empirical strategy:}

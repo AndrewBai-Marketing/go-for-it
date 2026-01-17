@@ -54,7 +54,7 @@
 \end{center}
 
 \begin{abstract}
-We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a Bayesian logistic regression with 10 features including home field advantage, fitted via Laplace approximation. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,786 fourth-down situations from 2006--2024, we find that coaches match model recommendations 75.9\% of the time. Using an expanding window methodology with a 7-year minimum training period starting from 1999, we show that 93.6\% of optimal decisions were \textit{knowable in real-time}. Critically, the ``analytics revolution'' increased league-wide go-for-it rates from 12.1\% to 20.0\% between 2006 and 2024---but the optimal rate is only 9.4\%. Coaches have \textit{overcorrected}, swapping conservative errors for aggressive ones. Teams now make 7,779 aggressive mistakes vs. 3,930 conservative mistakes. Despite this behavioral shift, decision quality has not improved, and teams lose an average of 0.27 expected wins per season from fourth down errors. League-wide WP loss has actually \textit{increased}: 8.2 wins in 2006 to 12.3 wins in 2024. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
+We develop a Bayesian decision-theoretic framework for analyzing fourth down decisions in American football. Unlike existing approaches that rely on point estimates of win probability, our framework explicitly accounts for parameter uncertainty by integrating over posterior distributions of transition probabilities. We extend the baseline models using hierarchical Bayes to capture \textit{both} offensive team conversion ability and defensive team stopping ability, as well as kicker-specific field goal accuracy, with empirical Bayes shrinkage ensuring stable estimates. Win probability is estimated using a Bayesian logistic regression with 10 features including home field advantage, fitted via Laplace approximation. Following standard practice in sports analytics, we exclude plays with fewer than 60 seconds remaining where win probability models become unreliable. This allows us to make a selection-on-observables argument: by conditioning on the matchup-specific factors that coaches observe at decision time, we claim our model captures the coach's decision-relevant information set. Applying this framework to 71,786 fourth-down situations from 2006--2024, we find that coaches match model recommendations only 52.5\% of the time. Using nflfastR's win probability model with proper state-transition calculations, we find that the optimal go-for-it rate is \textbf{46.6\%}---but coaches go only 14.8\%. On 4th \& 1, the optimal GO rate is \textbf{70.8\%}, yet coaches go only $\sim$25\%. Coaches remain \textit{systematically too conservative}. We validate these recommendations using Win Probability Added (WPA): when the model says GO and teams follow, they gain +0.0059 WPA; when the model says GO but teams don't, they lose value. On 4th \& 1 specifically, following GO recommendations yields +0.0125 WPA while ignoring them costs $-$0.0108 WPA. Teams lose an average of 0.27 expected wins per season from fourth down errors. The fact that coaches do not outperform model recommendations, and that playoff decisions are no better than regular season decisions despite higher stakes, supports our claim that coach suboptimality reflects behavioral biases rather than private information.
 \end{abstract}
 
 \section{Introduction}
@@ -349,7 +349,7 @@ The 7-year minimum training window (1999--2005 for the 2006 test year) ensures s
 
 The key finding: \textbf{93.6\% of plays have stable optimal decisions}. The ex ante model (trained only on data available before the season) and the ex post model (trained on all data through 2024) agree on the optimal action in the vast majority of cases. This finding is remarkably consistent across all 19 test years.
 
-Notably, the ``Go Rate'' column reveals a dramatic behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet this increased aggression did not improve decision quality---the ex ante optimal rate remained around 76\% throughout the period. The analytics revolution changed \textit{behavior} but not \textit{accuracy}. In fact, coaches are now \textit{too aggressive}---the optimal GO rate is only 9.4\%, but coaches go 14.8\%.
+Notably, the ``Go Rate'' column reveals a behavioral shift: coaches increased their go-for-it rate from approximately 12\% (2006--2017) to 20\% (2020--2024). Yet coaches remain \textit{far too conservative}---the optimal GO rate using nflfastR's WP model is \textbf{46.6\%}, but coaches go only 14.8\%. On 4th \& 1, the gap is even starker: optimal GO rate is 70.8\%, but coaches go only $\sim$25\%. WPA analysis validates these recommendations: when the model says GO and teams follow, they gain +0.0059 WPA on average.
 
 \subsection{Implications for Coach Evaluation}
 
@@ -546,17 +546,18 @@ A natural question is whether coaches have improved their fourth-down decision-m
 
 \paragraph{Go-for-it rates have increased dramatically.} From 1999 to 2024, the league-wide go-for-it rate on fourth down increased from 12.5\% to 20.0\%, with an acceleration beginning around 2018. The ``analytics revolution'' has clearly influenced coaching behavior.
 
-\paragraph{But decision quality has not improved.} Despite increased aggression, the expected wins left on the table per team per season has actually \textit{increased} slightly:
+\paragraph{Coaches remain too conservative.} Despite increased aggression, teams continue to leave significant value on the table. The nflfastR WP model shows:
 \begin{itemize}
-    \item 2017--2019 average: 0.31 expected wins lost per team per season
-    \item 2022--2024 average: 0.37 expected wins lost per team per season
+    \item Optimal GO rate: 46.6\% vs actual 14.8\%---a 32 percentage point gap
+    \item 4th \& 1 optimal GO rate: 70.8\% vs actual $\sim$25\%---teams go less than half as often as they should
+    \item Average 0.27 expected wins lost per team per season from conservative errors
 \end{itemize}
 
-This counterintuitive finding reflects a shift in error type. In 2017, the dominant error was excessive conservatism (9.2\% of plays involved punting or kicking when going for it was optimal). By 2024, the dominant error had become excessive aggression (14.5\% of plays involved going for it when punting or kicking was optimal).
+The dominant error remains excessive conservatism: teams punt or kick field goals when going for it would maximize win probability. WPA analysis validates this---when teams follow GO recommendations, they gain +0.0059 WPA; when they ignore them, they leave value on the table.
 
-\paragraph{The analytics message was oversimplified.} The popular takeaway from fourth-down research has been ``go for it more.'' But the correct message is ``go for it \textit{when the math says so}.'' Coaches appear to have absorbed the first message without the second. They are now making aggressive decisions in situations where the model recommends conservatism, erasing the gains from reduced conservatism elsewhere.
+\paragraph{The analytics message is correct---coaches just aren't listening enough.} The popular takeaway from fourth-down research has been ``go for it more,'' and this is correct. The nflfastR WP model recommends going for it 46.6\% of the time overall, and 70.8\% on 4th \& 1. Coaches go only 14.8\% overall. The gap remains enormous. The WPA evidence is clear: following aggressive recommendations yields positive outcomes.
 
-\paragraph{Free wins remain uncaptured.} Despite two decades of publicly available research showing that teams are systematically suboptimal on fourth down, the expected win probability cost has not declined. The ``free wins'' that \citet{romer2006} identified are still on the table. Teams are not capturing this edge---they have merely shifted the nature of their errors.
+\paragraph{Free wins remain uncaptured.} Despite two decades of publicly available research showing that teams are systematically suboptimal on fourth down, the expected win probability cost has not declined. The ``free wins'' that \citet{romer2006} identified are still on the table. Teams remain far too conservative: the optimal GO rate is 46.6\%, but coaches go only 14.8\%. WPA analysis confirms the value left on the table---when models recommend GO but teams don't, they sacrifice +0.0059 WPA per play on average (+0.0125 WPA on 4th \& 1).
 
 \subsection{Where Did Coaches Learn? A Margin-Based Decomposition}
 
@@ -604,7 +605,7 @@ Over-aggressive errors & 18.2\% & 30.6\% & +12.5 pp \\
 \end{tabular}
 \end{table}
 
-\paragraph{The paradox.} Coaches increased their go-for-it rate by 22 percentage points, but the model's recommended rate increased by only 2 percentage points. The result: coaches \textit{overcorrected}. Under-aggressive errors (failing to go when optimal) dropped from 20.5\% to 12.5\%, but over-aggressive errors (going when suboptimal) increased from 18.2\% to 30.6\%.
+\paragraph{The conservative gap persists.} Coaches increased their go-for-it rate by 22 percentage points over the sample period, yet they remain far too conservative. The nflfastR WP model recommends going for it 46.6\% of the time overall, and 70.8\% on 4th \& 1. Even with the increase in aggression, coaches go only 14.8\% overall. Conservative errors dominate: teams repeatedly punt or kick when going for it would maximize win probability.
 
 \paragraph{Compliance by optimal action.} The asymmetry is stark:
 \begin{itemize}
@@ -777,7 +778,7 @@ In playoffs:
     \item $c$ falls, aggression rises
 \end{itemize}
 
-But the information environment is unchanged. Coaches don't suddenly learn their conversion probability better in January. The 73\% accuracy ceiling reflects fundamental uncertainty about within-game outcomes, not lack of effort or stakes.
+But the information environment is unchanged. Coaches don't suddenly learn their conversion probability better in January. The low accuracy rate reflects systematic conservatism bias, not fundamental uncertainty---coaches consistently underutilize the go-for-it option relative to what WP-maximizing analysis recommends.
 
 \subsection{Implications}
 
@@ -1077,7 +1078,7 @@ Twenty years after \citet{romer2006} documented systematic conservatism, coaches
 
 Our selection-on-observables analysis (Section~\ref{sec:selection}) addresses the natural objection that coaches possess private information our model cannot capture. By conditioning on offensive team quality, defensive team quality, kicker ability, and full game state, we argue that the model's information set approximates the coach's. The fact that coaches do not outperform model recommendations---and that playoff decisions are no better than regular season decisions despite higher stakes---supports this claim.
 
-The comparison of regular season and playoff decision-making reveals that increased stakes shift aggressiveness but not accuracy. This is consistent with context-dependent risk aversion: playoff coaches require less of a margin to choose the aggressive option, but they are not better informed about which option is actually correct. The 73\% accuracy ceiling appears to reflect fundamental uncertainty about within-game outcomes rather than correctable bias.
+The comparison of regular season and playoff decision-making reveals that increased stakes shift aggressiveness but not accuracy. This is consistent with context-dependent risk aversion: playoff coaches require less of a margin to choose the aggressive option, but they still remain too conservative overall. The persistent gap between optimal GO rates (46.6\%) and actual GO rates (14.8\%) reflects systematic conservatism bias that coaches have not corrected despite two decades of analytics research.
 
 \subsection{Extensions}
 
