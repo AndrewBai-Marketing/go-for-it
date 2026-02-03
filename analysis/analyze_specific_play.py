@@ -151,5 +151,150 @@ the ball back means the opponent can kneel out the clock.
     return analysis
 
 
+def analyze_belichick_4th_and_2():
+    """
+    Analyze Bill Belichick's famous 4th & 2 decision (November 15, 2009).
+
+    Situation: 4th & 2 at own 28 (yardline_100=72), up 6, 2:08 remaining
+    Patriots went for it, failed to convert.
+    Colts scored touchdown to win 35-34.
+
+    This is the canonical case of:
+    - Analytically correct decision
+    - Bad outcome
+    - Wrong learning signal to other coaches
+
+    Most analyses showed going for it was correct because:
+    1. Conversion probability ~60% on 4th & 2
+    2. If convert: game over (can kneel out clock)
+    3. If fail: Colts need TD from own 28 with 2:00 left vs Colts getting ball
+       at own ~30 after punt with 2:00 left anyway
+    4. Peyton Manning was highly likely to score either way
+    """
+    print("\n" + "="*80)
+    print("NOVEMBER 15, 2009: NEW ENGLAND PATRIOTS @ INDIANAPOLIS COLTS")
+    print("Bill Belichick's 4th & 2 Decision")
+    print("="*80)
+
+    # The actual situation
+    state = GameState(
+        field_pos=72,           # Own 28 yard line (72 yards from opponent's end zone)
+        yards_to_go=2,          # 4th & 2
+        score_diff=6,           # Up 6 (Patriots 34, Colts 28)
+        time_remaining=128,     # 2:08 remaining
+        off_team='NE',
+        def_team='IND',
+        is_home=0.0             # Patriots were away
+    )
+
+    analysis = analyze_play(state)
+    result = print_analysis(analysis)
+
+    print("\n" + "="*80)
+    print("HEURISTIC LEARNING IMPLICATIONS (Strulov-Shlain Framework)")
+    print("="*80)
+
+    print("""
+This play is a perfect example of OUTCOME-BASED LEARNING vs MODEL-BASED OPTIMIZATION:
+
+WHAT HAPPENED:
+- Belichick went for it (analytically correct)
+- Pass to Kevin Faulk was ruled short (bad outcome)
+- Colts scored TD, won 35-34
+- Media CRUCIFIED Belichick for "arrogance"
+
+CORRECT BAYESIAN ANALYSIS:
+- P(convert 4th & 2) ≈ 60%
+- If convert: P(win) ≈ 100% (kneel out clock)
+- If fail: P(win) ≈ 30% (Colts need TD from 28, 2:00 left)
+- If punt: P(win) ≈ 35-40% (Colts get ball at ~30, 2:00 left, Manning)
+
+E[WP|Go] = 0.60 × 1.00 + 0.40 × 0.30 = 0.72
+E[WP|Punt] ≈ 0.35-0.40
+
+Going for it was ~30+ percentage points better!
+
+THE LEARNING PROBLEM:
+1. Other coaches observed: "Belichick went for it and LOST"
+2. Outcome-based heuristic update: "Going for it is risky, I should punt"
+3. This is EXACTLY WRONG - the decision was correct, outcome was unlucky
+
+PREDICTION FOR YOUR ANALYSIS:
+- Look at league-wide go-for-it rates in similar situations BEFORE and AFTER Nov 2009
+- If coaches learned from the wrong signal, rates should DROP after this game
+- This would be evidence of heuristic (outcome-based) learning, not model-based optimization
+""")
+
+    # Additional analysis: What if they had punted?
+    print("\n" + "-"*40)
+    print("COUNTERFACTUAL: What if Patriots had punted?")
+    print("-"*40)
+
+    # Approximate punt situation
+    punt_state = GameState(
+        field_pos=70,           # Colts get ball around own 30 after punt
+        yards_to_go=10,         # 1st & 10
+        score_diff=-6,          # Colts down 6
+        time_remaining=120,     # ~2:00 after punt
+        off_team='IND',
+        def_team='NE',
+        is_home=1.0             # Colts at home
+    )
+
+    print(f"\nColts would have ball at ~own 30, down 6, 2:00 left")
+    print(f"With Peyton Manning, their P(TD) was extremely high")
+    print(f"Punt only 'saves' ~8 yards of field position")
+
+    return analysis
+
+
+def analyze_learning_around_belichick():
+    """
+    Study whether the Belichick 4th & 2 caused a league-wide chilling effect.
+
+    This is an empirical test: did coaches become MORE conservative after
+    the Belichick play was criticized, despite it being analytically correct?
+    """
+    print("\n" + "="*80)
+    print("EMPIRICAL TEST: Did Belichick 4th & 2 cause a chilling effect?")
+    print("="*80)
+
+    print("""
+METHODOLOGY:
+
+1. Define "Belichick-like situations":
+   - 4th & short (1-3 yards)
+   - Own territory (own 20-40)
+   - Leading by 3-10 points
+   - 1-4 minutes remaining
+
+2. Compute go-for-it rate in these situations:
+   - Pre-Belichick: 2006-2009 (up to Nov 15, 2009)
+   - Post-Belichick: Nov 16, 2009 - 2012
+   - Analytics era: 2018-2024
+
+3. If heuristic learning from wrong signal:
+   - Rate should DROP after Nov 2009
+   - Rate should INCREASE again in analytics era
+
+4. If model-based optimization:
+   - Rate should be UNCHANGED by Belichick outcome
+   - Coaches would recognize decision was correct despite outcome
+
+This is a clean test because:
+- The Belichick play was highly salient (massive media coverage)
+- The outcome was negative (loss)
+- The decision was analytically correct
+- Other coaches could observe and potentially "learn" the wrong lesson
+""")
+
+    return None
+
+
 if __name__ == "__main__":
+    # Run both analyses
     analyze_2006_eagles_playoff()
+    print("\n" * 3)
+    analyze_belichick_4th_and_2()
+    print("\n" * 3)
+    analyze_learning_around_belichick()
