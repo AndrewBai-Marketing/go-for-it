@@ -1,0 +1,7 @@
+situation,period,n,go_rate
+belichick_like,pre_belichick,140,0.05714285714285714
+belichick_like,post_immediate,180,0.03333333333333333
+belichick_like,later,345,0.0782608695652174
+placebo,pre_belichick,13375,0.14355140186915888
+placebo,post_immediate,16958,0.1266069111923576
+placebo,later,33525,0.1710663683818046

@@ -68,6 +68,39 @@ DIFFERENCE: +0.5% → GO FOR 2 IS BETTER
 
 **Behavioral explanation**: Present bias—going for 2 when down 8 ties the game *now*; going for 2 when down 9 sets up a future tying field goal. Coaches respond to the immediate payoff ("tie now") rather than the deferred but superior payoff ("FG ties later")
 
+### Heuristic Learning: Evidence from the Belichick Chilling Effect
+
+Inspired by Strulov-Shlain (2025) "Learning and Limitations of Heuristic Pricing," we test whether coaches learn from *outcomes* (heuristic) or *models* (optimal).
+
+**The Belichick 4th & 2 (November 15, 2009):** Belichick went for it on 4th & 2 from his own 28, up 6 with 2:08 left. The decision was analytically correct (E[WP|go] ≈ 72% vs E[WP|punt] ≈ 38%), but the Patriots failed to convert and lost 35-34. Media crucified him.
+
+**Key finding:** Go-for-it rates in Belichick-like situations dropped after 2009:
+
+| Period | Go-for-it Rate | Notes |
+|--------|---------------|-------|
+| Pre-Belichick (2006-2009) | 9.3% | Baseline |
+| Post-Belichick (2010-2012) | 2.9% | Chilling effect |
+| Analytics Era (2018-2024) | 15.9% | Recovery |
+
+![Belichick Chilling Effect](outputs/figures/belichick_chilling_effect.png)
+
+**Season-by-season go-for-it rates (4th & 1-2):**
+- 2009: 37.3% ← Belichick 4th & 2
+- 2011: 27.4% ← 10pp drop
+- 2018: 44.4% ← Analytics revolution
+- 2024: 59.1%
+
+**Interpretation:** If coaches optimized against a known win probability model, they would recognize Belichick's decision was correct despite the outcome. The fact that league-wide rates *dropped* suggests heuristic (outcome-based) learning: "Belichick went for it and lost → going for it is risky."
+
+**Placebo test:** Diff-in-diff comparing Belichick-like situations (treatment) to other 4th downs (control) shows -0.7% differential effect—suggesting a general conservative trend rather than a Belichick-specific shock. The evidence is suggestive but not definitive.
+
+**"Punted when should go" mistake rate by era:**
+- Pre-Belichick: 3.49%
+- Chilling Effect (2010-2017): 2.91%
+- Analytics Era (2018-2024): 1.96%
+
+Coaches are gradually learning the correct behavior, but the path was not immediate.
+
 ### Model Validation: WPA Evidence
 
 The nflfastR model recommendations are validated by actual Win Probability Added:
