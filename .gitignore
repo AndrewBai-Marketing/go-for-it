@@ -82,3 +82,4 @@ salary_efficiency/
 
 # Claude Code settings (local only, never commit)
 .claude/
+CLAUDE_CONTEXT.md
